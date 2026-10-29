@@ -146,6 +146,17 @@ MUTANTS = [
      "a refutation whose reproduction job was skipped is accepted"),
     ("bare_hex_threshold_dropped", f"{PKG}/secretscan.py", "[0-9a-f]{32,}", "[0-9a-f]{3,}",
      "short hex or plain numbers assigned to a token-named variable refuse innocent pushes"),
+    ("brain_read_gets_an_identity_again", "seed/bootstrap/workflow/bootstrap.yml",
+     "          GH_TOKEN: ${{ github.token }}\n        run: python3 -m snowball_bootstrap poll",
+     "          GH_TOKEN: ${{ github.token }}\n          BRAIN" + "_TOKEN: ${{ github.token }}\n        run: python3 -m snowball_bootstrap poll",
+     "an identity is handed to the brain read although the brain is public"),
+    ("config_value_prints_what_nobody_reads", f"{PKG}/cli.py", "    output(image=boot.image)\n",
+     "    output(image=boot.image, brain_branch=boot.brain_branch)\n",
+     "a step output nobody reads stays behind and the workflow and the command drift apart"),
+    ("setup_day_names_an_app_the_workflow_dropped", "spec/tohum/25-kurulum-gunu.md",
+     "sır `CLAUDE_CODE_OAUTH_TOKEN` (operatörün",
+     "değişken `READER" + "_APP_ID`, sırlar `READER" + "_APP_KEY` ve `CLAUDE_CODE_OAUTH_TOKEN` (operatörün",
+     "the operator is told to configure an App that nothing uses"),
 ]
 
 

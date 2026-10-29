@@ -82,14 +82,14 @@ class WorkflowWiringTest(unittest.TestCase):
 
     def test_every_secret_and_variable_is_documented_for_the_operator(self):
         names = set(re.findall(r"(?:secrets|vars)@BS@.([A-Z0-9_]+)".replace("@BS@", BS), WORKFLOW))
-        self.assertEqual(names, {"READER_APP_ID", "READER_APP_KEY", "CLAUDE_CODE_OAUTH_TOKEN"})
+        self.assertEqual(names, {"CLAUDE_CODE_OAUTH_TOKEN"})  # the brain is public: nothing else is held
         for name in names:
             self.assertIn(name, SETUP_DAY, f"tohum/25 never tells the operator about {name}")
 
     def test_the_model_credential_reaches_only_the_rival_step(self):
         self.assertEqual(WORKFLOW.count("${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}"), 1)
         used = re.findall(r"\$\{\{\s*secrets\.([A-Za-z0-9_]+)\s*\}\}", WORKFLOW)
-        self.assertEqual(sorted(used), ["CLAUDE_CODE_OAUTH_TOKEN", "READER_APP_KEY"])  # no other way to read a secret
+        self.assertEqual(used, ["CLAUDE_CODE_OAUTH_TOKEN"])  # no other way to read a secret
         self.assertNotIn("toJSON(secrets", WORKFLOW)
         self.assertNotIn("secrets[", WORKFLOW)
         self.assertNotIn("secrets: inherit", WORKFLOW)
@@ -104,6 +104,15 @@ class WorkflowWiringTest(unittest.TestCase):
         self.assertIn(f"--claude {install.group(1)}/node_modules/.bin/claude", WORKFLOW)
         self.assertNotIn("--ignore-scripts", WORKFLOW)  # the CLI's own install step links its binary
 
+    def test_the_brain_is_read_without_any_identity(self):
+        """Public brain: no App token step, no token handed to the pull or the poll, no auth header in the code."""
+        self.assertNotIn("app-id", WORKFLOW)
+        self.assertEqual(re.findall(r"BRAIN_[A-Z_]+", WORKFLOW), [])
+        self.assertNotIn("steps.app.", WORKFLOW)
+        gitio_source = (BOOT / "snowball_bootstrap" / "gitio.py").read_text(encoding="utf-8")
+        for needle in ("extraheader", "AUTHORIZATION", "x-access-token"):
+            self.assertNotIn(needle, gitio_source, f"gitio still knows how to send {needle}")
+
     def test_the_job_outlives_the_cli_it_waits_for(self):
         job = WORKFLOW[WORKFLOW.index("  cagir:"):]
         minutes = int(re.search(r"timeout-minutes: ([0-9]+)", job).group(1))
@@ -112,7 +121,7 @@ class WorkflowWiringTest(unittest.TestCase):
 
 class NothingStaleTest(unittest.TestCase):
     STALE = ("call.txt", "secrets.ANTHROPIC", "import anthropic", "anthropic==", "/tmp/call", "Anthropic SDK",
-             "model SDK", "price_micros_per_mtok")
+             "model SDK", "price_micros_per_mtok", "READER_APP", "BRAIN_TOKEN", "create-github-app-token")
 
     def test_the_old_api_design_has_left_no_trace(self):
         here = Path(__file__).resolve()

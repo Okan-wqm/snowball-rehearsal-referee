@@ -7,19 +7,21 @@
 #   seats/                  <- spec/tohum/29-tohum-koltuklari.md
 #   bootstrap.json, control.json, policy.json, setup/summary.json
 # Repository settings: default workflow permissions read-only; no App with write access.
-# Variables and secrets: vars.READER_APP_ID, secrets.READER_APP_KEY, secrets.CLAUDE_CODE_OAUTH_TOKEN
-# (the operator's `claude setup-token`). No API key is held anywhere while this system is for internal use.
+# Secrets: secrets.CLAUDE_CODE_OAUTH_TOKEN (the operator's `claude setup-token`), nothing else. No API key
+# is held anywhere while this system is for internal use. The brain repository is public while the system
+# is for internal use, so it is read without any identity (tohum/25, 01a).
 #
 # Schedule: hourly at a fixed odd minute. An idle poll is one job of under a minute (it installs
-# and verifies nothing), so idling costs about 24 x 30 = 720 Actions minutes a month; see tohum/25
-# "Actions dakikası hesabı" before changing the cadence.
+# and verifies nothing). Standard runners are free in a public repository; in a private one the same
+# idling costs about 24 x 30 = 720 Actions minutes a month, see tohum/25 "Actions dakikası hesabı"
+# before changing the cadence.
 #
 # Every wheel this workflow installs passes the license gate first (`licenses`, tohum/24 "Lisans"). The one
 # npm package it installs, the claude CLI, is a vendor tool and not a wheel: requirements/claude-cli/
 # package-lock.json pins it and its platform binary by sha512, and `npm ci` refuses anything else.
 #
 # Jobs and what they may hold (tohum/08 1):
-#   cek     reader App token, GITHUB_TOKEN (contents, actions: read) - runs no brain code
+#   cek     GITHUB_TOKEN (contents, actions: read); the brain is read anonymously - runs no brain code
 #   getir   nothing; network for wheels only                         - runs no brain code
 #   kos     nothing; brain code only inside --network none containers
 #   cagir   operator's Claude login (CLAUDE_CODE_OAUTH_TOKEN)        - runs no brain code
@@ -73,18 +75,10 @@ jobs:
         run: python3 -m snowball_bootstrap control --root snap
       - id: cfg
         run: python3 -m snowball_bootstrap config-value --root snap
-      - id: app
-        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
-        with:
-          app-id: ${{ vars.READER_APP_ID }}
-          private-key: ${{ secrets.READER_APP_KEY }}
-          owner: ${{ steps.cfg.outputs.brain_owner }}
-          repositories: ${{ steps.cfg.outputs.brain_name }}
       - id: poll
         name: Anything new to judge? (installs and verifies nothing)
         env:
           GH_TOKEN: ${{ github.token }}
-          BRAIN_TOKEN: ${{ steps.app.outputs.token }}
         run: python3 -m snowball_bootstrap poll --root snap --out state
       - name: Sigstore (hash-pinned, license-checked)
         if: steps.poll.outputs.skip == 'false'
@@ -107,8 +101,6 @@ jobs:
       - id: pull
         name: Pull and classify the brain commit
         if: steps.poll.outputs.skip == 'false'
-        env:
-          BRAIN_TOKEN: ${{ steps.app.outputs.token }}
         run: python3 -m snowball_bootstrap pull --root snap --state state/state.json --work work --out pulled
       - id: pack
         if: steps.pull.outputs.skip == 'false'

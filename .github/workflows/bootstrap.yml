@@ -1,0 +1,360 @@
+# Snowball bootstrap referee (spec tohum/29b). Install into the referee repository as
+# .github/workflows/bootstrap.yml during setup (tohum/25 row 3). Only the operator edits it.
+#
+# Referee repository layout this workflow expects (all written by the operator):
+#   bootstrap/              <- copy of seed/bootstrap/ (package, requirements, workflow)
+#   vectors/                <- copy of seed/bootstrap/vectors/
+#   seats/                  <- spec/tohum/29-tohum-koltuklari.md
+#   bootstrap.json, control.json, policy.json, setup/summary.json
+# Repository settings: default workflow permissions read-only; no App with write access.
+# Secrets: secrets.CLAUDE_CODE_OAUTH_TOKEN (the operator's `claude setup-token`), nothing else. No API key
+# is held anywhere while this system is for internal use. The brain repository is public while the system
+# is for internal use, so it is read without any identity (tohum/25, 01a).
+#
+# Schedule: hourly at a fixed odd minute. An idle poll is one job of under a minute (it installs
+# and verifies nothing). Standard runners are free in a public repository; in a private one the same
+# idling costs about 24 x 30 = 720 Actions minutes a month, see tohum/25 "Actions dakikası hesabı"
+# before changing the cadence.
+#
+# Every wheel this workflow installs passes the license gate first (`licenses`, tohum/24 "Lisans"). The one
+# npm package it installs, the claude CLI, is a vendor tool and not a wheel: requirements/claude-cli/
+# package-lock.json pins it and its platform binary by sha512, and `npm ci` refuses anything else.
+#
+# Jobs and what they may hold (tohum/08 1):
+#   cek     GITHUB_TOKEN (contents, actions: read); the brain is read anonymously - runs no brain code
+#   getir   nothing; network for wheels only                         - runs no brain code
+#   kos     nothing; brain code only inside --network none containers
+#   cagir   operator's Claude login (CLAUDE_CODE_OAUTH_TOKEN)        - runs no brain code
+#   yeniden nothing; reproducers only inside --network none containers
+#   yaz     OIDC (Sigstore) and contents: read                         - runs no brain code
+
+name: snowball-bootstrap
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: snowball-bootstrap
+  cancel-in-progress: false
+
+env:
+  PYTHONPATH: snap/bootstrap
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  cek:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      skip: ${{ steps.poll.outputs.skip == 'true' || steps.pull.outputs.skip == 'true' }}
+      kind: ${{ steps.pull.outputs.kind }}
+      run_tests: ${{ steps.pull.outputs.run_tests }}
+      run_rival: ${{ steps.pull.outputs.run_rival }}
+      image: ${{ steps.cfg.outputs.image }}
+      snap_sha: ${{ steps.pack.outputs.snap_sha }}
+      pulled_sha: ${{ steps.pack.outputs.pulled_sha }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          path: referee
+      - name: Snapshot operator files and bootstrap code
+        run: |
+          mkdir -p snap/setup
+          cp -r referee/bootstrap referee/vectors referee/seats snap/
+          cp referee/bootstrap.json referee/control.json referee/policy.json snap/
+          cp referee/setup/summary.json snap/setup/
+      - name: Kill switch and operator files
+        run: python3 -m snowball_bootstrap control --root snap
+      - id: cfg
+        run: python3 -m snowball_bootstrap config-value --root snap
+      - id: poll
+        name: Anything new to judge? (installs and verifies nothing)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -m snowball_bootstrap poll --root snap --out state
+      - name: Sigstore (hash-pinned, license-checked)
+        if: steps.poll.outputs.skip == 'false'
+        run: |
+          python3 -m venv /tmp/sig
+          /tmp/sig/bin/pip download --quiet --require-hashes --only-binary=:all: --no-deps \
+            -d /tmp/sigw -r snap/bootstrap/requirements/sign.txt
+          python3 -m snowball_bootstrap licenses --root snap --wheels /tmp/sigw
+          /tmp/sig/bin/pip install --quiet --no-index --find-links /tmp/sigw --require-hashes \
+            --only-binary=:all: --no-deps -r snap/bootstrap/requirements/sign.txt
+      - id: state
+        name: Previous signed state
+        if: steps.poll.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          python3 -m snowball_bootstrap fetch-state --root snap --out state
+          --sigstore-python /tmp/sig/bin/python
+          --identity "https://github.com/${{ github.repository }}/.github/workflows/bootstrap.yml@${{ github.ref }}"
+      - id: pull
+        name: Pull and classify the brain commit
+        if: steps.poll.outputs.skip == 'false'
+        run: python3 -m snowball_bootstrap pull --root snap --state state/state.json --work work --out pulled
+      - id: pack
+        if: steps.pull.outputs.skip == 'false'
+        run: |
+          python3 -m snowball_bootstrap pack --dir snap --out snapshot.tar | sed -n 's/^sha256=/snap_sha=/p' >> "$GITHUB_OUTPUT"
+          python3 -m snowball_bootstrap pack --dir pulled --out pulled.tar | sed -n 's/^sha256=/pulled_sha=/p' >> "$GITHUB_OUTPUT"
+      - if: steps.pull.outputs.skip == 'false'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: snapshot
+          path: snapshot.tar
+          retention-days: 7
+          if-no-files-found: error
+      - if: steps.pull.outputs.skip == 'false'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pulled
+          path: pulled.tar
+          retention-days: 7
+          if-no-files-found: error
+      - name: Keep the signed state alive while idle
+        if: >-
+          (steps.poll.outputs.skip == 'true' && steps.poll.outputs.reupload == 'true') ||
+          (steps.pull.outputs.skip == 'true' && steps.state.outputs.reupload == 'true')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bootstrap-state
+          path: |
+            state/prev/result.json
+            state/prev/result.json.sigstore.json
+          retention-days: 90
+          if-no-files-found: error
+
+  getir:
+    needs: cek
+    if: needs.cek.outputs.run_tests == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions: {}
+    outputs:
+      deps_sha: ${{ steps.pack.outputs.deps_sha }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: snapshot }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: pulled }
+      - name: Verify and unpack
+        run: |
+          echo "${{ needs.cek.outputs.snap_sha }}  snapshot.tar" | sha256sum -c -
+          echo "${{ needs.cek.outputs.pulled_sha }}  pulled.tar" | sha256sum -c -
+          mkdir snap pulled && tar -xf snapshot.tar -C snap && tar -xf pulled.tar -C pulled
+      - name: Kill switch (snapshot of this run)
+        run: python3 -m snowball_bootstrap control --root snap
+      - name: Download locked wheels (no install scripts)
+        run: |
+          python3 -m venv /tmp/dl
+          /tmp/dl/bin/python -m snowball_bootstrap fetch-deps --pulled pulled --work work --out deps
+      - id: pack
+        run: python3 -m snowball_bootstrap pack --dir deps --out deps.tar | sed -n 's/^sha256=/deps_sha=/p' >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: deps
+          path: deps.tar
+          retention-days: 7
+          if-no-files-found: error
+
+  kos:
+    needs: [cek, getir]
+    if: needs.cek.outputs.run_tests == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions: {}
+    outputs:
+      run_sha: ${{ steps.pack.outputs.run_sha }}
+      green: ${{ steps.run.outputs.green }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: snapshot }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: pulled }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: deps }
+      - name: Verify and unpack
+        run: |
+          echo "${{ needs.cek.outputs.snap_sha }}  snapshot.tar" | sha256sum -c -
+          echo "${{ needs.cek.outputs.pulled_sha }}  pulled.tar" | sha256sum -c -
+          echo "${{ needs.getir.outputs.deps_sha }}  deps.tar" | sha256sum -c -
+          mkdir snap pulled deps && tar -xf snapshot.tar -C snap && tar -xf pulled.tar -C pulled && tar -xf deps.tar -C deps
+      - name: Kill switch (snapshot of this run)
+        run: python3 -m snowball_bootstrap control --root snap
+      - name: Pull the pinned image
+        run: docker pull "${{ needs.cek.outputs.image }}"
+      - id: run
+        name: Red controls, founder tests and seed vectors in sandboxed containers
+        run: python3 -m snowball_bootstrap run-tests --root snap --pulled pulled --deps deps --work work --out run
+      - id: pack
+        run: python3 -m snowball_bootstrap pack --dir run --out run.tar | sed -n 's/^sha256=/run_sha=/p' >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: run
+          path: run.tar
+          retention-days: 7
+          if-no-files-found: error
+
+  cagir:
+    needs: [cek, kos]
+    if: >-
+      always() && needs.cek.result == 'success' && needs.cek.outputs.run_rival == 'true' &&
+      (needs.cek.outputs.kind == 'spec' || needs.kos.outputs.green == 'true')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions: {}
+    outputs:
+      rival_sha: ${{ steps.pack.outputs.rival_sha }}
+      has_repro: ${{ steps.rival.outputs.has_repro }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: snapshot }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: pulled }
+      - name: Verify and unpack
+        run: |
+          echo "${{ needs.cek.outputs.snap_sha }}  snapshot.tar" | sha256sum -c -
+          echo "${{ needs.cek.outputs.pulled_sha }}  pulled.tar" | sha256sum -c -
+          mkdir snap pulled && tar -xf snapshot.tar -C snap && tar -xf pulled.tar -C pulled
+      - name: Kill switch (snapshot of this run)
+        run: python3 -m snowball_bootstrap control --root snap
+      - name: Claude CLI (lock-pinned and sha512-checked; this step holds no secret)
+        run: |
+          node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'
+          npm ci --prefix snap/bootstrap/requirements/claude-cli --no-audit --no-fund
+          pinned=$(node -p 'require("./snap/bootstrap/requirements/claude-cli/package.json").dependencies["@anthropic-ai/claude-code"]')
+          test "$(snap/bootstrap/requirements/claude-cli/node_modules/.bin/claude --version | cut -d' ' -f1)" = "$pinned"
+      - id: rival
+        name: Seed rival
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          : "${CLAUDE_CODE_OAUTH_TOKEN:?secrets.CLAUDE_CODE_OAUTH_TOKEN is empty (run claude setup-token)}"
+          python3 -m snowball_bootstrap rival --root snap --pulled pulled --work work --out rival \
+            --claude snap/bootstrap/requirements/claude-cli/node_modules/.bin/claude
+      - id: pack
+        run: python3 -m snowball_bootstrap pack --dir rival --out rival.tar | sed -n 's/^sha256=/rival_sha=/p' >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rival
+          path: rival.tar
+          retention-days: 7
+          if-no-files-found: error
+
+  yeniden:
+    needs: [cek, getir, cagir]
+    if: always() && needs.cagir.result == 'success' && needs.cagir.outputs.has_repro == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions: {}
+    outputs:
+      repro_sha: ${{ steps.pack.outputs.repro_sha }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: snapshot }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: pulled }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: rival }
+      - if: needs.getir.result == 'success'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: deps }
+      - name: Verify and unpack
+        run: |
+          echo "${{ needs.cek.outputs.snap_sha }}  snapshot.tar" | sha256sum -c -
+          echo "${{ needs.cek.outputs.pulled_sha }}  pulled.tar" | sha256sum -c -
+          echo "${{ needs.cagir.outputs.rival_sha }}  rival.tar" | sha256sum -c -
+          mkdir snap pulled rival deps
+          tar -xf snapshot.tar -C snap && tar -xf pulled.tar -C pulled && tar -xf rival.tar -C rival
+          if [ -f deps.tar ]; then
+            echo "${{ needs.getir.outputs.deps_sha }}  deps.tar" | sha256sum -c -
+            tar -xf deps.tar -C deps
+          fi
+      - name: Kill switch (snapshot of this run)
+        run: python3 -m snowball_bootstrap control --root snap
+      - name: Pull the pinned image
+        run: docker pull "${{ needs.cek.outputs.image }}"
+      - name: Run the rival's reproducers in sandboxed containers
+        run: >
+          python3 -m snowball_bootstrap reproduce --root snap --pulled pulled --deps deps
+          --rival rival --work work --out repro
+      - id: pack
+        run: python3 -m snowball_bootstrap pack --dir repro --out repro.tar | sed -n 's/^sha256=/repro_sha=/p' >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: repro
+          path: repro.tar
+          retention-days: 7
+          if-no-files-found: error
+
+  yaz:
+    needs: [cek, getir, kos, cagir, yeniden]
+    if: always() && needs.cek.result == 'success' && needs.cek.outputs.skip != 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          path: referee
+      - name: Kill switch (live)
+        run: PYTHONPATH=referee/bootstrap python3 -m snowball_bootstrap control --root referee
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: snapshot }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: pulled }
+      - if: needs.kos.result == 'success'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: run }
+      - if: needs.cagir.result == 'success'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: rival }
+      - if: needs.yeniden.result == 'success'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: repro }
+      - name: Verify and unpack
+        run: |
+          set -eu
+          check() { echo "$2  $1" | sha256sum -c - && mkdir -p "${1%.tar}" && tar -xf "$1" -C "${1%.tar}"; }
+          echo "${{ needs.cek.outputs.snap_sha }}  snapshot.tar" | sha256sum -c -
+          mkdir snap && tar -xf snapshot.tar -C snap
+          check pulled.tar "${{ needs.cek.outputs.pulled_sha }}"
+          if [ -f run.tar ]; then check run.tar "${{ needs.kos.outputs.run_sha }}"; fi
+          if [ -f rival.tar ]; then check rival.tar "${{ needs.cagir.outputs.rival_sha }}"; fi
+          if [ -f repro.tar ]; then check repro.tar "${{ needs.yeniden.outputs.repro_sha }}"; fi
+      - name: Decide
+        run: >
+          python3 -m snowball_bootstrap decide --root snap --pulled pulled
+          --run run --rival rival --repro repro --out out
+          --job getir=${{ needs.getir.result }} --job kos=${{ needs.kos.result }}
+          --job cagir=${{ needs.cagir.result }} --job yeniden=${{ needs.yeniden.result }}
+      - name: Sign the result into Rekor (Sigstore, keyless)
+        run: |
+          python3 -m venv /tmp/sig
+          /tmp/sig/bin/pip download --quiet --require-hashes --only-binary=:all: --no-deps \
+            -d /tmp/sigw -r snap/bootstrap/requirements/sign.txt
+          python3 -m snowball_bootstrap licenses --root snap --wheels /tmp/sigw
+          /tmp/sig/bin/pip install --quiet --no-index --find-links /tmp/sigw --require-hashes \
+            --only-binary=:all: --no-deps -r snap/bootstrap/requirements/sign.txt
+          /tmp/sig/bin/python -m sigstore sign --bundle out/result.json.sigstore.json out/result.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bootstrap-state
+          path: |
+            out/result.json
+            out/result.json.sigstore.json
+          retention-days: 90
+          if-no-files-found: error

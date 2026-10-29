@@ -77,14 +77,6 @@ class Bootstrap:
     rival: RivalConfig
     limits: Limits
 
-    @property
-    def brain_owner(self) -> str:
-        return self.brain_repo.split("/", 1)[0]
-
-    @property
-    def brain_name(self) -> str:
-        return self.brain_repo.split("/", 1)[1]
-
 
 MODEL_RE = re.compile(r"^claude-[a-z0-9][a-z0-9.-]*\Z")
 REMOVED_KEYS = {"max_tokens": "the rival runs through the claude CLI, which takes no per-request token limit flag",

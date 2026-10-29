@@ -7,7 +7,6 @@ no effect (`asama-0/06`).
 
 from __future__ import annotations
 
-import base64
 import io
 import os
 import subprocess
@@ -29,11 +28,9 @@ class GitError(RuntimeError):
     pass
 
 
-def git(repo: Path, *args: str, env: dict[str, str] | None = None, stdin: bytes | None = None) -> bytes:
+def git(repo: Path, *args: str, stdin: bytes | None = None) -> bytes:
     full_env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     full_env.update({"GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null"})
-    if env:
-        full_env.update(env)
     proc = subprocess.run(["git", *SAFE_CONFIG, "-C", str(repo), *args], input=stdin,
                           capture_output=True, env=full_env, check=False)
     if proc.returncode != 0:
@@ -41,37 +38,24 @@ def git(repo: Path, *args: str, env: dict[str, str] | None = None, stdin: bytes 
     return proc.stdout
 
 
-def auth_env(token: str | None) -> dict[str, str]:
-    """Pass the reader App token as an HTTP header through the environment, never on argv."""
-    if not token:
-        return {}
-    basic = base64.b64encode(f"x-access-token:{token}".encode()).decode()
-    return {
-        "GIT_CONFIG_COUNT": "1",
-        "GIT_CONFIG_KEY_0": "http.https://github.com/.extraheader",
-        "GIT_CONFIG_VALUE_0": f"AUTHORIZATION: basic {basic}",
-    }
-
-
-def fetch(dest: Path, remote: str, branch: str, base_sha: str, token: str | None) -> str:
+def fetch(dest: Path, remote: str, branch: str, base_sha: str) -> str:
     """Fetch ``branch`` and make sure ``base_sha`` is present. Return the branch head SHA."""
     dest.mkdir(parents=True, exist_ok=True)
     if not (dest / "HEAD").exists():
         git(dest, "init", "--bare", "--quiet")
-    env = auth_env(token)
-    git(dest, "fetch", "--quiet", "--no-tags", remote, f"+refs/heads/{branch}:refs/remotes/brain/{branch}", env=env)
+    git(dest, "fetch", "--quiet", "--no-tags", remote, f"+refs/heads/{branch}:refs/remotes/brain/{branch}")
     head = git(dest, "rev-parse", f"refs/remotes/brain/{branch}^{{commit}}").decode().strip()
     if not has_commit(dest, base_sha):
         try:
-            git(dest, "fetch", "--quiet", "--no-tags", remote, base_sha, env=env)
+            git(dest, "fetch", "--quiet", "--no-tags", remote, base_sha)
         except GitError:
             pass
     return head
 
 
-def remote_head(remote: str, branch: str, token: str | None) -> str:
+def remote_head(remote: str, branch: str) -> str:
     """The branch head on the remote, read with ``ls-remote`` (no objects are fetched)."""
-    out = git(Path("."), "ls-remote", "--heads", remote, f"refs/heads/{branch}", env=auth_env(token)).decode()
+    out = git(Path("."), "ls-remote", "--heads", remote, f"refs/heads/{branch}").decode()
     lines = [line.split("\t") for line in out.splitlines() if line.strip()]
     if len(lines) != 1 or lines[0][1] != f"refs/heads/{branch}":
         raise GitError(f"branch {branch!r} not found on the brain remote")

@@ -131,8 +131,7 @@ def cmd_control(args: argparse.Namespace) -> int:
 
 def cmd_config_value(args: argparse.Namespace) -> int:
     boot = config.load_bootstrap(Path(args.root))
-    output(brain_owner=boot.brain_owner, brain_name=boot.brain_name, brain_branch=boot.brain_branch,
-           image=boot.image)
+    output(image=boot.image)
     return 0
 
 
@@ -147,7 +146,7 @@ def cmd_poll(args: argparse.Namespace) -> int:
     token = os.environ["GH_TOKEN"]
     repo = os.environ["GITHUB_REPOSITORY"]
     remote = args.remote or f"https://github.com/{boot.brain_repo}.git"
-    head = gitio.remote_head(remote, boot.brain_branch, os.environ.get("BRAIN_TOKEN"))
+    head = gitio.remote_head(remote, boot.brain_branch)
     art = ghapi.latest_artifact(repo, STATE_ARTIFACT, token)
     if art is None:
         output(skip=False, reupload=False, head=head)
@@ -225,7 +224,7 @@ def cmd_pull(args: argparse.Namespace) -> int:
     repo = Path(args.work) / "brain.git"
     remote = args.remote or f"https://github.com/{boot.brain_repo}.git"
     base = prev["last_accepted_sha"]
-    head = gitio.fetch(repo, remote, boot.brain_branch, base, os.environ.get("BRAIN_TOKEN"))
+    head = gitio.fetch(repo, remote, boot.brain_branch, base)
     meta: dict[str, Any] = {"schema": "snowball-bootstrap-pull/1", "head": head, "base": base, "state": prev,
                             "kind": "none", "changed": [], "pre_reasons": [], "evaluate": True,
                             "run_tests": False, "run_rival": False, "manifest": None, "exit_request": None,

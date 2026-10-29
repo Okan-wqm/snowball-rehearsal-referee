@@ -5,6 +5,7 @@ import datetime
 import io
 import json
 import os
+import re
 import stat
 import subprocess
 import tarfile
@@ -123,6 +124,15 @@ class Flow(unittest.TestCase):
         result = self.finish(meta)
         self.assertEqual(result["verdict"], "rejected")
         self.assertEqual(result["state"]["last_evaluated_sha"], sha)  # judged once, not polled forever
+
+    def test_the_workflow_reads_exactly_what_config_value_prints(self):
+        """A step output nobody reads is dead; one the workflow reads but the command never prints is empty."""
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            self.assertEqual(cli.main(["config-value", "--root", str(self.referee)]), 0)
+        printed = {line.split("=", 1)[0] for line in buf.getvalue().splitlines() if line}
+        workflow = (Path(__file__).resolve().parents[1] / "workflow" / "bootstrap.yml").read_text(encoding="utf-8")
+        self.assertEqual(printed, set(re.findall(r"steps\.cfg\.outputs\.([a-z_]+)", workflow)))
 
     def test_a_crashed_job_is_one_infrastructure_reason_not_two(self):
         commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0, revised" + chr(10)}, "spec only")
