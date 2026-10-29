@@ -94,18 +94,22 @@ class Flow(unittest.TestCase):
         return {"controls": [{"id": "exit_one", "ok": True}], "tests": tests, "vectors": [],
                 "module_less": module_less_red(meta), "green": True}
 
-    def test_the_rivals_own_failures_are_evaluated_not_retried(self):
-        """Unlike an outage, these end the commit's evaluation (what they count toward is the owner's call)."""
+    def test_the_rivals_own_failures_are_reviewed_again_not_counted_as_outages(self):
+        """What the Founder can fix (or what can only fail again) ends the commit's evaluation; the rival's own
+        passing failures leave it to the next run (E166: the owner asked for a loop that never waits on the
+        Founder for something it cannot fix). None of them is an outage."""
         commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0, revised" + chr(10)}, "spec only")
+        evaluated = {"max_turns", "prompt_too_large", "budget"}
         for reason in ("model_mismatch", "refusal", "max_turns", "budget", "no_verdict:end_turn",
                        "malformed_verdict:x", "secret_in_verdict:aws_access_key", "prompt_too_large"):
             self.state["last_evaluated_sha"] = None  # the same head, polled again for the next reason
+            self.state["rival_side_streak"] = 0
             meta = self.pull()
             rival = {"verdict": "unresolved", "attempts": [], "reasons": [reason], "cost_usd_micros": 100,
                      "reproducer_count": 0}
             result = self.finish(meta, rival=rival, jobs={"cagir": "success"})
             self.assertEqual(result["verdict"], "rejected", reason)
-            self.assertEqual(result["state"]["last_evaluated_sha"], meta["head"], reason)
+            self.assertEqual(result["state"]["last_evaluated_sha"], meta["head"] if reason in evaluated else None, reason)
             self.assertEqual(result["state"]["outage_count"], 0, reason)
 
     def commit_with_raw_name(self, name: bytes) -> str:

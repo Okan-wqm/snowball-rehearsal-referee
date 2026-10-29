@@ -9,6 +9,7 @@ import re
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from snowball_bootstrap import rival
 
@@ -88,6 +89,79 @@ class BuildContextTest(unittest.TestCase):
         for rel in files:
             self.assertNotIn(b"\r", (ctx / rel).read_bytes(), rel)
         self.assertEqual((ctx / "founder/entrypoint.sh").read_bytes(), b"#!/bin/sh\nset -eu\n")
+
+
+class RefereeRetryTest(unittest.TestCase):  # E166: the loop never waits on the Founder for the rival's own failure
+    def run_cycle(self, evaluated_on):
+        launch = load_launch()
+        before, after = "a" * 40, "b" * 40
+        report = []
+
+        class Fake(launch.Pilot):
+            dispatches = 0
+            heads = [before, after]
+
+            def fetch_result(self):
+                if not self.dispatches:
+                    return None
+                done = self.dispatches >= evaluated_on
+                return {"head": after, "verdict": "accepted" if done else "rejected",
+                        "warnings": [] if done else [f"rival_side_retry:{self.dispatches}"],
+                        "state": {"last_evaluated_sha": after if done else None}}
+
+            def dispatch_referee(self, timeout_s):
+                self.dispatches += 1
+                return {"id": str(self.dispatches), "conclusion": "success", "url": "u"}
+
+            def brain_head(self):
+                return self.heads.pop(0)
+
+            def ledger_rows(self, sha):
+                return []
+
+            def session(self, *a):
+                return {"exit": 0, "minutes": 1}
+
+            def write(self, text):
+                report.append(text)
+
+        pilot = Fake(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+        pilot.idle = 0
+        args = type("Args", (), dict(model="m", max_turns=1, budget_usd=1, session_timeout=1, referee_timeout=1))
+        with mock.patch.object(launch, "say"):
+            pilot.cycle(1, args)
+        self.metrics = [json.loads(line) for line in pilot.metrics.read_text(encoding="utf-8").splitlines()]
+        return pilot.dispatches, "".join(report), launch.MAX_REFEREE_RETRIES
+
+    def test_every_cycle_leaves_one_measurable_line(self):  # what docs/pilot-gunlugu.md counts
+        self.run_cycle(evaluated_on=2)
+        self.assertEqual(len(self.metrics), 1)
+        m = self.metrics[0]
+        self.assertEqual((m["pushed"], m["verdict"], m["referee_retries"], m["brain_after"]), (True, "accepted", 1, "b" * 40))
+        for key in ("reasons", "warnings", "rival_attempts", "reproduced", "old_refutations_still_reproducing",
+                    "ledger_new", "reports_new", "minutes", "cost_usd"):
+            self.assertIn(key, m)
+
+    def test_a_reasons_owner_is_the_referees_own_rule(self):
+        owner = load_launch().reason_owner
+        self.assertEqual(owner({"kind": "refutation_reproduced", "ref": "repro:x"}), "founder")
+        self.assertEqual(owner({"kind": "rival_unresolved", "ref": "secret_in_prompt:generic_assignment"}), "founder")
+        self.assertEqual(owner({"kind": "rival_unresolved", "ref": "secret_in_verdict:generic_assignment_bare"}), "rival")
+        self.assertEqual(owner({"kind": "rival_missing", "ref": ""}), "rival")
+        self.assertEqual(owner({"kind": "infra", "ref": "kos"}), "referee")
+        self.assertEqual(owner({"kind": "budget", "ref": ""}), "referee")
+
+    def test_an_unevaluated_commit_goes_back_to_the_referee_before_the_next_session(self):
+        dispatches, report, _ = self.run_cycle(evaluated_on=2)
+        self.assertEqual(dispatches, 2)
+        self.assertIn("1 kez yeniden incelendi", report)
+        self.assertIn("**accepted**", report)
+
+    def test_an_evaluated_commit_is_not_sent_again_and_retries_are_capped(self):
+        self.assertEqual(self.run_cycle(evaluated_on=1)[0], 1)
+        dispatches, report, cap = self.run_cycle(evaluated_on=99)
+        self.assertEqual(dispatches, 1 + cap)
+        self.assertIn(f"{cap} kez yeniden incelendi", report)
 
 
 class TranscriptTest(unittest.TestCase):

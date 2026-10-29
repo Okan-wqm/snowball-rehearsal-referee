@@ -385,7 +385,9 @@ class E11LearningSplit(unittest.TestCase):
             rival_doc = unresolved(reason) if reason else None
             res = run_decide(meta2("code", st_), green(), rival_doc, [], dict(CODE_JOBS, yeniden="skipped"))
             self.assertEqual(res["verdict"], "rejected", reason)
-            self.assertEqual(res["state"]["last_evaluated_sha"], B, reason)  # evaluated, not an outage
+            # Reviewed again by the next run unless another run could only fail the same way (E166, E12).
+            final = bool(reason) and reason.startswith(("budget", "request_rejected"))
+            self.assertEqual(res["state"]["last_evaluated_sha"], B if final else None, reason)
             self.assertEqual((res["state"]["reject_streaks"], res["state"]["repeat_events"]), (self.STREAKS, 1), reason)
 
     def test_budget_and_a_pull_error_leave_the_streaks_as_they_were_too(self):
@@ -430,6 +432,26 @@ class E11LearningSplit(unittest.TestCase):
         self.assertEqual(res["learning"]["not_learning"], [])
         res = run_decide(meta2("code", st_, head=C), green(), not_refuted(), [], dict(CODE_JOBS, yeniden="skipped"))
         self.assertEqual((res["state"]["rival_side_streak"], res["warnings"]), (0, []))
+
+    def test_the_same_commit_is_reviewed_again_until_the_rival_side_streak_warns(self):  # E166, pilot cycle 5
+        """The rival lost its review of MF2 (a credential-shaped value in its verdict); the Founder could not fix that."""
+        st_ = state2()
+        for n in (1, 2):
+            res = run_decide(meta2("code", st_), green(), unresolved("secret_in_verdict:generic_assignment_bare"), [],
+                             dict(CODE_JOBS, yeniden="skipped"))
+            st_ = res["state"]
+            self.assertEqual((st_["last_evaluated_sha"], st_["rival_side_streak"]), (None, n))
+            self.assertIn(f"rival_side_retry:{n}", res["warnings"])
+        res = run_decide(meta2("code", st_), green(), unresolved("secret_in_verdict:generic_assignment_bare"), [],
+                         dict(CODE_JOBS, yeniden="skipped"))
+        self.assertEqual(res["state"]["last_evaluated_sha"], B)  # the third in a row ends the retries
+        self.assertIn("rival_side_streak:3", res["warnings"])
+        self.assertNotIn("rival_side_retry:3", res["warnings"])
+        res = run_decide(meta2("code", state2(rival_side_streak=2)), green(), not_refuted(), [],
+                         dict(CODE_JOBS, yeniden="skipped"))
+        self.assertEqual((res["verdict"], res["state"]["rival_side_streak"]), ("accepted", 0))
+        res = run_decide(meta2("code", state2()), green(), None, [], dict(CODE_JOBS, yeniden="skipped"))
+        self.assertEqual((res["state"]["last_evaluated_sha"], res["warnings"]), (None, ["rival_side_retry:1"]))
 
     def test_the_decide_command_raises_the_warning(self):
         import test_decision

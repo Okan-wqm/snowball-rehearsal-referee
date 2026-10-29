@@ -67,6 +67,10 @@ def signature(reason: dict[str, Any]) -> str:
 OUTAGE_RETRY_LIMIT = 3  # consecutive infrastructure failures of one commit before `poll` parks it
 OUTAGE_GIVE_UP_DAYS = 7  # a parked commit is retried once a day for this long, then stops visibly (E12)
 RIVAL_SIDE_WARN = 3  # the rival's own failures in a row that warn the operator (E11)
+# A rival-side failure another run may not repeat leaves the commit unevaluated, so the next run reviews it again,
+# until RIVAL_SIDE_WARN failures in a row; the Founder is never left to push something it cannot fix (E166).
+# These two would only fail again: no budget left, or a request the API refuses as such (E12).
+RIVAL_SIDE_FINAL = ("budget", "request_rejected")
 # Rejections that say nothing about the Founder's work: they leave its streaks exactly as they were (E11).
 NOT_THE_FOUNDERS = ("budget", "pull_error", "infra", "rival_missing")
 # What an unresolved rival run can say that the Founder can fix: a push too large to send or to review in the
@@ -254,6 +258,9 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
             if job_results.get("cagir") == "success":  # a failed job is already reported as infra
                 reasons.append(_reason("rival_missing"))
                 rival_side = True
+                if state["rival_side_streak"] + 1 < RIVAL_SIDE_WARN:
+                    evaluate = False  # review this commit again (E166)
+                    warnings.append(f"rival_side_retry:{state['rival_side_streak'] + 1}")
         else:
             if rival.get("verdict") in VALID_RIVAL:
                 rival_valid = True
@@ -267,6 +274,10 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
                     stop = next((w.split(":", 1)[1] for w in said if w.startswith("api_error:isolation_")), None)
                 else:
                     rival_side = not any(counts_against_founder(_reason("rival_unresolved", ref=w)) for w in said)
+                    if (rival_side and not any(w.startswith(RIVAL_SIDE_FINAL) for w in said)
+                            and state["rival_side_streak"] + 1 < RIVAL_SIDE_WARN):
+                        evaluate = False  # review this commit again (E166)
+                        warnings.append(f"rival_side_retry:{state['rival_side_streak'] + 1}")
                 warnings += [w for w in said if w.startswith("request_rejected")]
 
     # Reproducers: the rival's own (or the reused rival's) and the state's on code and exit heads (E07, E08).
@@ -387,7 +398,7 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
 
     if rival_valid:
         state["rival_side_streak"] = 0
-    elif rival_side and evaluate:
+    elif rival_side:  # counted on a retried run too, so the retries end (E166)
         state["rival_side_streak"] += 1
         if state["rival_side_streak"] >= RIVAL_SIDE_WARN:
             warnings.append(f"rival_side_streak:{state['rival_side_streak']}")

@@ -92,7 +92,9 @@ class RivalOutcomeJudgement(unittest.TestCase):
             res = run_decide(meta_("code", state0()), green_run(), rival, [], CODE_JOBS)
             self.assertEqual(res["verdict"], "rejected", rival)
             self.assertEqual([(r["kind"], r["ref"]) for r in res["reasons"]], [("rival_unresolved", "unresolved")])
-            self.assertEqual(res["state"]["last_evaluated_sha"], B)  # a verdict-less rival is a judgement, not an outage
+            # Not the Founder's and not an outage: the same commit is reviewed again by the next run (E166).
+            self.assertEqual((res["state"]["last_evaluated_sha"], res["state"]["outage_count"]), (None, 0))
+            self.assertIn("rival_side_retry:1", res["warnings"])
 
     def test_every_rival_call_is_charged_to_both_budgets_and_they_add_up(self):  # D09 D10 D11 D12
         first = run_decide(meta_("code", state0()), green_run(), unresolved("max_turns", cost=500), [], CODE_JOBS)
