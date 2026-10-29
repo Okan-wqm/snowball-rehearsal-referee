@@ -375,6 +375,8 @@ class RivalOutcome:
     prompt_sha256: str = ""
     tokens: dict[str, int] = field(default_factory=dict)
     duration_ms: int = 0
+    # Where a secret-shaped string kept the request from leaving: file paths only, never the value (E164).
+    secret_paths: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -384,7 +386,7 @@ class RivalOutcome:
             "withheld_tool_results": self.withheld_tool_results,
             "reproducer_count": sum(1 for a in self.attempts if "reproducer" in a),
             "cli_version": self.cli_version, "effort": self.effort, "prompt_sha256": self.prompt_sha256,
-            "tokens": dict(self.tokens), "duration_ms": self.duration_ms,
+            "tokens": dict(self.tokens), "duration_ms": self.duration_ms, "secret_paths": list(self.secret_paths),
         }
 
 
@@ -667,6 +669,7 @@ def run_rival(cfg: RivalConfig, *, claude_bin: str | None, seat_prompt: str, con
     leaked = secretscan.scan(system_text + "\n" + context)
     if leaked:
         out.reasons.append("secret_in_prompt:" + ",".join(leaked))
+        out.secret_paths = secret_paths(context)
         return out
     budget = min(budget_usd_micros, cfg.per_run_cap_usd_micros)
     if budget <= 0:
@@ -799,6 +802,23 @@ def hidden(path: str) -> bool:
     """A path the rival is not shown (E10, E153)."""
     parts = path.split("/")
     return any(part in HIDDEN_NAMES for part in parts) or parts[0] in HIDDEN_DIRS
+
+
+DIFF_FILE_RE = re.compile(r"^diff --git a/(.+?) b/", re.M)
+MAX_SECRET_PATHS = 20
+
+
+def secret_paths(context: str) -> list[str]:
+    """The diff's files whose section holds a secret-shaped string, so the Founder knows where to look while
+    nothing of the value leaves (E164). Text before the first file section is named "(request text)". A path that
+    itself looks like a secret is never named."""
+    starts = [(m.start(), m.group(1)) for m in DIFF_FILE_RE.finditer(context)]
+    found = ["(request text)"] if secretscan.scan(context[:starts[0][0]] if starts else context) else []
+    for i, (pos, path) in enumerate(starts):
+        end = starts[i + 1][0] if i + 1 < len(starts) else len(context)
+        if path not in found and not secretscan.scan(path) and secretscan.scan(context[pos:end]):
+            found.append(path)
+    return found[:MAX_SECRET_PATHS]
 
 
 def build_context(kind: str, base: str, head: str, changed: list[str], diff: str, pages: dict[str, str],

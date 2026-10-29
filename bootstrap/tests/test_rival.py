@@ -390,6 +390,21 @@ class RivalTest(unittest.TestCase):
         self.assertEqual(out.reasons, ["secret_in_prompt:aws_access_key"])
         self.assertIsNone(self.seen("seen.json"))
 
+    def test_a_secret_in_the_request_is_located_by_file_never_by_value(self):  # E164, pilot cycle 3
+        """MF2's own tests hold fake secrets; the Founder must learn which file kept the review from running."""
+        fake = "AKIA" + "ABCDEFGHIJKLMNOP"
+        diff = ("diff --git a/referee/gate/secrets.py b/referee/gate/secrets.py\n+x = 1\n"
+                f"diff --git a/referee/tests/test_secrets.py b/referee/tests/test_secrets.py\n+KEY = '{fake}'\n"
+                "diff --git a/README.md b/README.md\n+clean\n")
+        out = self.run_with({}, context="header\n" + diff)
+        self.assertEqual(out.reasons, ["secret_in_prompt:aws_access_key"])
+        self.assertEqual(out.secret_paths, ["referee/tests/test_secrets.py"])
+        self.assertEqual(out.as_dict()["secret_paths"], ["referee/tests/test_secrets.py"])
+        self.assertNotIn(fake, json.dumps(out.as_dict()))
+        self.assertIsNone(self.seen("seen.json"))  # still nothing was sent
+        self.assertEqual(rival.secret_paths(fake + "\ndiff --git a/a.py b/a.py\n+ok\n"), ["(request text)"])
+        self.assertEqual(rival.secret_paths(f"diff --git a/{fake}.py b/{fake}.py\n+{fake}\n"), [])
+
     def test_toolbox_grep_and_glob(self):
         box = ToolBox(self.root)
         self.assertIn("referee/a.py:2: y = 2", box.grep(r"y = \d"))
