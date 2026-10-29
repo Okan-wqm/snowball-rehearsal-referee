@@ -1,9 +1,11 @@
 """Local end-to-end run of the bootstrap referee against a real container runtime.
 
-It builds a throwaway brain repository whose ``referee/`` answers the seed-vector interface with
-reference implementations, writes operator files for a throwaway referee, and runs the same steps
-the workflow runs: pull -> fetch-deps (real PyPI download) -> run-tests (real docker, no network)
--> decide. Sigstore signing is not run (it needs a workflow's OIDC identity).
+It builds a throwaway brain repository from the reference brain in ``reference_brain/`` (a real,
+tested implementation of micro-feature 1, the hash-chained ledger, and nothing it does not have), writes
+operator files for a throwaway referee, and runs the same steps the workflow runs: pull -> fetch-deps
+-> run-tests (real docker, no network) -> decide. Sigstore signing is not run (it needs a workflow's
+OIDC identity). The reference brain uses the standard library only, so fetch-deps has nothing to fetch;
+the real hash-pinned download and the licence gate run in the workflow's own Sigstore step.
 
     cd seed/bootstrap && python3 local/e2e.py [--keep DIR] [--rival]
 
@@ -12,9 +14,8 @@ push stays stubbed) through the
 ``claude`` CLI on PATH, signed in as whoever runs this (no API key; one call is capped at the
 ``per_run_cap_usd_micros`` below, a list-price estimate) and its reproducers run in the container.
 
-Exit 0 means: the red controls behaved, the founder-style tests ran offline in the pinned image,
-every seed vector passed (including the drill group), the licence gate passed and the push was
-accepted. Exit 3 means the rival could not run (an outage of the CLI or its login, not a verdict).
+Exit 0 means: the red controls behaved, the brain's tests ran offline in the pinned image, every
+seed vector of the micro-features it declares done passed and the push was accepted. Exit 3 means the rival could not run (an outage of the CLI or its login, not a verdict).
 """
 
 from __future__ import annotations
@@ -35,92 +36,11 @@ sys.path.insert(0, str(BOOT))
 
 from snowball_bootstrap import cli, gitio  # noqa: E402
 from snowball_bootstrap.decide import decide  # noqa: E402
-from snowball_bootstrap.manifest import STAGE0_MF_TESTS  # noqa: E402
 from snowball_bootstrap.rival import RivalOutcome  # noqa: E402
 from snowball_bootstrap.treehash import tree_hash  # noqa: E402
 
 IMAGE = "docker.io/library/python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159"
-DONE = list(range(1, 19))  # micro-features 1-18: chain, statistics and match, and the drill judge
-
-CANON = '''
-import hashlib, json, sys
-def canonical(v):
-    return json.dumps(v, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
-def row_hash(row):
-    body = {k: v for k, v in row.items() if k != "row_hash"}
-    return hashlib.sha256(canonical(body) + row["prev_hash"].encode()).hexdigest()
-'''
-
-CHAIN = CANON + '''
-def main(argv):
-    if argv[0] == "hash":
-        print(json.dumps({"row_hash": row_hash(json.loads(sys.stdin.read()))}))
-        return
-    prev = "0" * 64
-    for line in open(argv[1]).read().splitlines():
-        row = json.loads(line)
-        if row["prev_hash"] != prev or row_hash(row) != row["row_hash"]:
-            print(json.dumps({"valid": False, "broken_row": row["row_id"]}))
-            return
-        prev = row["row_hash"]
-    print(json.dumps({"valid": True}))
-if __name__ == "__main__":
-    main(sys.argv[1:])
-'''
-
-STATS = '''
-import json, math, sys
-def beta_cdf(a, b, x, steps=4000):
-    if x <= 0: return 0.0
-    if x >= 1: return 1.0
-    lb = math.lgamma(a) + math.lgamma(b) - math.lgamma(a + b)
-    f = lambda t: 0.0 if t <= 0 or t >= 1 else math.exp((a - 1) * math.log(t) + (b - 1) * math.log(1 - t) - lb)
-    h = x / steps
-    s = f(0) + f(x) + sum((4 if i % 2 else 2) * f(i * h) for i in range(1, steps))
-    return s * h / 3
-def cp_lower(x, n, alpha):
-    if x <= 0: return 0.0
-    if x >= n: return alpha ** (1 / n)
-    lo, hi = 0.0, 1.0
-    for _ in range(60):
-        mid = (lo + hi) / 2
-        if beta_cdf(x, n - x + 1, mid) > alpha: hi = mid
-        else: lo = mid
-    return lo
-def mcnemar(b, c):
-    m = b + c
-    return sum(math.comb(m, k) for k in range(c, m + 1)) / 2 ** m
-if __name__ == "__main__":
-    a = sys.argv[1:]
-    if a[0] == "cp_lower":
-        print(json.dumps({"lb": f"{cp_lower(float(a[1]), int(a[2]), float(a[3])):.6f}"}))
-    else:
-        print(json.dumps({"p": f"{mcnemar(int(a[1]), int(a[2])):.6f}"}))
-'''
-
-SCORE = '''
-import json, sys
-def score(findings, cases):
-    hits, used = 0, set()
-    for case in cases:
-        for i, f in enumerate(findings):
-            if i in used: continue
-            if (f.get("tool") == case.get("tool") and f.get("rule_id") == case.get("rule_id")
-                    and any(ref["path"] == tp["path"] and any(h["start"] <= ref["line_start"] <= h["end"]
-                            for h in tp["hunks"]) for ref in f["evidence_refs"] for tp in case["touched_paths"])):
-                hits += 1; used.add(i); break
-    return hits
-if __name__ == "__main__":
-    print(json.dumps({"hits": score(json.load(open(sys.argv[1])), json.load(open(sys.argv[2])))}))
-'''
-
-DRILL = '''
-import json, sys
-from harness import drill_judge
-if __name__ == "__main__" and sys.argv[1] == "judge":
-    out = drill_judge.judge(json.load(open(sys.argv[2])))
-    print(json.dumps({"drill": out["drill"], "verdicts": out["verdicts"]}))
-'''
+BRAIN = HERE / "reference_brain"
 
 
 def sh(cwd: Path, *argv: str) -> str:
@@ -130,18 +50,16 @@ def sh(cwd: Path, *argv: str) -> str:
 def commit(repo: Path, files: dict[str, str], message: str) -> str:
     for rel, content in files.items():
         (repo / rel).parent.mkdir(parents=True, exist_ok=True)
-        (repo / rel).write_text(content)
+        (repo / rel).write_text(content, encoding="utf-8", newline="\n")
     sh(repo, "git", "add", "-A")
     sh(repo, "git", "-c", "user.email=e2e@example.invalid", "-c", "user.name=e2e", "commit", "-q", "-m", message)
     return sh(repo, "git", "rev-parse", "HEAD")
 
 
-def manifest() -> str:
-    # Test commands run from the repository root (`tohum/26b`); vectors run from referee/.
-    cmd = "cd referee && python -c 'import annotated_types, ledger.chain, harness.stats'"
-    tests = [{"id": f"T{n}", "cmd": cmd, "stage": 0}
-             for mf in DONE for n in STAGE0_MF_TESTS[mf]]
-    return json.dumps({"tests": tests, "done_mf": DONE, "lockfiles": ["requirements.lock"]})
+def brain_files() -> dict[str, str]:
+    """The reference brain's files, keyed by their path in the brain repository."""
+    return {p.relative_to(BRAIN).as_posix(): p.read_text(encoding="utf-8") for p in sorted(BRAIN.rglob("*"))
+            if p.is_file() and "__pycache__" not in p.parts}
 
 
 def main() -> int:
@@ -202,23 +120,15 @@ def main() -> int:
     state = decide(meta, None, rival_ok, None, {"cagir": "success"}, 5, 3)["state"]
     print("1/4 spec push frozen (rival result stubbed; --rival runs the real one through your claude CLI)")
 
-    pins = (BOOT / "requirements" / "sign.txt").read_text(encoding="utf-8").splitlines()
-    first = next(n for n, line in enumerate(pins) if line.startswith("annotated-types=="))
-    lock = "\n".join(pins[first:first + 2])  # the pin and its --hash line
-    judge_src = (SEED / "drill" / "snowball_drill" / "judge.py").read_text()
-    commit(brain, {
-        "referee/ledger/__init__.py": "", "referee/ledger/chain.py": CHAIN,
-        "referee/harness/__init__.py": "", "referee/harness/stats.py": STATS, "referee/harness/score.py": SCORE,
-        "referee/harness/drill.py": DRILL, "referee/harness/drill_judge.py": judge_src,
-        "requirements.lock": lock + "\n", "snowball-tests.json": manifest()}, "stage 0 through MF18")
+    commit(brain, brain_files(), "stage 0: micro-feature 1, the hash-chained ledger")
     meta, pulled = pull(2)
     assert meta["kind"] == "code" and meta["run_tests"], meta
-    print("2/4 code push classified; manifest and lock file accepted")
+    print("2/4 code push classified; manifest accepted (done_mf", meta["manifest"]["done_mf"], ")")
 
     deps = work / "deps"
     rc = cli.main(["fetch-deps", "--pulled", str(pulled), "--work", str(work / "dl"), "--out", str(deps)])
-    assert rc == 0 and list(deps.glob("*.whl")), "fetch-deps downloaded nothing"
-    print("3/4 wheels downloaded:", ", ".join(p.name for p in deps.glob("*.whl")))
+    assert rc == 0, "fetch-deps failed"
+    print("3/4 wheels downloaded:", ", ".join(p.name for p in deps.glob("*.whl")) or "none (no lock files)")
 
     run_dir = work / "run"
     started = time.monotonic()

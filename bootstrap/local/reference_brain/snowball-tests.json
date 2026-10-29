@@ -1,0 +1,7 @@
+{
+  "tests": [
+    {"id": "T13", "cmd": "cd referee && python -m unittest discover -s tests", "stage": 0}
+  ],
+  "done_mf": [1],
+  "lockfiles": []
+}
