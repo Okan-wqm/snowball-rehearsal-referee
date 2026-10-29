@@ -1,0 +1,58 @@
+[
+  {
+    "case_id": "c1",
+    "class_level": "K0",
+    "property": "lint",
+    "provenance": "mutation",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "mutation_id": "m-c1",
+    "touched_paths": [
+      {
+        "path": "pkg/a.py",
+        "hunks": [
+          {
+            "start": 3,
+            "end": 3
+          }
+        ]
+      }
+    ],
+    "tool": "ruff",
+    "rule_id": "F401",
+    "validity_evidence": {
+      "kind": "tool_diff",
+      "ref": "ruff",
+      "output_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "split": "exit",
+    "group": "pkg"
+  },
+  {
+    "case_id": "c2",
+    "class_level": "K0",
+    "property": "lint",
+    "provenance": "mutation",
+    "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "mutation_id": "m-c2",
+    "touched_paths": [
+      {
+        "path": "pkg/a.py",
+        "hunks": [
+          {
+            "start": 3,
+            "end": 4
+          }
+        ]
+      }
+    ],
+    "tool": "ruff",
+    "rule_id": "F401",
+    "validity_evidence": {
+      "kind": "tool_diff",
+      "ref": "ruff",
+      "output_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "split": "exit",
+    "group": "pkg"
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "name": "snowball-rival-cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The claude CLI the seed rival runs through (tohum/29b). Installed with npm ci on a Linux x64 runner; the platform package holding the real binary is a hard dependency so that a wrong digest fails the install instead of being skipped.",
+  "engines": {
+    "node": ">=22"
+  },
+  "allowScripts": {
+    "@anthropic-ai/claude-code@2.1.293": true
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-code": "2.1.293",
+    "@anthropic-ai/claude-code-linux-x64": "2.1.293"
+  }
+}

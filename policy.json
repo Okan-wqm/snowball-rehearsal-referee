@@ -1,0 +1,30 @@
+{
+  "constitutional": {
+    "monthly_cap_usd": 300,
+    "stage_params": {
+      "rival_min_attempts": 5,
+      "repeat_reject_limit": 3
+    },
+    "stage_budgets": {
+      "asama_0": {
+        "rival_usd": 30
+      }
+    },
+    "license_allowlist": [
+      "MIT",
+      "MIT-0",
+      "BSD-2-Clause",
+      "BSD-3-Clause",
+      "0BSD",
+      "Apache-2.0",
+      "ISC",
+      "PSF-2.0",
+      "Python-2.0",
+      "Unlicense",
+      "CC0-1.0",
+      "Zlib",
+      "MPL-2.0"
+    ],
+    "license_exceptions": {}
+  }
+}

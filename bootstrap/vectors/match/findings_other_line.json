@@ -1,0 +1,31 @@
+[
+  {
+    "finding_id": "f2",
+    "fingerprint": "fp-f2",
+    "state": "open",
+    "class_level": "K0",
+    "property": "lint",
+    "file": "pkg/a.py",
+    "tool": "ruff",
+    "rule_id": "F401",
+    "claim": "Unused import makes the module surface misleading.",
+    "evidence_refs": [
+      {
+        "path": "pkg/a.py",
+        "line_start": 7,
+        "line_end": 7
+      }
+    ],
+    "required_change": [
+      {
+        "file": "pkg/a.py",
+        "op": "lint_fix"
+      }
+    ],
+    "severity_hint": "LOW",
+    "confidence": "0.90",
+    "derivation": "tool",
+    "trust": "observed",
+    "snapshot_id": "snap-1"
+  }
+]

@@ -1,0 +1,370 @@
+{
+  "schema": "snowball-seed-vectors/1",
+  "source": "spec/tohum/29a-tohum-vektorleri.md (seed 2.2)",
+  "chain": {
+    "mf": 1,
+    "rows": [
+      {
+        "row": {
+          "row_id": "r1",
+          "ts": "2026-10-28T00:00:00Z",
+          "part": "events",
+          "kind": "genesis",
+          "payload": {},
+          "derivation": "tool",
+          "trust": "verified",
+          "snapshot_id": "s0",
+          "evidence_refs": [],
+          "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+        },
+        "row_hash": "3bae91580aca99362572e9f5f41b3e46c2bc0c29236f72e867faa5cd46ca603a"
+      },
+      {
+        "row": {
+          "row_id": "r2",
+          "ts": "2026-10-28T00:00:01Z",
+          "part": "cost",
+          "kind": "run",
+          "payload": {
+            "usd_micros": 0
+          },
+          "derivation": "tool",
+          "trust": "observed",
+          "snapshot_id": "s0",
+          "evidence_refs": [],
+          "prev_hash": "3bae91580aca99362572e9f5f41b3e46c2bc0c29236f72e867faa5cd46ca603a"
+        },
+        "row_hash": "3b10a5bb06351b0933c0e30f7dd55d3a57245743b97fb1faba348351a554a45c"
+      }
+    ],
+    "verify_good": "chain/good.jsonl",
+    "verify_v3": "chain/v3.jsonl",
+    "v3_broken_row": "r2"
+  },
+  "cp_lower": {
+    "mf": 9,
+    "alpha": "0.10",
+    "cases": [
+      [
+        "60",
+        "60",
+        "0.9624"
+      ],
+      [
+        "45",
+        "45",
+        "0.9501"
+      ],
+      [
+        "44",
+        "44",
+        "0.9490"
+      ],
+      [
+        "25",
+        "25",
+        "0.9120"
+      ],
+      [
+        "10",
+        "10",
+        "0.7943"
+      ],
+      [
+        "8",
+        "10",
+        "0.5504"
+      ],
+      [
+        "7.5",
+        "10",
+        "0.4982"
+      ],
+      [
+        "8.0",
+        "10",
+        "0.5504"
+      ]
+    ]
+  },
+  "mcnemar": {
+    "mf": 9,
+    "cases": [
+      [
+        0,
+        3,
+        "0.1250"
+      ],
+      [
+        0,
+        4,
+        "0.0625"
+      ],
+      [
+        1,
+        7,
+        "0.0352"
+      ],
+      [
+        0,
+        8,
+        "0.0039"
+      ],
+      [
+        2,
+        8,
+        "0.0547"
+      ]
+    ]
+  },
+  "match": {
+    "mf": 9,
+    "cases": [
+      {
+        "findings": "match/findings_hit.json",
+        "cases": "match/cases_one.json",
+        "hits": 1
+      },
+      {
+        "findings": "match/findings_other_line.json",
+        "cases": "match/cases_one.json",
+        "hits": 0
+      },
+      {
+        "findings": "match/findings_hit.json",
+        "cases": "match/cases_two.json",
+        "hits": 1
+      }
+    ]
+  },
+  "drill": {
+    "mf": 18,
+    "source": "seed/drill: python -m snowball_drill vectors (seed 7)",
+    "cases": [
+      {
+        "name": "learner",
+        "file": "drill/learner.json",
+        "drill": "PASS",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "wrong_cause",
+        "file": "drill/wrong_cause.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "FAIL",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "unbound_lesson",
+        "file": "drill/unbound_lesson.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "FAIL",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "unscoped",
+        "file": "drill/unscoped.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "FAIL",
+          "use": "FAIL",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "no_injection",
+        "file": "drill/no_injection.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "FAIL",
+          "effect": "FAIL",
+          "wrong_lesson": "UNMEASURABLE",
+          "placebo": "UNMEASURABLE",
+          "persistence": "FAIL"
+        }
+      },
+      {
+        "name": "leaky",
+        "file": "drill/leaky.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "FAIL",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "ignores_lessons",
+        "file": "drill/ignores_lessons.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "FAIL",
+          "wrong_lesson": "UNMEASURABLE",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "shortcut",
+        "file": "drill/shortcut.json",
+        "drill": "UNMEASURABLE",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "UNMEASURABLE",
+          "wrong_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "stubborn",
+        "file": "drill/stubborn.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "FAIL",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "unrecorded_withdrawal",
+        "file": "drill/unrecorded_withdrawal.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "FAIL",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "stale_dispatcher",
+        "file": "drill/stale_dispatcher.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "FAIL",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "raw_rate_ranker",
+        "file": "drill/raw_rate_ranker.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "placebo": "FAIL",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "rank_ignores_credit",
+        "file": "drill/rank_ignores_credit.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "placebo": "FAIL",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "amnesic",
+        "file": "drill/amnesic.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "FAIL"
+        }
+      },
+      {
+        "name": "lossy_ledger",
+        "file": "drill/lossy_ledger.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "FAIL"
+        }
+      },
+      {
+        "name": "tampered_key",
+        "file": "drill/tampered_key.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "FAIL",
+          "birth": "FAIL",
+          "use": "FAIL",
+          "effect": "FAIL",
+          "wrong_lesson": "FAIL",
+          "placebo": "FAIL",
+          "persistence": "FAIL"
+        }
+      }
+    ]
+  }
+}

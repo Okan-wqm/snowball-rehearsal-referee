@@ -1,0 +1,40 @@
+{
+ "verdict": "refuted",
+ "attempts": [
+  {
+   "claim": "All 26 registered tests in snowball-tests.json run the same import-only command. It never calls the drill judge, score, stats or chain logic, so it cannot detect a wrong verdict. It also never imports harness.drill_judge or harness.score, and it needs the third-party annotated_types, which no code uses.",
+   "evidence_refs": [
+    {
+     "path": "snowball-tests.json",
+     "line_start": 1,
+     "line_end": 1
+    }
+   ]
+  },
+  {
+   "claim": "drill.py does `from harness import drill_judge`, which fails with ModuleNotFoundError when the file is run as a script from referee/. Python then puts referee/harness on sys.path[0], so the `harness` package is not found. The CLI entry point is therefore broken as invoked.",
+   "evidence_refs": [
+    {
+     "path": "referee/harness/drill.py",
+     "line_start": 2,
+     "line_end": 5
+    }
+   ],
+   "reproducer": {
+    "cmd": "cd referee && echo '{}' > /tmp/d.json && python harness/drill.py judge /tmp/d.json",
+    "expect_exit": 1,
+    "expect_stdout_contains": ""
+   }
+  },
+  {
+   "claim": "requirements.lock pins annotated-types==0.8.0 with a hash that cannot be checked here. The only consumer is a test import that no code needs, so the pin adds an unneeded and possibly unavailable dependency.",
+   "evidence_refs": [
+    {
+     "path": "requirements.lock",
+     "line_start": 1,
+     "line_end": 2
+    }
+   ]
+  }
+ ]
+}
