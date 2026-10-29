@@ -18,7 +18,7 @@ import zipfile
 from pathlib import Path
 from unittest import mock
 
-from snowball_bootstrap import canon, cli, ghapi, reproduce, rival, state as st
+from snowball_bootstrap import canon, cli, ghapi, reproduce, rival, secretscan, state as st
 from snowball_bootstrap.config import ConfigError, RivalConfig, Summary
 from snowball_bootstrap.container import RunResult
 from snowball_bootstrap.decide import decide
@@ -148,6 +148,14 @@ class E06ReproducerContract(unittest.TestCase):
                          {"cmd", "expect_exit", "expect_stdout_contains", "expect_stderr_contains"})
         self.assertEqual(rep["properties"]["expect_stderr_contains"]["maxLength"], rival.MAX_EXPECT_CHARS)
         self.assertIn("because of the defect", tool["description"] + rep["description"])
+
+    def test_the_protocol_tells_the_rival_to_build_secret_shaped_strings_at_run_time(self):  # E165, pilot cycle 5
+        """Reviewing a secret scanner, the rival quoted a credential-shaped value and its verdict was withheld."""
+        self.assertIn("build it at run time from parts", rival.PROTOCOL)
+        self.assertIn("'gh'+'p_'+'A'*36", rival.PROTOCOL)
+        self.assertEqual(secretscan.scan(rival.PROTOCOL), [])  # the protocol rides in every request
+        built = "see x_" + "gh" + "p_" + "A" * 36  # what that reproducer prints at run time is caught
+        self.assertEqual(secretscan.scan(built), ["github_token"])
 
     def test_a_stderr_expectation_is_accepted_and_kept(self):
         with tempfile.TemporaryDirectory() as tmp:

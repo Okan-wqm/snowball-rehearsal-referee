@@ -72,6 +72,10 @@ Protocol for this review (bootstrap referee):
   they are kept as open claims and shown to the next review. At most 5 attempts may carry a reproducer.
 - Open claims of earlier reviews, if any, are listed in the request with an id. You may correct the
   reproducer of an open claim once: send an attempt with open_claim set to that id.
+- Never write a secret-shaped string anywhere in your verdict (a token or key, or a credential name such
+  as password or api_key followed by = or : and a value): the referee discards a verdict that holds one
+  and your whole review is lost. When a reproducer needs such a string, build it at run time from parts,
+  for example 'gh'+'p_'+'A'*36, and describe it in claims without quoting it.
 - Finish by calling submit_verdict (mcp__snowball__submit_verdict) exactly once. Write claims in English, one sentence each,
   with at least one path:line reference.
 """
