@@ -122,7 +122,7 @@ class VectorsTest(unittest.TestCase):
 
     def test_drill_vectors_need_a_judge_that_fails_non_learners(self):
         honest = run_vectors(FakeRunner(VECTORS), VECTORS, (18,))
-        self.assertEqual(len(honest), 16)
+        self.assertEqual(len(honest), 19)
         self.assertEqual([r for r in honest if not r["ok"]], [])
         lenient = {r["id"] for r in run_vectors(FakeRunner(VECTORS, wrong={"drill_lenient"}), VECTORS, (18,))
                    if not r["ok"]}

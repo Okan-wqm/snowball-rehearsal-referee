@@ -253,7 +253,7 @@ class RunnerFaults(unittest.TestCase):
             jobs = dict(CODE_JOBS)
             jobs.pop("yeniden") if yeniden is None else jobs.update(yeniden=yeniden)
             res = run_decide(meta_("code", state0()), green_run(), refuted("c"), None, jobs)
-            self.assertEqual([r["kind"] for r in res["reasons"]], ["infra"], yeniden)
+            self.assertEqual([(r["kind"], r["ref"]) for r in res["reasons"]], [("infra", f"yeniden:{yeniden}")], yeniden)
             self.assertEqual(res["state"]["outage_count"], 1, yeniden)
 
     def test_an_exhausted_budget_halts_the_run_but_is_never_the_founders_fault(self):
@@ -508,7 +508,7 @@ class CommandWiring(unittest.TestCase):
             zf.writestr("result.json", json.dumps({"state": state}))
             zf.writestr("result.json.sigstore.json", "{}")
         _Api = test_state._Api
-        _Api.artifacts = [{"id": 5, "name": "bootstrap-state", "expired": False, "created_at": created}]
+        _Api.artifacts = [{"id": 5, "name": "bootstrap-state", "expired": False, "workflow_run": {"head_branch": "main"}, "created_at": created}]
         self.original_download = ghapi.download_zip
         ghapi.download_zip = lambda repo, aid, token: buf.getvalue()
         self.addCleanup(setattr, ghapi, "download_zip", self.original_download)

@@ -24,7 +24,7 @@ from .importer import ImportErrorStop, run_import, verify_signature
 from .manifest import ManifestError, check_stage0, parse_lockfile, parse_manifest
 from .reproduce import run_reproducers
 from .rival import build_context, extract_seat_prompt, resolve_claude, run_rival
-from .treehash import TreeError, extract, is_utf8_name, iter_files, shown, tree_hash
+from .treehash import path_problem, TreeError, extract, is_utf8_name, iter_files, shown, tree_hash
 from .vectors import run_vectors
 
 EXIT_FILE = "exit-request.json"
@@ -225,15 +225,42 @@ def cmd_pull(args: argparse.Namespace) -> int:
     remote = args.remote or f"https://github.com/{boot.brain_repo}.git"
     base = prev["last_accepted_sha"]
     head = gitio.fetch(repo, remote, boot.brain_branch, base)
-    meta: dict[str, Any] = {"schema": "snowball-bootstrap-pull/1", "head": head, "base": base, "state": prev,
-                            "kind": "none", "changed": [], "pre_reasons": [], "evaluate": True,
-                            "run_tests": False, "run_rival": False, "manifest": None, "exit_request": None,
-                            "referee_tree_sha256": None, "spec_dir_hashes": {}}
+    meta = _pull_meta(head, base, prev)
     if head in (base, prev["last_evaluated_sha"]):
         write_json(out / "meta.json", meta)
         output(skip=True, kind="none", head=head, run_tests=False, run_rival=False)
         return 0
+    try:
+        return _pull_classify(boot, policy, summary_cfg, prev, repo, base, head, meta, out)
+    except (ValueError, TypeError, KeyError, IndexError, AttributeError, RecursionError) as exc:
+        # Content of the commit broke a step that should have named it. Rejecting it is the only safe
+        # answer that does not wedge the referee: without a signed result the same head comes back every
+        # hour and nothing is ever parked (E02). Git, network and operator-file errors still stop the run.
+        print(f"::warning::pull could not classify {head}: {type(exc).__name__}: {str(exc)[:200]!r}")
+        meta = _pull_meta(head, base, prev)
+        meta.update(kind="rejected", pre_reasons=["pull_error"])
+        write_json(out / "meta.json", meta)
+        output(skip=False, kind="rejected", head=head, run_tests=False, run_rival=False)
+        return 0
 
+
+def _pull_meta(head: str, base: str, prev: dict[str, Any]) -> dict[str, Any]:
+    return {"schema": "snowball-bootstrap-pull/1", "head": head, "base": base, "state": prev,
+            "kind": "none", "changed": [], "pre_reasons": [], "evaluate": True,
+            "run_tests": False, "run_rival": False, "manifest": None, "exit_request": None,
+            "referee_tree_sha256": None, "spec_dir_hashes": {}}
+
+
+def _well_formed_exit_request(req: Any) -> bool:
+    return (isinstance(req, dict) and set(req) == {"stage", "sha", "spec_sha256"}
+            and isinstance(req["stage"], int) and not isinstance(req["stage"], bool) and 0 <= req["stage"] <= 1000
+            and isinstance(req["sha"], str) and bool(config.SHA_RE.match(req["sha"]))
+            and isinstance(req["spec_sha256"], str) and bool(config.HEX64_RE.match(req["spec_sha256"])))
+
+
+def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: config.Summary,
+                   prev: dict[str, Any], repo: Path, base: str, head: str, meta: dict[str, Any],
+                   out: Path) -> int:
     pre: list[str] = []
     base_ok = gitio.has_commit(repo, base)
     if not base_ok:
@@ -241,8 +268,11 @@ def cmd_pull(args: argparse.Namespace) -> int:
     elif not gitio.is_ancestor(repo, base, head):
         pre.append("history_rewritten")
     changed = gitio.changed_paths(repo, base, head) if base_ok else []
-    if not all(map(is_utf8_name, changed + gitio.tree_paths(repo, head))):
+    names = changed + gitio.tree_paths(repo, head)
+    if not all(map(is_utf8_name, names)):
         pre.append("non_utf8_path")  # canonical JSON cannot hold such a name: keep it out of meta.json, say so once
+    elif any(path_problem(p) for p in names):
+        pre.append("unsafe_path")  # a control character, a .git component, ':' or '\\' (E03, E04)
     changed = [shown(p) for p in changed]
     if changed == [EXIT_FILE]:
         kind = "exit"
@@ -251,14 +281,14 @@ def cmd_pull(args: argparse.Namespace) -> int:
         pre += reasons
         if EXIT_FILE in changed:
             pre.append("exit_request_not_alone")
-    if {"base_unreachable", "history_rewritten", "non_utf8_path"} & set(pre):  # nothing of the tree can be read safely
+    if {"base_unreachable", "history_rewritten", "non_utf8_path", "unsafe_path"} & set(pre):  # nothing can be read safely
         kind = "rejected"
     pre += [f"not_regular_file:{x}" for x in gitio.special_entries(repo, head)][:20]
     tar_bytes = gitio.archive(repo, head)
     if len(tar_bytes) > boot.limits.max_tree_bytes:
         pre.append("tree_too_large")
     try:
-        if ("non_utf8_path" not in pre
+        if (not {"non_utf8_path", "unsafe_path"} & set(pre)
                 and tree_hash(tar_bytes, "spec/tohum", forbid_operator_names=False) != summary_cfg.seed_tree_sha256):
             pre.append("seed_tree_mismatch")
     except TreeError:
@@ -297,9 +327,9 @@ def cmd_pull(args: argparse.Namespace) -> int:
     if kind == "exit":
         try:
             req = json.loads((tar_file(tar_bytes, EXIT_FILE) or b"").decode("utf-8"))
-        except (json.JSONDecodeError, UnicodeDecodeError):
+        except (ValueError, RecursionError):  # bad UTF-8 or JSON, or nested deeper than the parser goes
             req = None
-        if not isinstance(req, dict) or set(req) != {"stage", "sha", "spec_sha256"}:
+        if not _well_formed_exit_request(req):
             pre.append("exit_request_malformed")
         else:
             meta["exit_request"] = req

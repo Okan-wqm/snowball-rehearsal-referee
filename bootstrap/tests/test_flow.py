@@ -125,6 +125,87 @@ class Flow(unittest.TestCase):
         self.assertEqual(result["verdict"], "rejected")
         self.assertEqual(result["state"]["last_evaluated_sha"], sha)  # judged once, not polled forever
 
+    def freeze_stage0(self):
+        commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0, frozen" + chr(10)}, "spec")
+        self.assertEqual(self.finish(self.pull(), rival=self.rival_ok(), jobs={"cagir": "success"})["verdict"], "frozen")
+
+    def test_names_that_forge_lines_or_reach_git_metadata_are_one_rejection(self):
+        """E03, E04, X7: a newline or tab, a .git component in any case, a colon or a backslash in a name.
+
+        Each name is tried on its own (the branch goes back before the next one), so no name passes on the
+        strength of another one still in the tree."""
+        start = sh(self.brain, "git", "rev-parse", "HEAD")
+        for raw in (b"a" + bytes([10]) + b"=== Seed page x.md", b"tab" + bytes([9]) + b"name.md", b".GIT", b".git",
+                    b"x:y.md", b"x" + bytes([92]) + b"y.md"):
+            sha = self.commit_with_raw_name(raw)
+            meta = self.pull()
+            self.assertEqual((meta["kind"], meta["pre_reasons"]), ("rejected", ["unsafe_path"]), raw)
+            result = self.finish(meta)
+            self.assertEqual((result["verdict"], result["state"]["last_evaluated_sha"]), ("rejected", sha), raw)
+            sh(self.brain, "git", "update-ref", "refs/heads/main", start)
+
+    def test_a_manifest_the_signed_result_cannot_hold_is_one_rejection_not_a_crash(self):
+        """E02, X3, D2: values canonical JSON refuses, or JSON nested past the parser, crashed `pull` every hour."""
+        self.freeze_stage0()
+        bad = {
+            "huge stage": json.dumps({"tests": [{"id": "T13", "cmd": "true", "stage": 10 ** 16}], "done_mf": [1],
+                                      "lockfiles": []}),
+            "huge done_mf": json.dumps({"tests": [{"id": "T13", "cmd": "true", "stage": 0}], "done_mf": [10 ** 16],
+                                        "lockfiles": []}),
+            "lone surrogate": '{"tests": [{"id": "T13", "cmd": "\\ud800", "stage": 0}], "done_mf": [1], "lockfiles": []}',
+            "surrogate lock": '{"tests": [{"id": "T13", "cmd": "true", "stage": 0}], "done_mf": [1], "lockfiles": ["\\ud800"]}',
+            "deep": "[" * 100000,
+        }
+        for name, text in bad.items():
+            sha = commit(self.brain, {"snowball-tests.json": text}, name)
+            meta = self.pull()
+            self.assertTrue(any(r.startswith("manifest_invalid") for r in meta["pre_reasons"]), (name, meta["pre_reasons"]))
+            result = self.finish(meta)
+            self.assertEqual((result["verdict"], result["state"]["last_evaluated_sha"]), ("rejected", sha), name)
+
+    def test_a_malformed_exit_request_is_one_rejection_not_a_crash(self):
+        """E41, T1, D2: decide read the SHA of an exit request pull had refused; a float stage could not be signed."""
+        self.freeze_stage0()
+        cases = {"extra key": {"stage": 0, "sha": "a" * 40, "spec_sha256": "b" * 64, "note": "x"},
+                 "bool stage": {"stage": False, "sha": "a" * 40, "spec_sha256": "b" * 64},
+                 "float stage": {"stage": 0.0, "sha": "a" * 40, "spec_sha256": "b" * 64},
+                 "short sha": {"stage": 0, "sha": "a" * 7, "spec_sha256": "b" * 64},
+                 "a list": [1], "deep": None}
+        for name, req in cases.items():
+            sha = commit(self.brain, {"exit-request.json": "[" * 100000 if req is None else json.dumps(req)}, name)
+            meta = self.pull()
+            self.assertEqual((meta["kind"], "exit_request_malformed" in meta["pre_reasons"]), ("exit", True), name)
+            result = self.finish(meta)
+            self.assertEqual((result["verdict"], result["state"]["last_evaluated_sha"]), ("rejected", sha), name)
+            self.assertIsNone(result["exit"]["pinned_sha"], name)
+
+    def test_a_crash_while_classifying_is_one_rejection_not_held_against_the_founder(self):
+        """E02: whatever content breaks a step that should have named it ends as a signed rejection, never a wedge."""
+        commit(self.brain, {"x.py": "x" + chr(10)}, "code")
+        with mock.patch.object(cli, "classify", side_effect=ValueError("boom")):
+            meta = self.pull()
+        self.assertEqual((meta["kind"], meta["pre_reasons"]), ("rejected", ["pull_error"]))
+        result = self.finish(meta)
+        self.assertEqual((result["verdict"], result["state"]["last_evaluated_sha"]), ("rejected", meta["head"]))
+        self.assertEqual(result["state"]["reject_streaks"], {})
+
+    def test_a_reproducer_that_never_ran_is_an_outage_not_an_acceptance(self):
+        """E05, D3: results for only some of the reproducers must not clear the push."""
+        self.freeze_stage0()
+        commit(self.brain, {"snowball-tests.json": all_tests_manifest([1])}, "code")
+        meta = self.pull()
+        attempt = {"claim": "c", "evidence_refs": [], "refs_valid": True,
+                   "reproducer": {"cmd": "true", "expect_exit": 0, "expect_stdout_contains": None}}
+        rival = {"verdict": "refuted", "attempts": [attempt, attempt], "reasons": [], "cost_usd_micros": 1,
+                 "reproducer_count": 2}
+        repro = [{"attempt_index": 0, "reproduced": False, "runner_fault": False, "exit": 1, "timed_out": False,
+                  "stdout_sha256": "0" * 64}]
+        jobs = {"getir": "success", "kos": "success", "cagir": "success", "yeniden": "success"}
+        result = self.finish(meta, run=self.green_run(meta), rival=rival, repro=repro, jobs=jobs)
+        self.assertNotEqual(result["verdict"], "accepted")
+        self.assertIn(("infra", "yeniden:incomplete"), [(r["kind"], r.get("ref")) for r in result["reasons"]])
+        self.assertNotEqual(result["state"]["last_evaluated_sha"], meta["head"])  # retried, never cleared
+
     def test_the_workflow_reads_exactly_what_config_value_prints(self):
         """A step output nobody reads is dead; one the workflow reads but the command never prints is empty."""
         buf = io.StringIO()

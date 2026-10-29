@@ -8,7 +8,7 @@ import zipfile
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
-from snowball_bootstrap import cli, state as st
+from snowball_bootstrap import cli, ghapi, state as st
 from snowball_bootstrap.config import ConfigError, Summary
 
 from helpers import commit, make_repo, posix_only
@@ -71,8 +71,20 @@ class StateTest(unittest.TestCase):
         self.assertEqual(state["last_accepted_sha"], "a" * 40)
         self.assertEqual(state["origin"], "initial")
 
+    def test_only_the_newest_unexpired_state_of_a_main_run_is_used(self):
+        """E17 and T3: an artifact from another branch, an expired one or an older one is never chosen."""
+        def art(i, created, branch="main", expired=False):
+            return {"id": i, "name": "bootstrap-state", "expired": expired, "created_at": created,
+                    "workflow_run": {"head_branch": branch}}
+        _Api.artifacts = [art(1, "2026-10-01T00:00:00Z"), art(2, "2026-10-03T00:00:00Z"),
+                          art(3, "2026-10-05T00:00:00Z", branch="evil"),
+                          art(4, "2026-10-06T00:00:00Z", expired=True), art(5, "2026-10-02T00:00:00Z")]
+        self.assertEqual(ghapi.latest_artifact("o/r", "bootstrap-state", "t")["id"], 2)
+        _Api.artifacts = [art(3, "2026-10-05T00:00:00Z", branch="evil")]
+        self.assertIsNone(ghapi.latest_artifact("o/r", "bootstrap-state", "t"))
+
     def test_token_is_not_sent_to_the_storage_redirect(self):
-        _Api.artifacts = [{"id": 5, "name": "bootstrap-state", "expired": False,
+        _Api.artifacts = [{"id": 5, "name": "bootstrap-state", "expired": False, "workflow_run": {"head_branch": "main"},
                            "created_at": "2026-10-28T00:00:00Z"}]
         from snowball_bootstrap import ghapi
         import urllib.request
@@ -100,7 +112,7 @@ class StateTest(unittest.TestCase):
 
     @posix_only
     def test_unverifiable_previous_state_stops_the_run(self):
-        _Api.artifacts = [{"id": 5, "name": "bootstrap-state", "expired": False,
+        _Api.artifacts = [{"id": 5, "name": "bootstrap-state", "expired": False, "workflow_run": {"head_branch": "main"},
                            "created_at": "2026-10-28T00:00:00Z"}]
         from snowball_bootstrap import ghapi
         buf = io.BytesIO()
@@ -138,7 +150,7 @@ class StateTest(unittest.TestCase):
         with zipfile.ZipFile(buf, "w") as zf:
             zf.writestr("result.json", json.dumps({"state": {"last_accepted_sha": head, "last_evaluated_sha": None}}))
             zf.writestr("result.json.sigstore.json", "{}")
-        _Api.artifacts = [{"id": 5, "name": "bootstrap-state", "expired": False,
+        _Api.artifacts = [{"id": 5, "name": "bootstrap-state", "expired": False, "workflow_run": {"head_branch": "main"},
                            "created_at": "2020-01-01T00:00:00Z"}]
         original = ghapi.download_zip
         ghapi.download_zip = lambda repo, aid, token: buf.getvalue()

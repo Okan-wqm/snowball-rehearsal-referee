@@ -16,6 +16,14 @@ from typing import Protocol
 # Runs inside the container. Copies the read-only source to tmpfs, installs locked wheels with no
 # index and no network, then runs the requested command. Values come in through environment
 # variables so nothing is interpolated into the script.
+# The command's own exit code is passed on, except 125: `docker run` reports a failure of docker itself
+# as 125, so a command (a Founder's test, a rival's reproducer) must never be able to claim it (E01).
+RUN = r"""rc=0
+sh -c "$SNOWBALL_CMD" || rc=$?
+if [ "$rc" -eq 125 ]; then rc=1; fi
+exit "$rc"
+"""
+
 PRELUDE = r"""set -eu
 cp -R /src /tmp/work
 python -m venv /tmp/venv >/dev/null
@@ -25,8 +33,9 @@ for lock in ${SNOWBALL_LOCKS:-}; do
 done
 export PATH=/tmp/venv/bin:$PATH
 cd "/tmp/work/${SNOWBALL_CWD:-.}"
-exec sh -c "$SNOWBALL_CMD"
-"""
+""" + RUN
+
+
 
 
 @dataclass(frozen=True)

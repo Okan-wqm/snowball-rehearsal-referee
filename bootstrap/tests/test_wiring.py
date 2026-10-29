@@ -113,6 +113,20 @@ class WorkflowWiringTest(unittest.TestCase):
         for needle in ("extraheader", "AUTHORIZATION", "x-access-token"):
             self.assertNotIn(needle, gitio_source, f"gitio still knows how to send {needle}")
 
+    def test_no_github_context_is_expanded_inside_a_shell_script(self):
+        """E17: `${{ github.ref }}` pasted into bash runs a branch name chosen by whoever can dispatch."""
+        for command in run_blocks(WORKFLOW):
+            self.assertNotRegex(command, r"\$\{\{\s*(github|inputs)\.", command[:160])
+
+    def test_only_runs_on_main_judge_and_sign_and_the_identity_is_mains(self):
+        """E17: a dispatch from another branch must neither judge nor sign, and the state is verified as main's."""
+        cek = WORKFLOW[WORKFLOW.index("  cek:"):WORKFLOW.index("  getir:")]
+        yaz = WORKFLOW[WORKFLOW.index("  yaz:"):]
+        for job in (cek, yaz):
+            self.assertIn("github.ref == 'refs/heads/main'", job.split("steps:", 1)[0])
+        identity = re.search(r'--identity "([^"]+)"', WORKFLOW).group(1)
+        self.assertTrue(identity.endswith("/.github/workflows/bootstrap.yml@refs/heads/main"), identity)
+
     def test_the_job_outlives_the_cli_it_waits_for(self):
         job = WORKFLOW[WORKFLOW.index("  cagir:"):]
         minutes = int(re.search(r"timeout-minutes: ([0-9]+)", job).group(1))

@@ -3,6 +3,7 @@ treehash; 82 survived the earlier tests). Each test names the mutants it kills i
 
 import io
 import json
+import re
 import os
 import signal
 import stat
@@ -15,7 +16,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from snowball_bootstrap import cli, rival, rival_mcp
+from snowball_bootstrap import cli, container, rival, rival_mcp
 from snowball_bootstrap.config import ConfigError, RivalConfig, load_bootstrap
 from snowball_bootstrap.rival import ToolBox, run_rival, validate_verdict
 from snowball_bootstrap.rival_mcp import RivalServer, serve
@@ -440,10 +441,47 @@ class CmdRivalGaps(unittest.TestCase):
         self.run_cmd({"calls": [submit()], "result": ok_result()})
         stdin = json.loads((self.bin_dir / "seen.json").read_text())["stdin"]
         self.assertIn("Review request: code push", stdin)
-        self.assertIn("=== Seed page spec/tohum/04-kod.md ===", stdin)
+        fence = re.search(r"=== ([0-9a-f]{16}) ", stdin).group(1)
+        self.assertIn(f'=== {fence} seed page "spec/tohum/04-kod.md" ===', stdin)
         self.assertEqual(stdin, rival.build_context("code", meta["base"], meta["head"], meta["changed"],
                                                     (self.pulled / "diff.patch").read_text(encoding="utf-8"),
-                                                    cli._pages((self.pulled / "brain.tar").read_bytes(), "code")))
+                                                    cli._pages((self.pulled / "brain.tar").read_bytes(), "code"),
+                                                    fence=fence))
+
+    @posix_only
+    def test_a_command_cannot_claim_dockers_own_exit_code(self):
+        """E01: 125 means docker failed; the command's 125 becomes 1, every other code and stdin pass through."""
+        def run(cmd, stdin=b""):
+            env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "SNOWBALL_CMD": cmd}
+            return subprocess.run(["sh", "-c", container.RUN], env=env, input=stdin, capture_output=True)
+        self.assertEqual(run("exit 125").returncode, 1)
+        self.assertEqual(run("exit 3").returncode, 3)
+        self.assertEqual(run("exit 0").returncode, 0)
+        done = run("cat; echo done", stdin=b"in ")
+        self.assertEqual((done.returncode, done.stdout), (0, b"in done" + bytes([10])))
+        self.assertIn(container.RUN, container.PRELUDE)
+        self.assertNotIn("exec sh", container.PRELUDE)
+
+    def test_a_tree_that_reaches_into_git_metadata_is_neither_hashed_nor_extracted(self):
+        """E04, X1: `referee/.git/hooks/pre-commit` in an accepted tree ran as the operator at import."""
+        from snowball_bootstrap.treehash import path_problem
+        for name, problem in (("referee/.git/hooks/pre-commit", ".git component"), ("a/.GiT/config", ".git component"),
+                              ("a" + chr(10) + "b", "control character"), ("a" + chr(127), "control character"),
+                              ("a:b", "backslash or colon"), ("a" + chr(92) + "b", "backslash or colon"),
+                              ("referee/.gitignore", None), ("referee/x.git", None), ("referee/a.py", None)):
+            self.assertEqual(path_problem(name), problem, name)
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w") as tar:
+            for member in ("referee/a.py", "referee/.git/hooks/pre-commit"):
+                info = tarfile.TarInfo(member)
+                info.size, info.mode = 1, 0o755
+                tar.addfile(info, io.BytesIO(b"x"))
+        with self.assertRaises(TreeError):
+            tree_hash(buf.getvalue(), "referee")
+        dest = Path(self.flow.tmp.name) / "import_target"
+        with self.assertRaises(TreeError):
+            extract(buf.getvalue(), dest, 10**6, prefix="referee")
+        self.assertFalse((dest / ".git").exists())
 
     def test_an_unsafe_archive_is_a_stop_not_a_traceback(self):
         """C12"""

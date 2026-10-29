@@ -114,8 +114,9 @@ def _match(run: VectorRun, spec: dict[str, Any]) -> None:
 
 
 def _drill(run: VectorRun, spec: dict[str, Any]) -> None:
-    """Lesson drill judge (`tohum/29c`): every simulated brain gets the reference verdicts. The
-    ``tampered_key`` case is the changed input of ``learner``: same run, answer key edited after it."""
+    """Lesson drill judge (`tohum/29c`): every simulated brain gets the reference verdicts. The edited
+    cases are the changed inputs: a brain's run with its answer key (``tampered_key``) or its transcript
+    edited after it."""
     for item in spec["cases"]:
         out = run.call(f"python -m harness.drill judge {shlex.quote('/vec/' + item['file'])}")
         got = (out.get("drill"), out.get("verdicts")) if out else (None, None)

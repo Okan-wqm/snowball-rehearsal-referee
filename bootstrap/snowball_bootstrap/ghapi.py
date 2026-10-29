@@ -27,13 +27,14 @@ def _request(url: str, token: str, accept: str = "application/vnd.github+json") 
     })
 
 
-def latest_artifact(repo: str, name: str, token: str) -> dict | None:
-    """Newest non-expired artifact with this exact name, or None."""
+def latest_artifact(repo: str, name: str, token: str, branch: str = "main") -> dict | None:
+    """Newest non-expired artifact with this exact name made by a run on `branch`, or None (E17)."""
     query = urllib.parse.urlencode({"name": name, "per_page": 50})
     with urllib.request.urlopen(_request(f"{_api_base()}/repos/{repo}/actions/artifacts?{query}", token),
                                 timeout=60) as resp:
         data = json.load(resp)
-    candidates = [a for a in data.get("artifacts", []) if a.get("name") == name and not a.get("expired")]
+    candidates = [a for a in data.get("artifacts", []) if a.get("name") == name and not a.get("expired")
+                  and (a.get("workflow_run") or {}).get("head_branch") == branch]
     candidates.sort(key=lambda a: a.get("created_at", ""), reverse=True)
     return candidates[0] if candidates else None
 

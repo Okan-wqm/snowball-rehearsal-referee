@@ -30,13 +30,32 @@ def shown(name: str) -> str:
     return name.encode("utf-8", "surrogateescape").decode("utf-8", "replace")
 
 
+def path_problem(name: str) -> str | None:
+    """Why a (UTF-8) path must not reach a file system, a prompt or a log line; None when it is fine.
+
+    Control characters forge lines in the rival's request and in logs (E03); a `.git` component writes
+    into a repository's own metadata, hooks included, when the operator imports an accepted tree (E04);
+    `:` and backslashes mean something else on Windows, where the operator imports.
+    """
+    if any(ord(c) < 0x20 or ord(c) == 0x7F for c in name):
+        return "control character"
+    if "\\" in name or ":" in name:
+        return "backslash or colon"
+    path = PurePosixPath(name)
+    if path.is_absolute() or ".." in path.parts:
+        return "absolute or parent path"
+    if any(part.lower() == ".git" for part in path.parts):
+        return ".git component"
+    return None
+
+
 def _clean(name: str) -> PurePosixPath:
     if not is_utf8_name(name):
         raise TreeError(f"path in archive is not valid UTF-8: {shown(name)}")
-    path = PurePosixPath(name)
-    if path.is_absolute() or ".." in path.parts or "\\" in name or ":" in name or "\x00" in name:
-        raise TreeError(f"unsafe path in archive: {name}")
-    return path
+    problem = path_problem(name)
+    if problem:
+        raise TreeError(f"unsafe path in archive ({problem}): {name!r}")
+    return PurePosixPath(name)
 
 
 def iter_files(tar_bytes: bytes):

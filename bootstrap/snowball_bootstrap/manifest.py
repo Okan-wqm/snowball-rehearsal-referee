@@ -27,6 +27,18 @@ REQ_LINE_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)==([A-Za-z0-9._+!-]+)\Z"
 HASH_TOKEN_RE = re.compile(r"^--hash=sha256:[0-9a-f]{64}\Z")
 
 
+MAX_STAGE = 1000  # stages and micro-features are small numbers; anything larger is a mistake or a probe
+
+
+def _text(value: str) -> bool:
+    """True when the string can be written as UTF-8 (a lone surrogate cannot, nor be signed)."""
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
 class ManifestError(ValueError):
     """The manifest or a lock file is unusable; the message is the rejection detail."""
 
@@ -49,7 +61,7 @@ class Manifest:
 
 
 def _safe_relpath(value: object) -> str:
-    if not isinstance(value, str) or not value:
+    if not isinstance(value, str) or not value or not _text(value):
         raise ManifestError("lock file path must be a non-empty string")
     path = PurePosixPath(value)
     if path.is_absolute() or ".." in path.parts or "\\" in value:
@@ -62,6 +74,8 @@ def parse_manifest(text: str) -> Manifest:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
         raise ManifestError(f"snowball-tests.json is not valid JSON: {exc}") from exc
+    except RecursionError as exc:
+        raise ManifestError("snowball-tests.json is nested too deeply") from exc
     if not isinstance(data, dict) or set(data) != {"tests", "done_mf", "lockfiles"}:
         raise ManifestError("snowball-tests.json must have exactly: tests, done_mf, lockfiles")
     raw_tests, raw_done, raw_locks = data["tests"], data["done_mf"], data["lockfiles"]
@@ -80,15 +94,15 @@ def parse_manifest(text: str) -> Manifest:
         if tid in seen:
             raise ManifestError(f"duplicate test id {tid}")
         seen.add(tid)
-        if not isinstance(cmd, str) or not cmd.strip() or len(cmd) > MAX_CMD or "\x00" in cmd:
+        if not isinstance(cmd, str) or not cmd.strip() or len(cmd) > MAX_CMD or "\x00" in cmd or not _text(cmd):
             raise ManifestError(f"{tid}: cmd must be a non-empty string up to {MAX_CMD} characters")
-        if not isinstance(stage, int) or isinstance(stage, bool) or stage < 0:
-            raise ManifestError(f"{tid}: stage must be a non-negative integer")
+        if not isinstance(stage, int) or isinstance(stage, bool) or not 0 <= stage <= MAX_STAGE:
+            raise ManifestError(f"{tid}: stage must be an integer from 0 to {MAX_STAGE}")
         tests.append(TestEntry(tid, cmd, stage))
     done: list[int] = []
     for mf in raw_done:
-        if not isinstance(mf, int) or isinstance(mf, bool):
-            raise ManifestError("done_mf entries must be integers")
+        if not isinstance(mf, int) or isinstance(mf, bool) or not 0 < mf <= MAX_STAGE:
+            raise ManifestError(f"done_mf entries must be integers from 1 to {MAX_STAGE}")
         done.append(mf)
     if len(raw_locks) > MAX_LOCKFILES:
         raise ManifestError(f"more than {MAX_LOCKFILES} lock files")

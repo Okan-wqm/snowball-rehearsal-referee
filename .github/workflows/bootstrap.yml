@@ -47,6 +47,7 @@ env:
 
 jobs:
   cek:
+    if: github.ref == 'refs/heads/main'  # a dispatch from another branch must not judge or sign (E17)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -97,7 +98,7 @@ jobs:
         run: >
           python3 -m snowball_bootstrap fetch-state --root snap --out state
           --sigstore-python /tmp/sig/bin/python
-          --identity "https://github.com/${{ github.repository }}/.github/workflows/bootstrap.yml@${{ github.ref }}"
+          --identity "https://github.com/${GITHUB_REPOSITORY}/.github/workflows/bootstrap.yml@refs/heads/main"
       - id: pull
         name: Pull and classify the brain commit
         if: steps.poll.outputs.skip == 'false'
@@ -299,7 +300,7 @@ jobs:
 
   yaz:
     needs: [cek, getir, kos, cagir, yeniden]
-    if: always() && needs.cek.result == 'success' && needs.cek.outputs.skip != 'true'
+    if: always() && github.ref == 'refs/heads/main' && needs.cek.result == 'success' && needs.cek.outputs.skip != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:

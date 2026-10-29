@@ -52,7 +52,7 @@ def signature(reason: dict[str, Any]) -> str:
 
 
 OUTAGE_RETRY_LIMIT = 3  # consecutive infrastructure failures of one commit before `poll` parks it
-NOT_THE_FOUNDERS = ("budget",)  # stops the run for the operator; never counts as the Founder not learning
+NOT_THE_FOUNDERS = ("budget", "pull_error")  # stops the run for the operator; never counts as the Founder not learning
 DOCKER_ERROR = 125  # `docker run` exit code for a failure of docker itself
 
 
@@ -137,6 +137,11 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
                     reasons.append(_reason("infra", ref="yeniden:docker"))
                     evaluate = False
                     outage = True
+                elif ({r["attempt_index"] for r in repro or []}
+                      != {i for i, a in enumerate(rival.get("attempts", [])) if "reproducer" in a}):
+                    reasons.append(_reason("infra", ref="yeniden:incomplete"))  # a reproducer that never ran (E05)
+                    evaluate = False
+                    outage = True
                 for r in repro or []:
                     if r["reproduced"]:
                         attempt = rival["attempts"][r["attempt_index"]]
@@ -151,7 +156,7 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
 
     exit_block: dict[str, Any] = {"requested": kind == "exit", "transferable": False, "missing": []}
     if kind == "exit":
-        exit_block["pinned_sha"] = meta.get("exit_request", {}).get("sha")
+        exit_block["pinned_sha"] = (meta.get("exit_request") or {}).get("sha")  # None when malformed (E41)
         missing = exit_block["missing"]
         manifest = meta.get("manifest") or {}
         if list(manifest.get("done_mf", [])) != list(range(1, STAGE0_MF_COUNT + 1)):

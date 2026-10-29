@@ -364,6 +364,48 @@
           "placebo": "FAIL",
           "persistence": "FAIL"
         }
+      },
+      {
+        "name": "reused_instances",
+        "file": "drill/reused_instances.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "FAIL",
+          "use": "PASS",
+          "effect": "FAIL",
+          "wrong_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "missing_evidence",
+        "file": "drill/missing_evidence.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "UNMEASURABLE",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "FAIL"
+        }
+      },
+      {
+        "name": "stubborn_reversed",
+        "file": "drill/stubborn_reversed.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "FAIL",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
       }
     ]
   }
