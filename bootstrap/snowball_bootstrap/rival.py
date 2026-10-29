@@ -73,6 +73,9 @@ Protocol for this review (bootstrap referee):
 - Hiding a defect is a defect. A test weakened, skipped or deleted, an expectation rewritten to match wrong
   output, an exception swallowed, a check or warning silenced, a fixture, input or path special-cased, or a
   limit raised only so that the push passes, is a refutation: its reproducer shows the defect the change hides.
+- Duplicated logic, or a second source for a fact the tree already holds (a rule, a constant, a schema, a
+  path list), is an open claim without a reproducer; it is a refutation only when the copies diverge into a
+  defect a reproducer shows.
 - When the spec asks a mechanism both to catch something and to let clean input pass (a scanner, a guard,
   a classifier), a refutation must use an input that is clearly the thing to catch and not a plausible
   clean input. An input on the boundary, one a correct implementation could reasonably treat either way,

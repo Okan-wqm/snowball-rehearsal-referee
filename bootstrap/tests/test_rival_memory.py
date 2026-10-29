@@ -150,6 +150,13 @@ class E06ReproducerContract(unittest.TestCase):
         self.assertEqual(rep["properties"]["expect_stderr_contains"]["maxLength"], rival.MAX_EXPECT_CHARS)
         self.assertIn("because of the defect", tool["description"] + rep["description"])
 
+    def test_duplication_is_an_open_claim_until_the_copies_diverge(self):  # E205, owner 2026-10-29: one source
+        text = " ".join(rival.PROTOCOL.split())
+        for phrase in ("Duplicated logic, or a second source for a fact the tree already holds",
+                       "is an open claim without a reproducer", "only when the copies diverge into a defect"):
+            self.assertIn(phrase, text)
+        self.assertEqual(secretscan.scan(text), [])
+
     def test_hiding_a_defect_is_a_refutation(self):  # E204, owner 2026-10-29: root cause, never silencing
         text = " ".join(rival.PROTOCOL.split())
         for phrase in ("Hiding a defect is a defect", "skipped or deleted", "an exception swallowed",

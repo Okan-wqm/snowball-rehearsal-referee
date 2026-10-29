@@ -238,6 +238,12 @@ class ImageAndEntrypointTest(unittest.TestCase):
         for key, value in rival.PINNED_ENV.items():
             self.assertRegex(env_block, rf"\b{key}={value}\b", f"{key} differs from the referee's rival pin")
 
+    def test_the_founder_keeps_one_source_and_chooses_its_own_architecture(self):  # E205, owner 2026-10-29
+        prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
+        for phrase in ("Yazmadan önce aynı ya da benzer işi yapan kodu ara", "tek bir yetkili kaynağı olsun",
+                       "duruma bakarak sen karar verirsin", "danışma içindir, reçete değil", "`decision` satırı"):
+            self.assertIn(phrase, prompt)
+
     def test_the_founder_fixes_root_causes_and_never_hides_them(self):  # E204, owner 2026-10-29
         prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
         for phrase in ("kök nedeninden ve mimari olarak onar", "`except: pass`", "susturmak",
