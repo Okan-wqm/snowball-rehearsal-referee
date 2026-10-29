@@ -1,0 +1,7 @@
+diff --git a/packages/api/generated/schema.ts b/packages/api/generated/schema.ts
+index 1111111..2222222 100644
+--- a/packages/api/generated/schema.ts
++++ b/packages/api/generated/schema.ts
+@@ -1 +1 @@
+-export const a = 1;
++export const a = 2;

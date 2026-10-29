@@ -4,7 +4,7 @@ Files, all in the referee repository and written only by the operator (`tohum/25
 - ``bootstrap.json``: what this bootstrap watches and how it runs.
 - ``control.json``: the kill switch.
 - ``policy.json``: the constitutional policy (only the keys this bootstrap reads are checked).
-- ``setup/summary.json``: the setup summary (seed commit and seed tree hash).
+- ``setup/summary.json``: the setup summary (seed commit and seed tree hash) and the seed epochs delivered since.
 """
 
 from __future__ import annotations
@@ -199,9 +199,42 @@ def load_policy(root: Path) -> Policy:
 
 
 @dataclass(frozen=True)
+class SeedEpoch:
+    """A seed the operator delivered into the brain (`25` 10b, `26c` ``seed_epochs[]``): the brain commit that carries
+    it and the tree hashes of its ``spec/tohum/`` and ``seed/`` there (``seed_sha256`` is None when the brain has no
+    ``seed/``). ``bootstrap_sha256`` is the referee's ``bootstrap/`` copy of the same seed."""
+    commit: str
+    spec_tohum_sha256: str
+    seed_sha256: str | None
+    bootstrap_sha256: str
+
+
+@dataclass(frozen=True)
 class Summary:
     seed_commit: str
     seed_tree_sha256: str
+    epochs: tuple[SeedEpoch, ...] = ()
+
+    @property
+    def epoch(self) -> SeedEpoch | None:
+        """The last seed epoch, the one the brain's seed must equal; None while only the setup seed exists."""
+        return self.epochs[-1] if self.epochs else None
+
+
+EPOCH_KEYS = frozenset({"commit", "spec_tohum_sha256", "seed_sha256", "bootstrap_sha256"})
+
+
+def _epoch(row: Any, where: str) -> SeedEpoch:
+    if not isinstance(row, dict) or set(row) != EPOCH_KEYS:
+        raise ConfigError(f"{where} must have exactly the keys {', '.join(sorted(EPOCH_KEYS))} (`26c`)")
+    if not isinstance(row["commit"], str) or not SHA_RE.match(row["commit"]):
+        raise ConfigError(f"{where}.commit must be a 40-character commit SHA")
+    for key in ("spec_tohum_sha256", "bootstrap_sha256"):
+        if not isinstance(row[key], str) or not HEX64_RE.match(row[key]):
+            raise ConfigError(f"{where}.{key} must be 64 hex characters")
+    if row["seed_sha256"] is not None and not (isinstance(row["seed_sha256"], str) and HEX64_RE.match(row["seed_sha256"])):
+        raise ConfigError(f"{where}.seed_sha256 must be 64 hex characters, or null when the brain has no seed/")
+    return SeedEpoch(row["commit"], row["spec_tohum_sha256"], row["seed_sha256"], row["bootstrap_sha256"])
 
 
 def load_summary(root: Path) -> Summary:
@@ -213,4 +246,10 @@ def load_summary(root: Path) -> Summary:
     seed_tree = _req(data, "seed_tree_sha256", str, where)
     if not HEX64_RE.match(seed_tree):
         raise ConfigError(f"{where}.seed_tree_sha256 must be 64 hex characters")
-    return Summary(seed_commit=seed_commit, seed_tree_sha256=seed_tree)
+    epochs: tuple[SeedEpoch, ...] = ()
+    if "seed_epochs" in data:  # absent: no seed was delivered after setup
+        rows = data["seed_epochs"]
+        if not isinstance(rows, list) or not rows:
+            raise ConfigError(f"{where}.seed_epochs must be a non-empty list of seed epochs")
+        epochs = tuple(_epoch(row, f"{where}.seed_epochs[{i}]") for i, row in enumerate(rows))
+    return Summary(seed_commit=seed_commit, seed_tree_sha256=seed_tree, epochs=epochs)

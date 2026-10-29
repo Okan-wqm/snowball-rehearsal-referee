@@ -77,6 +77,14 @@ NOT_THE_FOUNDERS = ("budget", "pull_error", "infra", "rival_missing")
 # turns given, or a secret-shaped string in it. Every other unresolved run is the rival's own failure.
 FOUNDERS_RIVAL_REASONS = ("prompt_too_large", "max_turns", "secret_in_prompt")
 DOCKER_ERROR = 125  # `docker run` exit code for a failure of docker itself
+# Heads with nothing of the Founder's to judge: an unchanged tree or ledger rows alone (`none`), and the operator's
+# seed delivery itself (`seed_update`, `25` 10b, E88). Noop: no streak, no rival artifact, no acceptance.
+NOTHING_TO_JUDGE = ("none", "seed_update")
+# The (A) conditions of `asama-0/10` the seed has no check for yet (E162; their rows E107, E100/E132, E130/E131, E102,
+# E79). Until a check exists each keeps the exit closed as `exit_condition` `not_checked:<anchor>`, never passes
+# silently. The Founder cannot fix them, so they are not its rejections (`29b` "Ret hafızası").
+EXIT_NOT_CHECKED = ("kurucu-defteri", "is-akisi", "agac", "genellik", "spec", "durustluk")
+NOT_CHECKED = "not_checked:"
 
 
 def counts_against_founder(reason: dict[str, Any]) -> bool:
@@ -84,6 +92,8 @@ def counts_against_founder(reason: dict[str, Any]) -> bool:
         return False
     if reason["kind"] == "rival_unresolved":
         return str(reason["ref"]).split(":", 1)[0] in FOUNDERS_RIVAL_REASONS
+    if reason["kind"] == "exit_condition":
+        return not str(reason["ref"]).startswith(NOT_CHECKED)
     return True
 
 
@@ -359,13 +369,14 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
             missing.append(f"rival_attempts:{len(others)}<{rival_min_attempts}")
         if not meta.get("referee_tree_sha256"):
             missing.append("referee_tree_hash")
+        missing += [NOT_CHECKED + anchor for anchor in EXIT_NOT_CHECKED]  # E162: closed until the seed checks it
         for m in missing:
             reasons.append(_reason("exit_condition", ref=m))
 
     accepted = not reasons and kind in ("spec", "code", "exit")
     if kind == "spec":
         verdict = "frozen" if accepted else "rejected"
-    elif kind == "none":
+    elif kind in NOTHING_TO_JUDGE:
         verdict = "noop"
     else:
         verdict = "accepted" if accepted else "rejected"
@@ -382,7 +393,7 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
     state["open_claims"] = claims[-MAX_OPEN_CLAIMS:]
 
     learning = {"repeated": [], "not_learning": [], "repeat_events": state["repeat_events"]}
-    if evaluate and kind != "none":
+    if evaluate and kind not in NOTHING_TO_JUDGE:
         state["last_evaluated_sha"] = head
         learning = _learning(state, reasons, repeat_reject_limit)
     elif evaluate:  # an unchanged tree (an empty commit, a revert): nothing to judge and nothing to learn from
@@ -393,7 +404,7 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
         else:
             state["outage_sha"], state["outage_count"], state["outage_since"] = head, 1, now
         state["outage_stop"] = stop
-    elif evaluate and kind != "none":
+    elif evaluate and kind not in NOTHING_TO_JUDGE:
         state.update(outage_sha=None, outage_count=0, outage_since=None, outage_stop=None)
 
     if rival_valid:
@@ -419,6 +430,10 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
         exit_block["repeat_events"] = state["repeat_events"]
         exit_block["open_claims"] = [{"id": c["id"], "claim": c["claim"], "first_head": c["first_head"]}
                                      for c in state["open_claims"]]
+        if verdict == "rejected" and evaluate and meta.get("exit_request_sha256"):
+            # `asama-0/10`, `26c`: the same bytes left in place are ignored in later code pushes (E97), so a request the
+            # seed cannot accept yet (E162) never turns every later code push into `exit_request_not_alone`.
+            state["rejected_exit_request"] = meta["exit_request_sha256"]
     state["runs"] += 1
     state["origin"] = "artifact"
 

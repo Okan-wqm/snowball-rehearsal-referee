@@ -1,0 +1,7 @@
+diff --git a/packages/sharex/package.json b/packages/sharex/package.json
+index 1111111..2222222 100644
+--- a/packages/sharex/package.json
++++ b/packages/sharex/package.json
+@@ -1 +1 @@
+-  "version": "0.0.0",
++  "version": "0.0.1",

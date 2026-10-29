@@ -1,0 +1,7 @@
+diff --git a/packages/sharex/src/util.ts b/packages/sharex/src/util.ts
+index 1111111..2222222 100644
+--- a/packages/sharex/src/util.ts
++++ b/packages/sharex/src/util.ts
+@@ -1 +1 @@
+-export const a = 1;
++export const a = 2;

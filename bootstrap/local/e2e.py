@@ -1,7 +1,8 @@
 """Local end-to-end run of the bootstrap referee against a real container runtime.
 
 It builds a throwaway brain repository from the reference brain in ``reference_brain/`` (a real,
-tested implementation of micro-feature 1, the hash-chained ledger, and nothing it does not have), writes
+tested implementation of micro-feature 1, the hash-chained ledger, and nothing it does not have; the reference
+implementations of MF2-MF7 it also carries are not declared done, so their vectors do not run here), writes
 operator files for a throwaway referee, and runs the same steps the workflow runs: pull -> fetch-deps
 -> run-tests (real docker, no network) -> decide. Sigstore signing is not run (it needs a workflow's
 OIDC identity). The reference brain uses the standard library only, so fetch-deps has nothing to fetch;

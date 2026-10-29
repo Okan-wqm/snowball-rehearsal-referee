@@ -1,0 +1,1 @@
+{"security_paths": ["packages/api/src/vault/"], "excluded_dirs": ["packages/api/generated/"]}

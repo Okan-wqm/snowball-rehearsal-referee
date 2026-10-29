@@ -1,0 +1,7 @@
+diff --git a/packages/api/generatex/schema.ts b/packages/api/generatex/schema.ts
+index 1111111..2222222 100644
+--- a/packages/api/generatex/schema.ts
++++ b/packages/api/generatex/schema.ts
+@@ -1 +1 @@
+-export const a = 1;
++export const a = 2;

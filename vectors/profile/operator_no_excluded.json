@@ -1,0 +1,1 @@
+{"security_keywords": ["auth", "guard", "security", "session", "token", "secret", "crypto", "tenant", "permission", "role", "policy", "payment", "billing", "pii"], "excluded_paths": [], "unit_candidates": ["packages/web", ".Claude", "packages/missing", "packages/api", "vendor"]}

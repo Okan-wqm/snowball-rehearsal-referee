@@ -19,6 +19,13 @@ def is_spec_path(path: str) -> bool:
     return bool(SPEC_STAGE_RE.match(path)) or path == SPEC_INDEX
 
 
+SEED_DIRS = ("spec/tohum", "seed")  # what a seed epoch delivers into the brain (`25` 10b)
+
+
+def is_seed_path(path: str) -> bool:
+    return any(path.startswith(d + "/") for d in SEED_DIRS)
+
+
 def is_founder_record(path: str) -> bool:
     """The Founder's memory and reports: neither spec nor code. They never turn a spec request into a mixed one,
     and a push of nothing else is not judged (`29b`, "Push türleri"; the `ledger` push of the narrowed Stage 0)."""

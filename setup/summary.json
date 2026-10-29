@@ -1,4 +1,12 @@
 {
   "seed_commit": "632a84cc3e7e70741607457a4060e375caa0e3a4",
-  "seed_tree_sha256": "8797ba63c645fa9afb3b5d254e7d0a49201e3ad69742c79e6df161466fdcb62f"
+  "seed_tree_sha256": "8797ba63c645fa9afb3b5d254e7d0a49201e3ad69742c79e6df161466fdcb62f",
+  "seed_epochs": [
+    {
+      "bootstrap_sha256": "562b210843e18e1fb1410ca06a2607fd36ca73a5185727ca1fbfdced84242b50",
+      "commit": "fdcc99e5eecfd329188b850141ce4c7af6ab57ce",
+      "seed_sha256": null,
+      "spec_tohum_sha256": "a23080327d40f9e73cbf6320d645850c410822f808a0e6a1d1b00d4f7f9f93b4"
+    }
+  ]
 }

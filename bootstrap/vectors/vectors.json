@@ -408,5 +408,1623 @@
         }
       }
     ]
+  },
+  "secrets": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29f-vektor-arayuzleri.md",
+    "source": "reconciled cases; every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161)",
+    "cases": [
+      {
+        "id": "secrets.diff_added_line",
+        "purpose": "A fake GitHub token on an added diff line is caught; the line is reported, the value is not.",
+        "cmd": "python -m gate.secrets scan diff /vec/secrets/s1_added.patch",
+        "fixture": [
+          "secrets/s1_added.patch"
+        ],
+        "expect": {
+          "clean": false,
+          "lines": [
+            7
+          ]
+        },
+        "changed": {
+          "description": "One byte: the token prefix ghp_ becomes ghq_ (no longer a token format).",
+          "cmd": "python -m gate.secrets scan diff /vec/secrets/s1_added_changed.patch",
+          "fixture": [
+            "secrets/s1_added_changed.patch"
+          ],
+          "expect_not": {
+            "clean": false,
+            "lines": [
+              7
+            ]
+          }
+        }
+      },
+      {
+        "id": "secrets.diff_context_line",
+        "purpose": "The whole diff text is scanned: a fake AWS key id on an unchanged context line still invalidates the run.",
+        "cmd": "python -m gate.secrets scan diff /vec/secrets/s2_context.patch",
+        "fixture": [
+          "secrets/s2_context.patch"
+        ],
+        "expect": {
+          "clean": false,
+          "lines": [
+            7
+          ]
+        },
+        "changed": {
+          "description": "One byte: the key id's last character E becomes '-', leaving 15 key characters.",
+          "cmd": "python -m gate.secrets scan diff /vec/secrets/s2_context_changed.patch",
+          "fixture": [
+            "secrets/s2_context_changed.patch"
+          ],
+          "expect_not": {
+            "clean": false,
+            "lines": [
+              7
+            ]
+          }
+        }
+      },
+      {
+        "id": "secrets.row_json_escape",
+        "purpose": "A ledger row is scanned after JSON decoding: a key id whose F is written as the JSON unicode escape backslash-u0046 is caught on its row (the raw line holds no key id).",
+        "cmd": "python -m gate.secrets scan row /vec/secrets/s3_rows.jsonl",
+        "fixture": [
+          "secrets/s3_rows.jsonl"
+        ],
+        "expect": {
+          "clean": false,
+          "lines": [
+            1
+          ]
+        },
+        "changed": {
+          "description": "One byte: the escape backslash-u0046 (F) becomes backslash-u0026 (&), so the decoded text is no key id.",
+          "cmd": "python -m gate.secrets scan row /vec/secrets/s3_rows_changed.jsonl",
+          "fixture": [
+            "secrets/s3_rows_changed.jsonl"
+          ],
+          "expect_not": {
+            "clean": false,
+            "lines": [
+              1
+            ]
+          }
+        }
+      },
+      {
+        "id": "secrets.prompt",
+        "purpose": "A fake token inside an outgoing prompt is caught (the run is invalid and the prompt must not be sent).",
+        "cmd": "python -m gate.secrets scan prompt /vec/secrets/s4_prompt.in",
+        "fixture": [
+          "secrets/s4_prompt.in"
+        ],
+        "expect": {
+          "clean": false,
+          "lines": [
+            4
+          ]
+        },
+        "changed": {
+          "description": "One byte: ghp_ becomes ghp- in the prompt.",
+          "cmd": "python -m gate.secrets scan prompt /vec/secrets/s4_prompt_clean.in",
+          "fixture": [
+            "secrets/s4_prompt_clean.in"
+          ],
+          "expect_not": {
+            "clean": false,
+            "lines": [
+              4
+            ]
+          }
+        }
+      },
+      {
+        "id": "secrets.prompt_clean",
+        "purpose": "A clean prompt passes (clean true): a scanner that never lets a prompt through is caught.",
+        "cmd": "python -m gate.secrets scan prompt /vec/secrets/s4_prompt_clean.in",
+        "fixture": [
+          "secrets/s4_prompt_clean.in"
+        ],
+        "expect": {
+          "clean": true,
+          "lines": []
+        },
+        "changed": {
+          "description": "One byte: ghp- becomes ghp_ (the prompt of secrets.prompt).",
+          "cmd": "python -m gate.secrets scan prompt /vec/secrets/s4_prompt.in",
+          "fixture": [
+            "secrets/s4_prompt.in"
+          ],
+          "expect_not": {
+            "clean": true,
+            "lines": []
+          }
+        }
+      },
+      {
+        "id": "secrets.glued_token",
+        "purpose": "Tokens glued to a word by '_' (x_ghp_..., x_AKIA...) are caught: the pilot's cycle-4 refutation of a word-boundary scanner (docs/pilot-gunlugu.md:26) is inside the floor.",
+        "cmd": "python -m gate.secrets scan prompt /vec/secrets/s7_glued.in",
+        "fixture": [
+          "secrets/s7_glued.in"
+        ],
+        "expect": {
+          "clean": false,
+          "lines": [
+            2,
+            3
+          ]
+        },
+        "changed": {
+          "description": "One byte: x_ghp_ becomes x_ghq_ (the AWS line still matches).",
+          "cmd": "python -m gate.secrets scan prompt /vec/secrets/s7_glued_changed.in",
+          "fixture": [
+            "secrets/s7_glued_changed.in"
+          ],
+          "expect_not": {
+            "clean": false,
+            "lines": [
+              2,
+              3
+            ]
+          }
+        }
+      },
+      {
+        "id": "secrets.clean_near_miss",
+        "purpose": "Clean input passes: near-miss strings (ghq_ prefix, 15-character key id) and the word FAKE are not matches.",
+        "cmd": "python -m gate.secrets scan diff /vec/secrets/s5_clean.patch",
+        "fixture": [
+          "secrets/s5_clean.patch"
+        ],
+        "expect": {
+          "clean": true,
+          "lines": []
+        },
+        "changed": {
+          "description": "One byte: ghq_ becomes ghp_, turning the near miss into a token format.",
+          "cmd": "python -m gate.secrets scan diff /vec/secrets/s5_clean_changed.patch",
+          "fixture": [
+            "secrets/s5_clean_changed.patch"
+          ],
+          "expect_not": {
+            "clean": true,
+            "lines": []
+          }
+        }
+      },
+      {
+        "id": "secrets.row_unusable_fails_closed",
+        "purpose": "A row that does not decode cannot be declared clean: unusable input fails closed (clean false, exit 2).",
+        "cmd": "python -m gate.secrets scan row /vec/secrets/s6_rows_bad.jsonl",
+        "fixture": [
+          "secrets/s6_rows_bad.jsonl"
+        ],
+        "expect": {
+          "clean": false
+        },
+        "changed": {
+          "description": "One byte: the missing closing brace is added; the row decodes and holds no secret.",
+          "cmd": "python -m gate.secrets scan row /vec/secrets/s6_rows_fixed.jsonl",
+          "fixture": [
+            "secrets/s6_rows_fixed.jsonl"
+          ],
+          "expect_not": {
+            "clean": false
+          }
+        }
+      }
+    ]
+  },
+  "contained": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29f-vektor-arayuzleri.md",
+    "source": "reconciled cases; every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161)",
+    "cases": [
+      {
+        "id": "contained.argv_baseline",
+        "purpose": "The argv for a valid request carries --network none, --cap-drop ALL, --read-only, --user <uid>, the memory limit read from operating.container_mem_bytes.value, only the worktree and outdir writable, the artefact read-only, exactly the request's env, and the digest-pinned image.",
+        "cmd": "python -m runner.contained argv",
+        "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":536870912,\"band\":[268435456,1073741824]}}}",
+        "fixture": [],
+        "expect": {
+          "ok": true,
+          "network": "none",
+          "cap_drop": [
+            "ALL"
+          ],
+          "cap_add": [],
+          "privileged": false,
+          "read_only": true,
+          "uid": 1001,
+          "memory_bytes": 536870912,
+          "mounts": [
+            [
+              "/runs/r-0001/deps",
+              "ro"
+            ],
+            [
+              "/runs/r-0001/out",
+              "rw"
+            ],
+            [
+              "/runs/r-0001/work",
+              "rw"
+            ]
+          ],
+          "env_names": [
+            "LANG"
+          ],
+          "image": "docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        },
+        "changed": {
+          "description": "One byte: operating.container_mem_bytes.value 536870912 -> 536870913.",
+          "cmd": "python -m runner.contained argv",
+          "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":536870913,\"band\":[268435456,1073741824]}}}",
+          "fixture": [],
+          "expect_not": {
+            "ok": true,
+            "network": "none",
+            "cap_drop": [
+              "ALL"
+            ],
+            "cap_add": [],
+            "privileged": false,
+            "read_only": true,
+            "uid": 1001,
+            "memory_bytes": 536870912,
+            "mounts": [
+              [
+                "/runs/r-0001/deps",
+                "ro"
+              ],
+              [
+                "/runs/r-0001/out",
+                "rw"
+              ],
+              [
+                "/runs/r-0001/work",
+                "rw"
+              ]
+            ],
+            "env_names": [
+              "LANG"
+            ],
+            "image": "docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          }
+        }
+      },
+      {
+        "id": "contained.argv_second_request",
+        "purpose": "A second, different request (other image, uid, memory, no artefacts) gives its own projection; a fixed argv cannot satisfy both.",
+        "cmd": "python -m runner.contained argv",
+        "stdin": "{\"image\":\"docker.io/library/python@sha256:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210\",\"cmd\":[\"python\",\"-m\",\"pytest\",\"-q\"],\"uid\":2002,\"worktree\":\"/runs/r-0002/work\",\"outdir\":\"/runs/r-0002/out\",\"artefacts\":[],\"env\":{\"LANG\":\"C.UTF-8\",\"TZ\":\"UTC\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":805306368,\"band\":[268435456,1073741824]}}}",
+        "fixture": [],
+        "expect": {
+          "ok": true,
+          "network": "none",
+          "cap_drop": [
+            "ALL"
+          ],
+          "cap_add": [],
+          "privileged": false,
+          "read_only": true,
+          "uid": 2002,
+          "memory_bytes": 805306368,
+          "mounts": [
+            [
+              "/runs/r-0002/out",
+              "rw"
+            ],
+            [
+              "/runs/r-0002/work",
+              "rw"
+            ]
+          ],
+          "env_names": [
+            "LANG",
+            "TZ"
+          ],
+          "image": "docker.io/library/python@sha256:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+        },
+        "changed": {
+          "description": "One field: uid 2002 -> 2003.",
+          "cmd": "python -m runner.contained argv",
+          "stdin": "{\"image\":\"docker.io/library/python@sha256:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210\",\"cmd\":[\"python\",\"-m\",\"pytest\",\"-q\"],\"uid\":2003,\"worktree\":\"/runs/r-0002/work\",\"outdir\":\"/runs/r-0002/out\",\"artefacts\":[],\"env\":{\"LANG\":\"C.UTF-8\",\"TZ\":\"UTC\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":805306368,\"band\":[268435456,1073741824]}}}",
+          "fixture": [],
+          "expect_not": {
+            "ok": true,
+            "network": "none",
+            "cap_drop": [
+              "ALL"
+            ],
+            "cap_add": [],
+            "privileged": false,
+            "read_only": true,
+            "uid": 2002,
+            "memory_bytes": 805306368,
+            "mounts": [
+              [
+                "/runs/r-0002/out",
+                "rw"
+              ],
+              [
+                "/runs/r-0002/work",
+                "rw"
+              ]
+            ],
+            "env_names": [
+              "LANG",
+              "TZ"
+            ],
+            "image": "docker.io/library/python@sha256:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+          }
+        }
+      },
+      {
+        "id": "contained.refuse_unpinned_image",
+        "purpose": "An image referenced by tag, not @sha256, is refused.",
+        "cmd": "python -m runner.contained argv",
+        "stdin": "{\"image\":\"docker.io/library/node:20.11.1\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":536870912,\"band\":[268435456,1073741824]}}}",
+        "fixture": [],
+        "expect": {
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: image is the digest-pinned reference.",
+          "cmd": "python -m runner.contained argv",
+          "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":536870912,\"band\":[268435456,1073741824]}}}",
+          "fixture": [],
+          "expect_not": {
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "contained.refuse_actions_env",
+        "purpose": "A request that would pass an ACTIONS_* variable into the container is refused, not silently stripped.",
+        "cmd": "python -m runner.contained argv",
+        "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\",\"ACTIONS_CACHE_URL\":\"https://example.invalid/\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":536870912,\"band\":[268435456,1073741824]}}}",
+        "fixture": [],
+        "expect": {
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: the variable name ACTIONS_CACHE_URL becomes SNOWBALL_CACHE_URL.",
+          "cmd": "python -m runner.contained argv",
+          "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\",\"SNOWBALL_CACHE_URL\":\"https://example.invalid/\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":536870912,\"band\":[268435456,1073741824]}}}",
+          "fixture": [],
+          "expect_not": {
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "contained.refuse_docker_socket",
+        "purpose": "A request that would mount the docker socket is refused.",
+        "cmd": "python -m runner.contained argv",
+        "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/var/run/docker.sock\"],\"env\":{\"LANG\":\"C.UTF-8\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":536870912,\"band\":[268435456,1073741824]}}}",
+        "fixture": [],
+        "expect": {
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: artefacts is the ordinary deps directory.",
+          "cmd": "python -m runner.contained argv",
+          "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":536870912,\"band\":[268435456,1073741824]}}}",
+          "fixture": [],
+          "expect_not": {
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "contained.refuse_services",
+        "purpose": "Stage 0 units are service-less: a request naming a service (which would need a network) is refused.",
+        "cmd": "python -m runner.contained argv",
+        "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\"},\"services\":[\"docker.io/library/postgres@sha256:fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210\"],\"operating\":{\"container_mem_bytes\":{\"value\":536870912,\"band\":[268435456,1073741824]}}}",
+        "fixture": [],
+        "expect": {
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: services is empty.",
+          "cmd": "python -m runner.contained argv",
+          "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":536870912,\"band\":[268435456,1073741824]}}}",
+          "fixture": [],
+          "expect_not": {
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "contained.refuse_missing_mem_limit",
+        "purpose": "No constant limits: without operating.container_mem_bytes the request is refused.",
+        "cmd": "python -m runner.contained argv",
+        "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\"},\"services\":[],\"operating\":{\"kos_wall_s\":{\"value\":1800,\"band\":[300,3600]}}}",
+        "fixture": [],
+        "expect": {
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: operating carries container_mem_bytes again.",
+          "cmd": "python -m runner.contained argv",
+          "stdin": "{\"image\":\"docker.io/library/node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"cmd\":[\"npm\",\"test\"],\"uid\":1001,\"worktree\":\"/runs/r-0001/work\",\"outdir\":\"/runs/r-0001/out\",\"artefacts\":[\"/runs/r-0001/deps\"],\"env\":{\"LANG\":\"C.UTF-8\"},\"services\":[],\"operating\":{\"container_mem_bytes\":{\"value\":536870912,\"band\":[268435456,1073741824]}}}",
+          "fixture": [],
+          "expect_not": {
+            "ok": false
+          }
+        }
+      }
+    ]
+  },
+  "profile": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29f-vektor-arayuzleri.md",
+    "source": "reconciled cases; every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161)",
+    "cases": [
+      {
+        "id": "profile.agent_config_case_insensitive",
+        "purpose": "Agent configuration is excluded at any depth and in any letter case (.Claude/ at the root, Claude.md inside a unit).",
+        "cmd": "python -m profile.derive derive /vec/profile/tree_t1.tar.gz /vec/profile/operator.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json"
+        ],
+        "expect": {
+          "languages": [
+            "javascript",
+            "typescript"
+          ],
+          "unit_candidates": [
+            "packages/web",
+            "packages/api"
+          ],
+          "security_paths": [
+            "packages/api/src/auth/login.ts",
+            "packages/api/src/session.ts",
+            "packages/web/src/tokenizer.js"
+          ],
+          "excluded_paths": [
+            ".Claude/settings.json",
+            "packages/api/Claude.md",
+            "vendor/legacy.py"
+          ]
+        },
+        "changed": {
+          "description": "One byte in a tree member name: .Claude/settings.json becomes .Clauda/settings.json.",
+          "cmd": "python -m profile.derive derive /vec/profile/tree_t1_clauda.tar.gz /vec/profile/operator.json",
+          "fixture": [
+            "profile/tree_t1_clauda.tar.gz",
+            "profile/operator.json"
+          ],
+          "expect_not": {
+            "languages": [
+              "javascript",
+              "typescript"
+            ],
+            "unit_candidates": [
+              "packages/web",
+              "packages/api"
+            ],
+            "security_paths": [
+              "packages/api/src/auth/login.ts",
+              "packages/api/src/session.ts",
+              "packages/web/src/tokenizer.js"
+            ],
+            "excluded_paths": [
+              ".Claude/settings.json",
+              "packages/api/Claude.md",
+              "vendor/legacy.py"
+            ]
+          }
+        }
+      },
+      {
+        "id": "profile.operator_excluded_paths",
+        "purpose": "The operator's excluded_paths (operator.json, from targets[]) exclude vendor/: its .py file adds no language and the vendor candidate is dropped.",
+        "cmd": "python -m profile.derive derive /vec/profile/tree_t1.tar.gz /vec/profile/operator.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json"
+        ],
+        "expect": {
+          "languages": [
+            "javascript",
+            "typescript"
+          ],
+          "unit_candidates": [
+            "packages/web",
+            "packages/api"
+          ],
+          "security_paths": [
+            "packages/api/src/auth/login.ts",
+            "packages/api/src/session.ts",
+            "packages/web/src/tokenizer.js"
+          ],
+          "excluded_paths": [
+            ".Claude/settings.json",
+            "packages/api/Claude.md",
+            "vendor/legacy.py"
+          ]
+        },
+        "changed": {
+          "description": "One field: excluded_paths is empty (operator_no_excluded.json).",
+          "cmd": "python -m profile.derive derive /vec/profile/tree_t1.tar.gz /vec/profile/operator_no_excluded.json",
+          "fixture": [
+            "profile/tree_t1.tar.gz",
+            "profile/operator_no_excluded.json"
+          ],
+          "expect_not": {
+            "languages": [
+              "javascript",
+              "typescript"
+            ],
+            "unit_candidates": [
+              "packages/web",
+              "packages/api"
+            ],
+            "security_paths": [
+              "packages/api/src/auth/login.ts",
+              "packages/api/src/session.ts",
+              "packages/web/src/tokenizer.js"
+            ],
+            "excluded_paths": [
+              ".Claude/settings.json",
+              "packages/api/Claude.md",
+              "vendor/legacy.py"
+            ]
+          }
+        }
+      },
+      {
+        "id": "profile.security_keyword_substring",
+        "purpose": "Security paths follow the keyword rule over path and file names (auth/ directory, session.ts, tokenizer.js by substring).",
+        "cmd": "python -m profile.derive derive /vec/profile/tree_t1.tar.gz /vec/profile/operator.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json"
+        ],
+        "expect": {
+          "languages": [
+            "javascript",
+            "typescript"
+          ],
+          "unit_candidates": [
+            "packages/web",
+            "packages/api"
+          ],
+          "security_paths": [
+            "packages/api/src/auth/login.ts",
+            "packages/api/src/session.ts",
+            "packages/web/src/tokenizer.js"
+          ],
+          "excluded_paths": [
+            ".Claude/settings.json",
+            "packages/api/Claude.md",
+            "vendor/legacy.py"
+          ]
+        },
+        "changed": {
+          "description": "One byte in a tree member name: session.ts becomes sessian.ts.",
+          "cmd": "python -m profile.derive derive /vec/profile/tree_t1_sessian.tar.gz /vec/profile/operator.json",
+          "fixture": [
+            "profile/tree_t1_sessian.tar.gz",
+            "profile/operator.json"
+          ],
+          "expect_not": {
+            "languages": [
+              "javascript",
+              "typescript"
+            ],
+            "unit_candidates": [
+              "packages/web",
+              "packages/api"
+            ],
+            "security_paths": [
+              "packages/api/src/auth/login.ts",
+              "packages/api/src/session.ts",
+              "packages/web/src/tokenizer.js"
+            ],
+            "excluded_paths": [
+              ".Claude/settings.json",
+              "packages/api/Claude.md",
+              "vendor/legacy.py"
+            ]
+          }
+        }
+      },
+      {
+        "id": "profile.unit_candidates_order_and_filter",
+        "purpose": "Unit candidates keep the operator's order and drop the missing one (packages/missing), the agent-configuration one (.Claude, which has a file under it) and the excluded one (vendor).",
+        "cmd": "python -m profile.derive derive /vec/profile/tree_t1.tar.gz /vec/profile/operator.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json"
+        ],
+        "expect": {
+          "languages": [
+            "javascript",
+            "typescript"
+          ],
+          "unit_candidates": [
+            "packages/web",
+            "packages/api"
+          ],
+          "security_paths": [
+            "packages/api/src/auth/login.ts",
+            "packages/api/src/session.ts",
+            "packages/web/src/tokenizer.js"
+          ],
+          "excluded_paths": [
+            ".Claude/settings.json",
+            "packages/api/Claude.md",
+            "vendor/legacy.py"
+          ]
+        },
+        "changed": {
+          "description": "One field: unit_candidates lists packages/api before packages/web (operator_reordered.json).",
+          "cmd": "python -m profile.derive derive /vec/profile/tree_t1.tar.gz /vec/profile/operator_reordered.json",
+          "fixture": [
+            "profile/tree_t1.tar.gz",
+            "profile/operator_reordered.json"
+          ],
+          "expect_not": {
+            "languages": [
+              "javascript",
+              "typescript"
+            ],
+            "unit_candidates": [
+              "packages/web",
+              "packages/api"
+            ],
+            "security_paths": [
+              "packages/api/src/auth/login.ts",
+              "packages/api/src/session.ts",
+              "packages/web/src/tokenizer.js"
+            ],
+            "excluded_paths": [
+              ".Claude/settings.json",
+              "packages/api/Claude.md",
+              "vendor/legacy.py"
+            ]
+          }
+        }
+      },
+      {
+        "id": "profile.reject_narrowed_excluded",
+        "purpose": "A proposal equal to the derivation except that it drops the case-variant agent file packages/api/Claude.md from excluded_paths narrows the list and is rejected.",
+        "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_narrow_excluded.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json",
+          "profile/prop_narrow_excluded.json"
+        ],
+        "expect": {
+          "accepted": false,
+          "reasons": [
+            "narrows:excluded_paths"
+          ]
+        },
+        "changed": {
+          "description": "One field: the proposal's excluded_paths holds packages/api/Claude.md again (proposal equals the derivation).",
+          "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_equal.json",
+          "fixture": [
+            "profile/tree_t1.tar.gz",
+            "profile/operator.json",
+            "profile/prop_equal.json"
+          ],
+          "expect_not": {
+            "accepted": false,
+            "reasons": [
+              "narrows:excluded_paths"
+            ]
+          }
+        }
+      },
+      {
+        "id": "profile.reject_different_languages",
+        "purpose": "A proposal whose languages differ from the derivation (adds python) is rejected.",
+        "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_languages.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json",
+          "profile/prop_languages.json"
+        ],
+        "expect": {
+          "accepted": false,
+          "reasons": [
+            "differs:languages"
+          ]
+        },
+        "changed": {
+          "description": "One field: languages equals the derivation (proposal equals the derivation).",
+          "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_equal.json",
+          "fixture": [
+            "profile/tree_t1.tar.gz",
+            "profile/operator.json",
+            "profile/prop_equal.json"
+          ],
+          "expect_not": {
+            "accepted": false,
+            "reasons": [
+              "differs:languages"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "npmlock": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29g-vektor-arayuzleri-devam.md",
+    "source": "reconciled cases; every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161)",
+    "cases": [
+      {
+        "id": "npmlock.integrity_good_and_one_byte",
+        "purpose": "Every tarball matches the lock's sha512 integrity; b's install script is marked in the recipe list; the content address and the license report (read from each tarball) are produced.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+        "fixture": [
+          "npmlock/lock_good.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": true,
+          "rejected": [],
+          "artefact": "sha256:c8b74b5a620c70bb24263efc66e4080c844934a1a78fd788c0625b0a8274ac19",
+          "licenses": [
+            {
+              "license": "MIT",
+              "name": "snowball-fixture-a",
+              "path": "node_modules/snowball-fixture-a",
+              "version": "1.0.0"
+            },
+            {
+              "license": "ISC",
+              "name": "snowball-fixture-b",
+              "path": "node_modules/snowball-fixture-b",
+              "version": "2.0.0"
+            }
+          ]
+        },
+        "changed": {
+          "description": "One byte in tarball a (gzip header OS byte 255 -> 3; the tar inside is byte-identical) via a second mirror.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror_onebyte",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_good.json",
+            "npmlock/mirror_onebyte"
+          ],
+          "expect_not": {
+            "ok": true,
+            "rejected": [],
+            "artefact": "sha256:c8b74b5a620c70bb24263efc66e4080c844934a1a78fd788c0625b0a8274ac19",
+            "licenses": [
+              {
+                "license": "MIT",
+                "name": "snowball-fixture-a",
+                "path": "node_modules/snowball-fixture-a",
+                "version": "1.0.0"
+              },
+              {
+                "license": "ISC",
+                "name": "snowball-fixture-b",
+                "path": "node_modules/snowball-fixture-b",
+                "version": "2.0.0"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "npmlock.install_script_unmarked",
+        "purpose": "Package b's tarball declares a postinstall script (the lock does not say hasInstallScript); unmarked in install_scripts_required it is rejected.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[]}",
+        "fixture": [
+          "npmlock/lock_good.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false,
+          "rejected": [
+            "install_script_unmarked:node_modules/snowball-fixture-b"
+          ],
+          "artefact": null,
+          "licenses": null
+        },
+        "changed": {
+          "description": "One field: install_scripts_required names snowball-fixture-b@2.0.0.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_good.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false,
+            "rejected": [
+              "install_script_unmarked:node_modules/snowball-fixture-b"
+            ],
+            "artefact": null,
+            "licenses": null
+          }
+        }
+      },
+      {
+        "id": "npmlock.registry_not_allowed",
+        "purpose": "A resolved URL on registry.npmjs.org.evil.example is not the allowed https://registry.npmjs.org/ (a host-prefix lookalike), so it is rejected before any fetch.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_registry.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+        "fixture": [
+          "npmlock/lock_registry.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false,
+          "rejected": [
+            "registry_not_allowed:node_modules/snowball-fixture-a"
+          ],
+          "artefact": null,
+          "licenses": null
+        },
+        "changed": {
+          "description": "One field: resolved is the allowed registry URL (lock_only_a.json).",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_only_a.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_only_a.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false,
+            "rejected": [
+              "registry_not_allowed:node_modules/snowball-fixture-a"
+            ],
+            "artefact": null,
+            "licenses": null
+          }
+        }
+      },
+      {
+        "id": "npmlock.git_dependency",
+        "purpose": "A git dependency (git+ssh resolved) is rejected even though it carries an integrity value.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_git.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+        "fixture": [
+          "npmlock/lock_git.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false,
+          "rejected": [
+            "git_dependency:node_modules/snowball-fixture-a"
+          ],
+          "artefact": null,
+          "licenses": null
+        },
+        "changed": {
+          "description": "One field: resolved is the registry URL of the same tarball (lock_only_a.json).",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_only_a.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_only_a.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false,
+            "rejected": [
+              "git_dependency:node_modules/snowball-fixture-a"
+            ],
+            "artefact": null,
+            "licenses": null
+          }
+        }
+      },
+      {
+        "id": "npmlock.file_dependency",
+        "purpose": "A file: dependency is rejected even though it carries an integrity value.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_file.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+        "fixture": [
+          "npmlock/lock_file.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false,
+          "rejected": [
+            "file_dependency:node_modules/snowball-fixture-a"
+          ],
+          "artefact": null,
+          "licenses": null
+        },
+        "changed": {
+          "description": "One field: resolved is the registry URL of the same tarball (lock_only_a.json).",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_only_a.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_only_a.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false,
+            "rejected": [
+              "file_dependency:node_modules/snowball-fixture-a"
+            ],
+            "artefact": null,
+            "licenses": null
+          }
+        }
+      },
+      {
+        "id": "npmlock.license_from_tarball",
+        "purpose": "The license report reads the tarball's package.json (GPL-3.0-only), not the lock's license field (MIT); a target dependency's license is reported, not gated, so the fetch still succeeds.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_license.json /vec/npmlock/mirror_gpl",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+        "fixture": [
+          "npmlock/lock_license.json",
+          "npmlock/mirror_gpl"
+        ],
+        "expect": {
+          "ok": true,
+          "rejected": [],
+          "artefact": "sha256:3709f448fa7c1106b118e3914914658e321c3d34bd9b029bc997dda7964816dd",
+          "licenses": [
+            {
+              "license": "GPL-3.0-only",
+              "name": "snowball-fixture-e",
+              "path": "node_modules/snowball-fixture-e",
+              "version": "1.0.0"
+            }
+          ]
+        },
+        "changed": {
+          "description": "One field: the tarball's license is MIT (lock integrity follows the tarball; lock license field unchanged).",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_license_mit.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_license_mit.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": true,
+            "rejected": [],
+            "artefact": "sha256:3709f448fa7c1106b118e3914914658e321c3d34bd9b029bc997dda7964816dd",
+            "licenses": [
+              {
+                "license": "GPL-3.0-only",
+                "name": "snowball-fixture-e",
+                "path": "node_modules/snowball-fixture-e",
+                "version": "1.0.0"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "npmlock.same_lock_same_address",
+        "purpose": "The same lock re-serialised (compact, keys reordered) gives the same content address as lock_good.json.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good_compact.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+        "fixture": [
+          "npmlock/lock_good_compact.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": true,
+          "rejected": [],
+          "artefact": "sha256:c8b74b5a620c70bb24263efc66e4080c844934a1a78fd788c0625b0a8274ac19",
+          "licenses": [
+            {
+              "license": "MIT",
+              "name": "snowball-fixture-a",
+              "path": "node_modules/snowball-fixture-a",
+              "version": "1.0.0"
+            },
+            {
+              "license": "ISC",
+              "name": "snowball-fixture-b",
+              "path": "node_modules/snowball-fixture-b",
+              "version": "2.0.0"
+            }
+          ]
+        },
+        "changed": {
+          "description": "One field: package b is removed (lock_only_a.json).",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_only_a.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_only_a.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": true,
+            "rejected": [],
+            "artefact": "sha256:c8b74b5a620c70bb24263efc66e4080c844934a1a78fd788c0625b0a8274ac19",
+            "licenses": [
+              {
+                "license": "MIT",
+                "name": "snowball-fixture-a",
+                "path": "node_modules/snowball-fixture-a",
+                "version": "1.0.0"
+              },
+              {
+                "license": "ISC",
+                "name": "snowball-fixture-b",
+                "path": "node_modules/snowball-fixture-b",
+                "version": "2.0.0"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "recipe": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29g-vektor-arayuzleri-devam.md",
+    "source": "reconciled cases; every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161)",
+    "cases": [
+      {
+        "id": "recipe.good",
+        "purpose": "A complete Stage 0 recipe passes the static check.",
+        "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_good.json /vec/recipe/policy.json",
+        "fixture": [
+          "recipe/recipe_good.json",
+          "recipe/policy.json"
+        ],
+        "expect": {
+          "ok": true,
+          "reasons": []
+        },
+        "changed": {
+          "description": "One field: services names a database image.",
+          "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_services.json /vec/recipe/policy.json",
+          "fixture": [
+            "recipe/recipe_services.json",
+            "recipe/policy.json"
+          ],
+          "expect_not": {
+            "ok": true,
+            "reasons": []
+          }
+        }
+      },
+      {
+        "id": "recipe.image_tag_only",
+        "purpose": "An env_image referenced by tag, without @sha256, is rejected.",
+        "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_image_tag.json /vec/recipe/policy.json",
+        "fixture": [
+          "recipe/recipe_image_tag.json",
+          "recipe/policy.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "image_not_pinned"
+          ]
+        },
+        "changed": {
+          "description": "One field: env_image is the digest-pinned reference.",
+          "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_good.json /vec/recipe/policy.json",
+          "fixture": [
+            "recipe/recipe_good.json",
+            "recipe/policy.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "image_not_pinned"
+            ]
+          }
+        }
+      },
+      {
+        "id": "recipe.image_digest_malformed",
+        "purpose": "A digest of 63 hex characters is not a pinned image.",
+        "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_image_63.json /vec/recipe/policy.json",
+        "fixture": [
+          "recipe/recipe_image_63.json",
+          "recipe/policy.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "image_not_pinned"
+          ]
+        },
+        "changed": {
+          "description": "One byte: the 64th hex character is restored.",
+          "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_good.json /vec/recipe/policy.json",
+          "fixture": [
+            "recipe/recipe_good.json",
+            "recipe/policy.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "image_not_pinned"
+            ]
+          }
+        }
+      },
+      {
+        "id": "recipe.inputs_missing_unit_dir",
+        "purpose": "inputs must contain the unit's own directory (path); packages/apx/ does not cover packages/api.",
+        "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_inputs_typo.json /vec/recipe/policy.json",
+        "fixture": [
+          "recipe/recipe_inputs_typo.json",
+          "recipe/policy.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "inputs_missing_unit"
+          ]
+        },
+        "changed": {
+          "description": "One byte: packages/apx/ becomes packages/api/.",
+          "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_good.json /vec/recipe/policy.json",
+          "fixture": [
+            "recipe/recipe_good.json",
+            "recipe/policy.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "inputs_missing_unit"
+            ]
+          }
+        }
+      },
+      {
+        "id": "recipe.inputs_agent_config",
+        "purpose": "An inputs entry that is agent configuration in any letter case (packages/api/.Claude/) is rejected.",
+        "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_inputs_agent.json /vec/recipe/policy.json",
+        "fixture": [
+          "recipe/recipe_inputs_agent.json",
+          "recipe/policy.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "input_excluded:packages/api/.Claude/"
+          ]
+        },
+        "changed": {
+          "description": "One byte: .Claude/ becomes .Clauda/.",
+          "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_inputs_agent_changed.json /vec/recipe/policy.json",
+          "fixture": [
+            "recipe/recipe_inputs_agent_changed.json",
+            "recipe/policy.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "input_excluded:packages/api/.Claude/"
+            ]
+          }
+        }
+      },
+      {
+        "id": "recipe.inputs_not_plain",
+        "purpose": "An absolute inputs entry (/packages/shared/) is not a plain repository path and is rejected.",
+        "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_inputs_abs.json /vec/recipe/policy.json",
+        "fixture": [
+          "recipe/recipe_inputs_abs.json",
+          "recipe/policy.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "input_not_plain:/packages/shared/"
+          ]
+        },
+        "changed": {
+          "description": "One byte: the leading slash is removed.",
+          "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_good.json /vec/recipe/policy.json",
+          "fixture": [
+            "recipe/recipe_good.json",
+            "recipe/policy.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "input_not_plain:/packages/shared/"
+            ]
+          }
+        }
+      },
+      {
+        "id": "recipe.limit_key_unknown",
+        "purpose": "Every limits key must be an operating{} key; cpu_seconds is not.",
+        "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_limit_key.json /vec/recipe/policy.json",
+        "fixture": [
+          "recipe/recipe_limit_key.json",
+          "recipe/policy.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "limit_key_unknown:cpu_seconds"
+          ]
+        },
+        "changed": {
+          "description": "One field: the key cpu_seconds becomes test_total_s.",
+          "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_good.json /vec/recipe/policy.json",
+          "fixture": [
+            "recipe/recipe_good.json",
+            "recipe/policy.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "limit_key_unknown:cpu_seconds"
+            ]
+          }
+        }
+      },
+      {
+        "id": "recipe.test_cmd_empty",
+        "purpose": "test_cmd must be a non-empty argv list.",
+        "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_test_cmd_empty.json /vec/recipe/policy.json",
+        "fixture": [
+          "recipe/recipe_test_cmd_empty.json",
+          "recipe/policy.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "cmd_empty:test_cmd"
+          ]
+        },
+        "changed": {
+          "description": "One field: test_cmd is npm test --workspace packages/api.",
+          "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_good.json /vec/recipe/policy.json",
+          "fixture": [
+            "recipe/recipe_good.json",
+            "recipe/policy.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "cmd_empty:test_cmd"
+            ]
+          }
+        }
+      },
+      {
+        "id": "recipe.cmd_entries",
+        "purpose": "The other two commands are checked too: lint_cmd holding an empty string and a missing affected_test_cmd each give their own reason (a check of test_cmd alone is caught).",
+        "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_cmd_bad.json /vec/recipe/policy.json",
+        "fixture": [
+          "recipe/recipe_cmd_bad.json",
+          "recipe/policy.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "cmd_empty:affected_test_cmd",
+            "cmd_empty:lint_cmd"
+          ]
+        },
+        "changed": {
+          "description": "One field: lint_cmd is npx eslint packages/api/src (affected_test_cmd is still missing).",
+          "cmd": "python -m profile.unit_verify check /vec/recipe/recipe_cmd_bad_lint_fixed.json /vec/recipe/policy.json",
+          "fixture": [
+            "recipe/recipe_cmd_bad_lint_fixed.json",
+            "recipe/policy.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "cmd_empty:affected_test_cmd",
+              "cmd_empty:lint_cmd"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "diffguard": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29g-vektor-arayuzleri-devam.md",
+    "source": "reconciled cases; every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161)",
+    "cases": [
+      {
+        "id": "diffguard.inside_inputs",
+        "purpose": "A plain edit inside the unit's inputs (packages/shared/) passes.",
+        "cmd": "python -m gate.diffguard check /vec/diffguard/d1_inputs.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+        "fixture": [
+          "diffguard/d1_inputs.patch",
+          "diffguard/profile.json",
+          "diffguard/recipe.json"
+        ],
+        "expect": {
+          "ok": true,
+          "reasons": []
+        },
+        "changed": {
+          "description": "One byte in the path: packages/shared/ becomes packages/sharex/ (outside inputs).",
+          "cmd": "python -m gate.diffguard check /vec/diffguard/d1_inputs_changed.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+          "fixture": [
+            "diffguard/d1_inputs_changed.patch",
+            "diffguard/profile.json",
+            "diffguard/recipe.json"
+          ],
+          "expect_not": {
+            "ok": true,
+            "reasons": []
+          }
+        }
+      },
+      {
+        "id": "diffguard.symlink",
+        "purpose": "A new symbolic link (git mode 120000) inside the inputs is rejected.",
+        "cmd": "python -m gate.diffguard check /vec/diffguard/d2_symlink.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+        "fixture": [
+          "diffguard/d2_symlink.patch",
+          "diffguard/profile.json",
+          "diffguard/recipe.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "symlink:packages/api/src/current.ts"
+          ]
+        },
+        "changed": {
+          "description": "One field: the mode is 100644 (a regular file with the same text).",
+          "cmd": "python -m gate.diffguard check /vec/diffguard/d2_symlink_changed.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+          "fixture": [
+            "diffguard/d2_symlink_changed.patch",
+            "diffguard/profile.json",
+            "diffguard/recipe.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "symlink:packages/api/src/current.ts"
+            ]
+          }
+        }
+      },
+      {
+        "id": "diffguard.submodule",
+        "purpose": "A new submodule (git mode 160000) inside the inputs is rejected.",
+        "cmd": "python -m gate.diffguard check /vec/diffguard/d3_submodule.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+        "fixture": [
+          "diffguard/d3_submodule.patch",
+          "diffguard/profile.json",
+          "diffguard/recipe.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "submodule:packages/api/vendor/lib"
+          ]
+        },
+        "changed": {
+          "description": "One field: the mode is 100644 (a regular file with the same text).",
+          "cmd": "python -m gate.diffguard check /vec/diffguard/d3_submodule_changed.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+          "fixture": [
+            "diffguard/d3_submodule_changed.patch",
+            "diffguard/profile.json",
+            "diffguard/recipe.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "submodule:packages/api/vendor/lib"
+            ]
+          }
+        }
+      },
+      {
+        "id": "diffguard.dotdot_path",
+        "purpose": "A path with a ../ component is rejected even though it normalises back inside the unit.",
+        "cmd": "python -m gate.diffguard check /vec/diffguard/d4_dotdot.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+        "fixture": [
+          "diffguard/d4_dotdot.patch",
+          "diffguard/profile.json",
+          "diffguard/recipe.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "path_escape:packages/api/src/../util.ts"
+          ]
+        },
+        "changed": {
+          "description": "One byte in the path: the .. component becomes .x.",
+          "cmd": "python -m gate.diffguard check /vec/diffguard/d4_dotdot_changed.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+          "fixture": [
+            "diffguard/d4_dotdot_changed.patch",
+            "diffguard/profile.json",
+            "diffguard/recipe.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "path_escape:packages/api/src/../util.ts"
+            ]
+          }
+        }
+      },
+      {
+        "id": "diffguard.agent_config_case_insensitive",
+        "purpose": "Agent configuration is rejected in any letter case (Claude.md inside the unit).",
+        "cmd": "python -m gate.diffguard check /vec/diffguard/d5_agent.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+        "fixture": [
+          "diffguard/d5_agent.patch",
+          "diffguard/profile.json",
+          "diffguard/recipe.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "agent_config:packages/api/Claude.md"
+          ]
+        },
+        "changed": {
+          "description": "One byte in the path: Claude.md becomes Claude.mb.",
+          "cmd": "python -m gate.diffguard check /vec/diffguard/d5_agent_changed.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+          "fixture": [
+            "diffguard/d5_agent_changed.patch",
+            "diffguard/profile.json",
+            "diffguard/recipe.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "agent_config:packages/api/Claude.md"
+            ]
+          }
+        }
+      },
+      {
+        "id": "diffguard.security_path",
+        "purpose": "A path under the profile's security_paths (packages/api/src/vault/, no keyword in it) is rejected.",
+        "cmd": "python -m gate.diffguard check /vec/diffguard/d6_security.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+        "fixture": [
+          "diffguard/d6_security.patch",
+          "diffguard/profile.json",
+          "diffguard/recipe.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "security_path:packages/api/src/vault/store.ts"
+          ]
+        },
+        "changed": {
+          "description": "One byte in the path: vault/ becomes vaulx/.",
+          "cmd": "python -m gate.diffguard check /vec/diffguard/d6_security_changed.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+          "fixture": [
+            "diffguard/d6_security_changed.patch",
+            "diffguard/profile.json",
+            "diffguard/recipe.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "security_path:packages/api/src/vault/store.ts"
+            ]
+          }
+        }
+      },
+      {
+        "id": "diffguard.config_manifest_lock_gitattributes",
+        "purpose": "Edits to a manifest (package.json), a lockfile (package-lock.json), a lint config (.eslintrc.json) and .gitattributes inside the inputs are each rejected with their own reason.",
+        "cmd": "python -m gate.diffguard check /vec/diffguard/d7_categories.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+        "fixture": [
+          "diffguard/d7_categories.patch",
+          "diffguard/profile.json",
+          "diffguard/recipe.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "config:packages/api/.eslintrc.json",
+            "gitattributes:packages/api/.gitattributes",
+            "lockfile:packages/api/package-lock.json",
+            "manifest:packages/api/package.json"
+          ]
+        },
+        "changed": {
+          "description": "One byte in one path: .gitattributes becomes .gitattributez.",
+          "cmd": "python -m gate.diffguard check /vec/diffguard/d7_categories_changed.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+          "fixture": [
+            "diffguard/d7_categories_changed.patch",
+            "diffguard/profile.json",
+            "diffguard/recipe.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "config:packages/api/.eslintrc.json",
+              "gitattributes:packages/api/.gitattributes",
+              "lockfile:packages/api/package-lock.json",
+              "manifest:packages/api/package.json"
+            ]
+          }
+        }
+      },
+      {
+        "id": "diffguard.excluded_path",
+        "purpose": "A path under the profile's excluded_dirs (the operator's excluded path packages/api/generated/) is rejected.",
+        "cmd": "python -m gate.diffguard check /vec/diffguard/d8_excluded.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+        "fixture": [
+          "diffguard/d8_excluded.patch",
+          "diffguard/profile.json",
+          "diffguard/recipe.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "excluded_path:packages/api/generated/schema.ts"
+          ]
+        },
+        "changed": {
+          "description": "One byte in the path: generated/ becomes generatex/.",
+          "cmd": "python -m gate.diffguard check /vec/diffguard/d8_excluded_changed.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+          "fixture": [
+            "diffguard/d8_excluded_changed.patch",
+            "diffguard/profile.json",
+            "diffguard/recipe.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "excluded_path:packages/api/generated/schema.ts"
+            ]
+          }
+        }
+      },
+      {
+        "id": "diffguard.every_reason",
+        "purpose": "Every applicable reason of a path is reported, not only the first: a manifest outside the inputs gives both manifest and outside_inputs.",
+        "cmd": "python -m gate.diffguard check /vec/diffguard/d9_two_reasons.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+        "fixture": [
+          "diffguard/d9_two_reasons.patch",
+          "diffguard/profile.json",
+          "diffguard/recipe.json"
+        ],
+        "expect": {
+          "ok": false,
+          "reasons": [
+            "manifest:packages/sharex/package.json",
+            "outside_inputs:packages/sharex/package.json"
+          ]
+        },
+        "changed": {
+          "description": "One byte in the path: packages/sharex/ becomes packages/shared/ (inside the inputs; only manifest remains).",
+          "cmd": "python -m gate.diffguard check /vec/diffguard/d9_two_reasons_changed.patch /vec/diffguard/profile.json /vec/diffguard/recipe.json",
+          "fixture": [
+            "diffguard/d9_two_reasons_changed.patch",
+            "diffguard/profile.json",
+            "diffguard/recipe.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "reasons": [
+              "manifest:packages/sharex/package.json",
+              "outside_inputs:packages/sharex/package.json"
+            ]
+          }
+        }
+      }
+    ]
   }
 }

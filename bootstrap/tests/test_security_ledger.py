@@ -17,7 +17,9 @@ BOOT = Path(__file__).resolve().parents[1]
 SEED = BOOT.parent
 ROOT = SEED.parent
 LEDGER = SEED / "security-ledger.jsonl"
-sys.path.insert(0, str(BOOT / "local" / "reference_brain" / "referee"))
+# Last, not first: the brain's `profile/` package (MF4, MF6) would shadow the standard library's `profile` (and so
+# `cProfile`) for every test that runs after this one (E191).
+sys.path.append(str(BOOT / "local" / "reference_brain" / "referee"))
 sys.path.insert(0, str(BOOT / "local"))
 from ledger import chain  # noqa: E402
 import mutate  # noqa: E402

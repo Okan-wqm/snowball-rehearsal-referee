@@ -6,11 +6,12 @@ import hashlib
 import io
 import json
 import os
+import re
 import unittest
 import zipfile
 from pathlib import Path
 
-from snowball_bootstrap import cli, ghapi, state as st
+from snowball_bootstrap import cli, decide as decide_module, ghapi, state as st
 from snowball_bootstrap.classify import classify
 from snowball_bootstrap.config import ConfigError, Policy
 from snowball_bootstrap.container import RunResult
@@ -23,14 +24,17 @@ import test_state
 from helpers import DRILL, EVERY_GROUP, STATS, FakeRunner, commit, install_fake_claude, ok_result, posix_only, sh, submit
 
 A, B, C = "a" * 40, "b" * 40, "c" * 40
+# What every exit is still missing until the seed checks it (E162); the literal list is held in KindsAndExit.
+UNCHECKED = [decide_module.NOT_CHECKED + anchor for anchor in decide_module.EXIT_NOT_CHECKED]
 
 
 def state0(**kw):
-    s = {"schema": "snowball-bootstrap-state/2", "origin": "artifact", "last_accepted_sha": A,
+    s = {"schema": "snowball-bootstrap-state/3", "origin": "artifact", "last_accepted_sha": A,
          "last_evaluated_sha": None, "frozen_specs": {}, "rival_artifacts": [], "month": "2026-10",
          "month_spend_usd_micros": 1000, "stage_spend_usd_micros": 2000, "runs": 4, "reject_streaks": {},
          "repeat_events": 0, "outage_sha": None, "outage_count": 0, "outage_since": None, "outage_stop": None,
-         "rival_side_streak": 0, "open_refutations": [], "open_claims": [], "pending_rival": None}
+         "rival_side_streak": 0, "open_refutations": [], "open_claims": [], "pending_rival": None,
+         "rejected_exit_request": None}
     s.update(kw)
     return s
 
@@ -314,14 +318,16 @@ class KindsAndExit(unittest.TestCase):
     def test_exit_conditions_are_each_enforced(self):  # D19 D22 D23
         ready = state0(rival_artifacts=survived(A, "1" * 40, "2" * 40))
         good = run_decide(self.exit_meta(ready), green_run(), None, None, {"getir": "success", "kos": "success"})
-        self.assertEqual((good["verdict"], good["exit"]["transferable"]), ("accepted", True))
+        # Every condition the code checks passes; only what it cannot check yet keeps the exit closed (E162).
+        self.assertEqual((good["verdict"], good["exit"]["transferable"], good["exit"]["missing"]),
+                         ("rejected", False, UNCHECKED))
         cases = ((dict(done=range(1, 18)), ready, "not_all_micro_features_done"),
                  (dict(), dict(ready, rival_artifacts=survived("1" * 40, "2" * 40)), "no_rival_attempt_on_exit_sha"),
                  (dict(tree=None), ready, "referee_tree_hash"))
         for kw, state, missing in cases:
             res = run_decide(self.exit_meta(state, **kw), green_run(), None, None, {"getir": "success", "kos": "success"})
             self.assertEqual(res["verdict"], "rejected", missing)
-            self.assertEqual(res["exit"]["missing"], [missing])
+            self.assertEqual(res["exit"]["missing"], [missing] + UNCHECKED)
             self.assertFalse(res["exit"]["transferable"], missing)  # D37
 
     def test_the_exit_needs_all_eighteen_micro_features_of_the_stage_table(self):
@@ -331,17 +337,89 @@ class KindsAndExit(unittest.TestCase):
         for done, missing in ((range(1, 19), []), (range(1, 18), ["not_all_micro_features_done"]),
                               (range(1, 31), ["not_all_micro_features_done"])):
             res = run_decide(self.exit_meta(ready, done=done), green_run(), None, None, jobs)
-            self.assertEqual(res["exit"]["missing"], missing, done)
+            self.assertEqual(res["exit"]["missing"], missing + UNCHECKED, done)
 
     def test_the_exit_waits_for_every_vector_group_the_seed_still_lacks(self):
         """`asama-0/10` #testler: every group passes. A group the seed has no vectors for cannot, so the exit is
         refused until a seed epoch brings it; on a code push the same gap is a warning (below)."""
         ready = state0(rival_artifacts=survived(A, "1" * 40, "2" * 40))
-        run = dict(green_run(), vector_groups_missing=["secrets", "genesis"])
+        run = dict(green_run(), vector_groups_missing=["k0map", "genesis"])
         res = run_decide(self.exit_meta(ready), run, None, None, {"getir": "success", "kos": "success"})
         self.assertEqual(res["verdict"], "rejected")
-        self.assertEqual(res["exit"]["missing"], ["vector_group_missing:secrets", "vector_group_missing:genesis"])
+        self.assertEqual(res["exit"]["missing"],
+                         ["vector_group_missing:k0map", "vector_group_missing:genesis"] + UNCHECKED)
         self.assertFalse(res["exit"]["transferable"])
+
+    def test_no_exit_condition_the_seed_cannot_check_passes_silently(self):
+        """E162: each (A) condition of `asama-0/10` without a check in this code keeps the exit closed by name."""
+        ready = state0(rival_artifacts=survived(A, "1" * 40, "2" * 40))
+        res = run_decide(self.exit_meta(ready), green_run(), None, None, {"getir": "success", "kos": "success"})
+        named = ["not_checked:kurucu-defteri", "not_checked:is-akisi", "not_checked:agac", "not_checked:genellik",
+                 "not_checked:spec", "not_checked:durustluk"]
+        self.assertEqual([(r["kind"], r["ref"]) for r in res["reasons"]], [("exit_condition", n) for n in named])
+        self.assertEqual((res["verdict"], res["exit"]["transferable"], res["rejection"]["kind"]), ("rejected", False, "exit"))
+        self.assertNotIn("brain_sha", res["exit"])
+        self.assertEqual(res["state"]["last_accepted_sha"], A)  # the exit SHA is not moved past
+
+    def test_every_row_of_the_exit_table_is_checked_or_named_unchecked(self):
+        """E162: a row of the `asama-0/10` table is either checked by this code or listed in EXIT_NOT_CHECKED; a row
+        added to the page without either fails here instead of passing silently. "Checked" is held to the code: each
+        row names the lines of `cli.py` (pull) or `decide.py` that check it, and a line that is gone fails the row
+        (E185: the names alone stayed green with the check deleted)."""
+        checked = {
+            ("testler", "kirmizi", "lisans"): {"decide": ['missing.append("not_all_micro_features_done")',
+                                                          '_reason("test_failed"', '_reason("vector_failed"',
+                                                          'missing += [f"vector_group_missing:{g}"',
+                                                          '_reason("license_not_allowed"']},
+            ("modulsuz",): {"cli": ['before = set() if kind == "exit" else _base_done(repo, base)'],
+                            "decide": ["reasons += _module_less_green(module_less)"]},
+            ("rakip",): {"decide": ['missing.append("no_rival_attempt_on_exit_sha")',
+                                    'missing.append(f"rival_attempts:{len(others)}<{rival_min_attempts}")',
+                                    '_reason("refutation_still_reproduces"', 'exit_block["open_claims"] = ']},
+            ("lock", "kilit"): {"cli": ['pre.append("exit_request_wrong_stage")',
+                                        'pre.append("exit_request_sha_is_not_last_accepted")',
+                                        'pre.append("exit_request_spec_hash_mismatch")']},
+            ("tekrar",): {"decide": ['exit_block["repeat_events"] = state["repeat_events"]']},
+            ("yalniz",): {"cli": ["if judged == [EXIT_FILE]:", 'pre.append("exit_request_not_alone")']},
+        }
+        sources = {name: (Path(cli.__file__).parent / f"{name}.py").read_text(encoding="utf-8")
+                   for name in ("cli", "decide")}
+        for row, where in checked.items():
+            for module, lines in where.items():
+                for line in lines:
+                    self.assertEqual(sources[module].count(line), 1, f"#{row[0]}: {module}.py no longer has {line!r}")
+        page = (Path(__file__).resolve().parents[3] / "spec" / "asama-0" / "10-cikis-testi.md").read_text(encoding="utf-8")
+        cells = [line.split("|")[1] for line in page.splitlines() if line.startswith("| #")]
+        rows = [tuple(found) for found in (re.findall(r"#([a-z-]+)", cell) for cell in cells) if found]  # not "| # |"
+        self.assertEqual(len(rows), 12)
+        for row in rows:
+            unchecked = [a for a in row if a in decide_module.EXIT_NOT_CHECKED]
+            self.assertEqual((row in checked) + len(unchecked), 1, row)
+        anchors = {a for row in rows for a in row}
+        self.assertLessEqual(set(decide_module.EXIT_NOT_CHECKED), anchors)
+        self.assertLessEqual(set(checked), set(rows))
+
+    def test_a_rejected_exit_request_is_remembered_only_when_it_was_judged(self):
+        """E97: the bytes of a rejected request are kept so the same file left in place is ignored later; an outage
+        judged nothing, so it remembers nothing."""
+        ready = state0(rival_artifacts=survived(A, "1" * 40, "2" * 40))
+        meta = dict(self.exit_meta(ready), exit_request_sha256="9" * 64)
+        res = run_decide(meta, green_run(), None, None, {"getir": "success", "kos": "success"})
+        self.assertEqual((res["verdict"], res["state"]["rejected_exit_request"]), ("rejected", "9" * 64))
+        res = run_decide(meta, None, None, None, {"getir": "success", "kos": "failure"})
+        self.assertEqual((res["verdict"], res["state"]["rejected_exit_request"]), ("rejected", None))
+
+    def test_what_the_seed_cannot_check_is_not_the_founders_rejection(self):
+        """E162, `29b` "Ret hafızası": only what the Founder can fix is counted. Asking for the exit again before the
+        checks exist never makes it `not_learning`; a condition it can fix still counts."""
+        state = state0(rival_artifacts=survived(A, "1" * 40, "2" * 40))
+        for _ in range(3):
+            res = run_decide(self.exit_meta(state), green_run(), None, None, {"getir": "success", "kos": "success"})
+            state = res["state"]
+        self.assertEqual((res["state"]["reject_streaks"], res["learning"]["not_learning"]), ({}, []))
+        res = run_decide(self.exit_meta(state, done=range(1, 18)), green_run(), None, None,
+                         {"getir": "success", "kos": "success"})
+        self.assertEqual(res["state"]["reject_streaks"], {"exit_condition:not_all_micro_features_done": 1})
 
     def test_the_exit_block_carries_the_founders_repeat_count(self):  # D36
         res = run_decide(self.exit_meta(state0(rival_artifacts=survived(A, "1" * 40, "2" * 40), repeat_events=4)),
@@ -401,9 +479,9 @@ class ModuleLessRed(unittest.TestCase):
     def test_a_vector_group_the_seed_lacks_warns_on_a_code_push_and_never_counts_against_the_founder(self):
         """The group's vectors are the seed's to bring (`29a`, `29d`), never the Founder's: the push is judged on
         what exists and the operator is told; the exit waits for the group (`KindsAndExit`)."""
-        res = self.code(dict(green_run(), vector_groups_missing=["secrets"]), module_less_mfs=())
+        res = self.code(dict(green_run(), vector_groups_missing=["k0map"]), module_less_mfs=())
         self.assertEqual(res["verdict"], "accepted")
-        self.assertEqual(res["warnings"], ["vector_group_missing:secrets"])
+        self.assertEqual(res["warnings"], ["vector_group_missing:k0map"])
         self.assertEqual(res["state"]["reject_streaks"], {})
 
 
@@ -773,10 +851,10 @@ class PullGates(unittest.TestCase):
         self.assertEqual((run["tests"], run["vectors"], run["green"]), ([], [], False))
         self.assertNotIn("python -m unittest t13", calls)
 
-    def run_tests_with(self, meta, lazy=False, docker_fails=False):
+    def run_tests_with(self, meta, lazy=False, docker_fails=False, extra=()):
         """run-tests with containers that run the Founder's T13 for real enough: it imports its module, so it is
         green with `referee/ledger/chain.py` in the mounted tree and red without (``lazy``: green either way)."""
-        files = ("referee/ledger/chain.py", "referee/ledger/__init__.py", "referee/other.py")
+        files = ("referee/ledger/chain.py", "referee/ledger/__init__.py", "referee/other.py", *extra)
         pulled, vectors = self.stage_pulled(meta, files=files)
         deps = Path(self.tmp.name) / "deps"
         deps.mkdir(exist_ok=True)
@@ -832,11 +910,52 @@ class PullGates(unittest.TestCase):
 
     def test_run_tests_names_the_vector_groups_the_seed_still_lacks(self):  # `29d`
         manifest = {"tests": [{"id": "T13", "cmd": "python -m unittest t13", "stage": 0},
-                              {"id": "T38", "cmd": "python -m unittest t38", "stage": 0}], "done_mf": [1, 2],
+                              {"id": "T38", "cmd": "python -m unittest t38", "stage": 0},
+                              {"id": "T35", "cmd": "python -m unittest t35", "stage": 0}], "done_mf": [1, 2, 8],
                     "lockfiles": []}
+        # The referee has `secrets`, the Founder's seed does not have its page yet: the seed's gap, not a red push.
         run, _ = self.run_tests_with({"manifest": manifest, "module_less": []})
-        self.assertEqual(run["vector_groups_missing"], ["secrets"])
+        self.assertEqual(run["vector_groups_missing"], ["secrets", "k0map"])
         self.assertEqual({v["id"].split(".")[0] for v in run["vectors"]}, {"chain"})
+        run, _ = self.run_tests_with({"manifest": manifest, "module_less": []},
+                                     extra=("spec/tohum/29f-vektor-arayuzleri.md",))
+        self.assertEqual(run["vector_groups_missing"], ["k0map"])  # MF2's `secrets` came with the seed (E161)
+        self.assertEqual({v["id"].split(".")[0] for v in run["vectors"]}, {"chain", "secrets"})
+
+    def test_the_founders_containers_get_the_fixtures_and_never_the_expected_values(self):
+        """`vectors.json` holds every case's `expect`. Mounted at `/vec`, Founder code could open it, find the case its
+        argv and stdin name and print the answer: every data vector green with nothing implemented."""
+        manifest = {"tests": [{"id": "T13", "cmd": "python -m unittest t13", "stage": 0}], "done_mf": [1],
+                    "lockfiles": []}
+        pulled, _ = self.stage_pulled({"manifest": manifest, "module_less": [1]}, files=("referee/ledger/chain.py",))
+        deps = Path(self.tmp.name) / "deps"
+        deps.mkdir(exist_ok=True)
+        rival_dir = Path(self.tmp.name) / "rival_vec"
+        rival_dir.mkdir()
+        (rival_dir / "rival.json").write_text(json.dumps({"attempts": []}))
+        mounts = []
+
+        def make(boot, src, deps_dir, vec, locks):
+            mounts.append(Path(vec))
+            return FakeRunner(Path(vec), commands={"python -m unittest t13": (0, b"")})  # reads /vec from the mount
+        real = cli._runner
+        cli._runner = make
+        self.addCleanup(setattr, cli, "_runner", real)
+        out = Path(self.tmp.name) / "run_vec"
+        self.assertEqual(cli.main(["run-tests", "--root", str(self.referee), "--pulled", str(pulled), "--deps", str(deps),
+                                   "--work", str(Path(self.tmp.name) / "work_vec"), "--out", str(out)]), 0)
+        run = json.loads((out / "run.json").read_text())
+        self.assertEqual((len(run["vectors"]), [v["id"] for v in run["vectors"] if not v["ok"]]), (6, []))
+        self.assertEqual(len(mounts), 2)  # the pushed tree, then MF1's module-less copy
+        self.assertEqual(cli.main(["reproduce", "--root", str(self.referee), "--pulled", str(pulled), "--deps", str(deps),
+                                   "--rival", str(rival_dir), "--work", str(Path(self.tmp.name) / "work_repro"),
+                                   "--out", str(Path(self.tmp.name) / "repro_vec")]), 0)
+        self.assertEqual(len(mounts), 4)  # the head and the empty control tree
+        for vec in mounts:
+            self.assertFalse((vec / "vectors.json").exists(), vec)
+            self.assertTrue((vec / "chain" / "good.jsonl").is_file(), vec)
+            self.assertTrue((vec / "secrets" / "s1_added.patch").is_file(), vec)
+        self.assertTrue((self.referee / "vectors" / "vectors.json").is_file())  # the referee still reads it
 
     def test_reproducers_run_with_the_reproducer_timeout(self):  # L32
         pulled, vectors = self.stage_pulled({"manifest": None})

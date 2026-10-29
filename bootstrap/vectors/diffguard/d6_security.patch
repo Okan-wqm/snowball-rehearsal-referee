@@ -1,0 +1,7 @@
+diff --git a/packages/api/src/vault/store.ts b/packages/api/src/vault/store.ts
+index 1111111..2222222 100644
+--- a/packages/api/src/vault/store.ts
++++ b/packages/api/src/vault/store.ts
+@@ -1 +1 @@
+-export const a = 1;
++export const a = 2;

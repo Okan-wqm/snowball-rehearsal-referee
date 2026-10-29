@@ -1,0 +1,28 @@
+diff --git a/packages/api/package.json b/packages/api/package.json
+index 1111111..2222222 100644
+--- a/packages/api/package.json
++++ b/packages/api/package.json
+@@ -1 +1 @@
+-  "version": "0.0.0",
++  "version": "0.0.1",
+diff --git a/packages/api/package-lock.json b/packages/api/package-lock.json
+index 1111111..2222222 100644
+--- a/packages/api/package-lock.json
++++ b/packages/api/package-lock.json
+@@ -1 +1 @@
+-  "version": "0.0.0",
++  "version": "0.0.1",
+diff --git a/packages/api/.eslintrc.json b/packages/api/.eslintrc.json
+index 1111111..2222222 100644
+--- a/packages/api/.eslintrc.json
++++ b/packages/api/.eslintrc.json
+@@ -1 +1 @@
+-{"rules": {}}
++{"rules": {"no-console": "off"}}
+diff --git a/packages/api/.gitattributes b/packages/api/.gitattributes
+index 1111111..2222222 100644
+--- a/packages/api/.gitattributes
++++ b/packages/api/.gitattributes
+@@ -1 +1 @@
+-* text=auto
++* -text

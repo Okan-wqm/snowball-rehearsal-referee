@@ -28,14 +28,28 @@ class GitError(RuntimeError):
     pass
 
 
-def git(repo: Path, *args: str, stdin: bytes | None = None) -> bytes:
+def _env() -> dict[str, str]:
     full_env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     full_env.update({"GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null"})
+    return full_env
+
+
+def git(repo: Path, *args: str, stdin: bytes | None = None) -> bytes:
     proc = subprocess.run(["git", *SAFE_CONFIG, "-C", str(repo), *args], input=stdin,
-                          capture_output=True, env=full_env, check=False)
+                          capture_output=True, env=_env(), check=False)
     if proc.returncode != 0:
         raise GitError(f"git {args[0]} failed: {proc.stderr.decode('utf-8', 'replace')[:500]}")
     return proc.stdout
+
+
+def same_under(repo: Path, a: str, b: str, dirs: tuple[str, ...]) -> bool:
+    """Whether commits ``a`` and ``b`` hold the same entries under ``dirs``: names, contents and modes (an executable
+    bit too), as git compares them, so a tree with a name no archive can hold is compared all the same."""
+    proc = subprocess.run(["git", *SAFE_CONFIG, "-C", str(repo), "diff", "--quiet", "--no-ext-diff", "--no-textconv",
+                           "--no-renames", a, b, "--", *dirs], capture_output=True, env=_env(), check=False)
+    if proc.returncode not in (0, 1):
+        raise GitError(f"git diff failed: {proc.stderr.decode('utf-8', 'replace')[:500]}")
+    return proc.returncode == 0
 
 
 def fetch(dest: Path, remote: str, branch: str, base_sha: str) -> str:
@@ -122,9 +136,10 @@ def tree_paths(repo: Path, head: str) -> list[str]:
     return [p for _m, _s, p in _entries(repo, head)]
 
 
-def archive(repo: Path, head: str) -> bytes:
-    """Deterministic tar of the regular files at ``head``, read blob by blob."""
-    entries = [(m, s, p) for m, s, p in _entries(repo, head) if m in ("100644", "100755")]
+def archive(repo: Path, head: str, dirs: tuple[str, ...] = ()) -> bytes:
+    """Deterministic tar of the regular files at ``head``, read blob by blob; only those under ``dirs`` if given."""
+    entries = [(m, s, p) for m, s, p in _entries(repo, head) if m in ("100644", "100755")
+               and (not dirs or any(p.startswith(d + "/") for d in dirs))]
     batch = "".join(f"{s}\n" for _m, s, _p in entries).encode()
     out = git(repo, "cat-file", "--batch", stdin=batch)
     buf = io.BytesIO()

@@ -38,11 +38,12 @@ WORKFLOW = (Path(__file__).resolve().parents[1] / "workflow" / "bootstrap.yml").
 
 
 def state2(**kw):
-    s = {"schema": "snowball-bootstrap-state/2", "origin": "artifact", "last_accepted_sha": A,
+    s = {"schema": "snowball-bootstrap-state/3", "origin": "artifact", "last_accepted_sha": A,
          "last_evaluated_sha": None, "frozen_specs": {}, "rival_artifacts": [], "month": "2026-10",
          "month_spend_usd_micros": 1000, "stage_spend_usd_micros": 2000, "runs": 4, "reject_streaks": {},
          "repeat_events": 0, "outage_sha": None, "outage_count": 0, "outage_since": None, "outage_stop": None,
-         "rival_side_streak": 0, "open_refutations": [], "open_claims": [], "pending_rival": None}
+         "rival_side_streak": 0, "open_refutations": [], "open_claims": [], "pending_rival": None,
+         "rejected_exit_request": None}
     s.update(kw)
     return s
 
@@ -256,6 +257,8 @@ class E09Tautology(unittest.TestCase):
         (base / "rv").mkdir()
         (base / "rv" / "rival.json").write_text(json.dumps(refuted_by(attempt("c", {"cmd": "true", "expect_exit": 0}))))
         (base / "deps").mkdir()
+        (flow.referee / "vectors").mkdir()  # the seed's vectors: reproduce mounts their fixtures at /vec
+        (flow.referee / "vectors" / "vectors.json").write_text("{}")
         made = []
 
         def runner(boot, tree, deps, vectors, locks):
@@ -735,11 +738,12 @@ class E20OneAttemptPerArtifact(unittest.TestCase):
                 {"sha": "2" * 40, "outcome": "survived"}, {"sha": "3" * 40, "outcome": "unknown"}]
         res = run_decide(self.exit_meta(state2(rival_artifacts=arts)), green(), None, None,
                          {"getir": "success", "kos": "success"})
-        self.assertEqual(res["exit"]["missing"], ["rival_attempts:1<2"])
+        unchecked = [r for r in res["exit"]["missing"] if r.startswith("not_checked:")]  # E162: the seed's, not these
+        self.assertEqual(res["exit"]["missing"], ["rival_attempts:1<2"] + unchecked)
         arts.append({"sha": "4" * 40, "outcome": "survived"})
         res = run_decide(self.exit_meta(state2(rival_artifacts=arts)), green(), None, None,
                          {"getir": "success", "kos": "success"})
-        self.assertEqual((res["verdict"], res["exit"]["missing"]), ("accepted", []))
+        self.assertEqual(res["exit"]["missing"], unchecked)  # #rakip holds
         arts[0]["outcome"] = "refuted"
         res = run_decide(self.exit_meta(state2(rival_artifacts=arts)), green(), None, None,
                          {"getir": "success", "kos": "success"})
@@ -910,7 +914,9 @@ class E07OpenClaims(unittest.TestCase):
         meta["state_repro"] = [claim["id"]]
         res = run_decide(meta, green(), None, None, {"getir": "success", "kos": "success", "yeniden": "success"},
                          state_repro=[state_ran(claim["id"], "claim", False)])
-        self.assertEqual(res["verdict"], "accepted", res["reasons"])
+        # An open claim does not close the exit, it is listed; only what the seed cannot check yet does (E162).
+        self.assertTrue(res["reasons"] and all(r["ref"].startswith("not_checked:") for r in res["reasons"]),
+                        res["reasons"])
         self.assertEqual(res["exit"]["open_claims"], [{"id": claim["id"], "claim": claim["claim"], "first_head": C}])
 
 
@@ -1020,6 +1026,8 @@ class E08ProvenDefects(unittest.TestCase):
         (pulled / "meta.json").write_text(json.dumps(meta))
         (base / "rv").mkdir()  # no rival.json: the rival was not called on this head
         (base / "deps").mkdir()
+        (flow.referee / "vectors").mkdir()  # the seed's vectors: reproduce mounts their fixtures at /vec
+        (flow.referee / "vectors" / "vectors.json").write_text("{}")
         runner = FakeRunner(Path("."), commands={REP["cmd"]: (1, b'{"valid": true}\n'),
                                                  "python -m other": (1, b"")})
         with mock.patch.object(cli, "_runner", lambda boot, tree, deps, vectors, locks: runner if locks or
@@ -1159,14 +1167,24 @@ class StateSchemaV2(unittest.TestCase):
 
     def test_a_v1_state_is_carried_forward(self):
         new = st.validate(st.migrate(self.v1(), NOW))
-        self.assertEqual(new["schema"], "snowball-bootstrap-state/2")
+        self.assertEqual(new["schema"], "snowball-bootstrap-state/3")
         for key in ("last_accepted_sha", "last_evaluated_sha", "frozen_specs", "month", "month_spend_usd_micros",
                     "stage_spend_usd_micros", "runs", "reject_streaks", "repeat_events", "outage_sha", "outage_count"):
             self.assertEqual(new[key], self.v1()[key], key)
         self.assertEqual(new["rival_artifacts"], [{"sha": A, "outcome": "survived"}, {"sha": "1" * 40, "outcome": "unknown"}])
-        self.assertEqual((new["outage_since"], new["open_refutations"], new["open_claims"], new["pending_rival"]),
-                         (NOW, [], [], None))
+        self.assertEqual((new["outage_since"], new["open_refutations"], new["open_claims"], new["pending_rival"],
+                          new["rejected_exit_request"]), (NOW, [], [], None, None))
         self.assertEqual(st.migrate(new, NOW), new)  # a current state passes unchanged
+
+    def test_a_v2_state_is_carried_forward_with_no_rejected_exit_request(self):
+        """E97 added `rejected_exit_request`: a state of the schema before it keeps everything and remembers none."""
+        v2 = dict(st.initial(Summary(A, "b" * 64), "2026-10"), schema="snowball-bootstrap-state/2",
+                  reject_streaks={"test_failed:T13": 2}, open_claims=[claim_entry()])
+        del v2["rejected_exit_request"]
+        new = st.validate(st.migrate(v2, NOW))
+        self.assertEqual(new, dict(v2, schema="snowball-bootstrap-state/3", rejected_exit_request=None))
+        with self.assertRaises(ConfigError):
+            st.validate(dict(new, rejected_exit_request="not a hash"))
 
     def test_states_of_unknown_shape_are_still_refused(self):
         for bad in ({"schema": "snowball-bootstrap-state/9"}, dict(self.v1(), extra=1), "x",
@@ -1199,7 +1217,7 @@ class StateSchemaV2(unittest.TestCase):
         self.assertEqual(case.fetch_ok(), 0)
         got = json.loads((case.root / "state" / "state.json").read_text())
         self.assertEqual((got["schema"], got["reject_streaks"], got["frozen_specs"]),
-                         ("snowball-bootstrap-state/2", {"test_failed:T13": 2}, {"spec/asama-0": "e" * 64}))
+                         ("snowball-bootstrap-state/3", {"test_failed:T13": 2}, {"spec/asama-0": "e" * 64}))
 
 
 class PullOutputsWiring(unittest.TestCase):

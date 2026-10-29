@@ -16,6 +16,8 @@ for the operator at once (an isolation fault, E12).
 valid rival result whose reproducers could not run, so the retry reuses it (one attempt per artifact).
 ``open_refutations`` are proven defects, re-run on every later code head until an accepted head no longer
 shows them (E08); ``open_claims`` are refutations that were not reproduced (E07).
+``rejected_exit_request`` is the sha256 of the last rejected exit request's bytes: the same file left in place is
+ignored in later code pushes (`asama-0/10`, `26c`, E97).
 
 A state written by an older bootstrap is carried forward by ``migrate``, never thrown away (`tohum/25`).
 """
@@ -27,7 +29,8 @@ from typing import Any
 
 from .config import ConfigError, Summary
 
-SCHEMA = "snowball-bootstrap-state/2"
+SCHEMA = "snowball-bootstrap-state/3"
+SCHEMA_V2 = "snowball-bootstrap-state/2"
 SCHEMA_V1 = "snowball-bootstrap-state/1"
 SHA_RE = re.compile(r"^[0-9a-f]{40}\Z")
 HEX64_RE = re.compile(r"^[0-9a-f]{64}\Z")
@@ -41,17 +44,20 @@ MAX_OPEN_CLAIMS = 10
 KEYS_V1 = {"schema", "origin", "last_accepted_sha", "last_evaluated_sha", "frozen_specs", "rival_artifacts",
            "month", "month_spend_usd_micros", "stage_spend_usd_micros", "runs", "reject_streaks", "repeat_events",
            "outage_sha", "outage_count"}
-KEYS = KEYS_V1 | {"outage_since", "outage_stop", "rival_side_streak", "open_refutations", "open_claims",
-                  "pending_rival"}
+KEYS_V2 = KEYS_V1 | {"outage_since", "outage_stop", "rival_side_streak", "open_refutations", "open_claims",
+                     "pending_rival"}
+KEYS = KEYS_V2 | {"rejected_exit_request"}
 REFUTATION_KEYS = {"key", "claim", "evidence_refs", "reproducer", "first_head", "last_head"}
 CLAIM_KEYS = {"id", "claim", "evidence_refs", "reproducer", "observed", "first_head", "rewritten"}
 
 
 def initial(summary: Summary, month: str) -> dict[str, Any]:
+    """A state that starts at the last seed epoch's commit, or the setup seed's when none was delivered (`25`,
+    "Durum kaybolursa": the referee starts from the last seed epoch's commit)."""
     return {
         "schema": SCHEMA,
         "origin": "initial",
-        "last_accepted_sha": summary.seed_commit,
+        "last_accepted_sha": summary.epoch.commit if summary.epoch else summary.seed_commit,
         "last_evaluated_sha": None,
         "frozen_specs": {},
         "rival_artifacts": [],
@@ -69,6 +75,7 @@ def initial(summary: Summary, month: str) -> dict[str, Any]:
         "open_refutations": [],
         "open_claims": [],
         "pending_rival": None,
+        "rejected_exit_request": None,
     }
 
 
@@ -78,16 +85,19 @@ def migrate(state: Any, now: str) -> Any:
     v1 -> v2: books, streaks, frozen specs and the accepted SHA stay. A v1 artifact list cannot say which
     heads survived the rival, so only the last accepted head (accepted means it survived) counts as one; the
     others become ``unknown``, which the exit never counts. A running outage restarts its week now.
+    v2 -> v3: everything stays; no rejected exit request is remembered yet (E97).
     """
-    if not isinstance(state, dict) or state.get("schema") != SCHEMA_V1 or set(state) != KEYS_V1:
-        return state
-    new = dict(state, schema=SCHEMA)
-    arts = state["rival_artifacts"] if isinstance(state["rival_artifacts"], list) else []
-    new["rival_artifacts"] = [{"sha": sha, "outcome": "survived" if sha == state["last_accepted_sha"] else "unknown"}
-                              for sha in arts]
-    new.update(outage_since=now if state["outage_sha"] else None, outage_stop=None, rival_side_streak=0,
-               open_refutations=[], open_claims=[], pending_rival=None)
-    return new
+    if isinstance(state, dict) and state.get("schema") == SCHEMA_V1 and set(state) == KEYS_V1:
+        new = dict(state, schema=SCHEMA_V2)
+        arts = state["rival_artifacts"] if isinstance(state["rival_artifacts"], list) else []
+        new["rival_artifacts"] = [{"sha": sha, "outcome": "survived" if sha == state["last_accepted_sha"] else "unknown"}
+                                  for sha in arts]
+        new.update(outage_since=now if state["outage_sha"] else None, outage_stop=None, rival_side_streak=0,
+                   open_refutations=[], open_claims=[], pending_rival=None)
+        state = new
+    if isinstance(state, dict) and state.get("schema") == SCHEMA_V2 and set(state) == KEYS_V2:
+        state = dict(state, schema=SCHEMA, rejected_exit_request=None)
+    return state
 
 
 def _text(value: Any, limit: int) -> bool:
@@ -167,6 +177,8 @@ def validate(state: Any) -> dict[str, Any]:
             and isinstance(pending["rival"], dict) and pending["rival"].get("verdict") in ("refuted", "not_refuted")
             and isinstance(pending["rival"].get("attempts"), list)):
         raise ConfigError("previous state: bad pending_rival")
+    if state["rejected_exit_request"] is not None and not HEX64_RE.match(str(state["rejected_exit_request"])):
+        raise ConfigError("previous state: bad rejected_exit_request")
     return state
 
 

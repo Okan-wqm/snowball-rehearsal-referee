@@ -2,6 +2,7 @@
 
 import contextlib
 import datetime
+import hashlib
 import io
 import json
 import os
@@ -57,13 +58,13 @@ class Flow(unittest.TestCase):
             "stage_budgets": {"asama_0": {"rival_usd": 30}},
             "license_allowlist": ["MIT", "Apache-2.0"], "license_exceptions": {}}}))
         (self.referee / "control.json").write_text(json.dumps({"kill_switch": False, "budget_state": "ok"}))
-        self.state = {"schema": "snowball-bootstrap-state/2", "origin": "initial",
+        self.state = {"schema": "snowball-bootstrap-state/3", "origin": "initial",
                       "last_accepted_sha": self.seed_sha, "last_evaluated_sha": None, "frozen_specs": {},
                       "rival_artifacts": [], "month": "2026-10", "month_spend_usd_micros": 0,
                       "stage_spend_usd_micros": 0, "runs": 0, "reject_streaks": {}, "repeat_events": 0,
                       "outage_sha": None, "outage_count": 0, "outage_since": None,
                       "outage_stop": None, "rival_side_streak": 0, "open_refutations": [], "open_claims": [],
-                      "pending_rival": None}
+                      "pending_rival": None, "rejected_exit_request": None}
         self.n = 0
 
     def tearDown(self):
@@ -164,6 +165,44 @@ class Flow(unittest.TestCase):
         self.state["last_accepted_sha"] = sh(self.brain, "git", "rev-parse", "HEAD")
         commit(self.brain, {"snowball-tests.json": all_tests_manifest([1, 2])}, "mf1 and mf2")
         self.assertEqual(self.pull()["module_less"], [1, 2])
+
+    def test_a_rejected_exit_request_left_in_place_is_ignored_by_later_pushes(self):
+        """`asama-0/10`, `26c`, E97: an `exit-request.json` byte for byte a rejected request is ignored in later code
+        pushes. Every exit is rejected while the seed cannot check all of (A) (E162), so without the rule each later
+        code push was `exit_request_not_alone` and the third stopped the Founder as not learning."""
+        self.freeze_stage0()
+        jobs = {"getir": "success", "kos": "success", "cagir": "success", "yeniden": "skipped"}
+        commit(self.brain, {"referee/ledger/chain.py": "x = 1\n", "snowball-tests.json": all_tests_manifest([1])}, "mf1")
+        meta = self.pull()
+        self.assertEqual(self.finish(meta, run=self.green_run(meta), rival=self.rival_ok(), jobs=jobs)["verdict"],
+                         "accepted")
+        accepted, frozen = self.state["last_accepted_sha"], self.state["frozen_specs"]["spec/asama-0"]
+        request = json.dumps({"stage": 0, "sha": accepted, "spec_sha256": frozen})
+        commit(self.brain, {"exit-request.json": request}, "exit request")
+        meta = self.pull()
+        self.assertEqual(meta["kind"], "exit")
+        exit_head = meta["head"]
+        result = self.finish(meta, run=self.green_run(meta), jobs={"getir": "success", "kos": "success"})
+        self.assertEqual(result["verdict"], "rejected")
+        remembered = result["state"]["rejected_exit_request"]
+        for n in range(3):  # code pushes that leave the request where it is, each red
+            commit(self.brain, {"referee/ledger/chain.py": f"x = {n + 2}\n"}, f"code {n}")
+            meta = self.pull()
+            self.assertEqual((meta["kind"], meta["pre_reasons"]), ("code", []), n)
+            run = self.green_run(meta)
+            run["tests"][0]["ok"], run["green"] = False, False
+            result = self.finish(meta, run=run, jobs=jobs)
+            self.assertEqual(result["verdict"], "rejected", n)
+        self.assertNotIn("exit_request_not_alone:", result["state"]["reject_streaks"])
+        self.assertNotIn("exit_request_not_alone:", result["learning"]["not_learning"])
+        self.assertEqual(remembered, hashlib.sha256(request.encode()).hexdigest())
+        # Other bytes are a new request: beside code it is still not alone.
+        commit(self.brain, {"exit-request.json": request + " ", "referee/ledger/chain.py": "x = 9\n"}, "new request")
+        self.assertIn("exit_request_not_alone", self.pull()["pre_reasons"])
+        # The same bytes asked for alone (ledger rows aside) are an exit request again, not a code push: judged again.
+        sh(self.brain, "git", "reset", "-q", "--hard", exit_head)
+        commit(self.brain, {"founder-ledger.jsonl": '{"kind":"session"}\n'}, "the same request, asked again")
+        self.assertEqual(self.pull()["kind"], "exit")
 
     def test_a_broken_stage_table_stops_the_run_and_is_never_the_founders_rejection(self):
         """`29e`: a table whose order (`calls`) or shape is wrong is not loaded; the seed is the operator's to fix."""
@@ -500,12 +539,21 @@ class Flow(unittest.TestCase):
         commit(self.brain, {"exit-request.json": json.dumps({"stage": 0, "sha": exit_sha, "spec_sha256": frozen})},
                "exit request again")
 
-        # One more independently reviewed artefact, then the exit request passes.
+        # One more independently reviewed artefact: every condition the code checks passes, and what it cannot check
+        # yet keeps the exit closed (E162) ...
         self.state["rival_artifacts"].append({"sha": "f" * 40, "outcome": "survived"})
         self.state["last_accepted_sha"] = exit_sha
         self.state["last_evaluated_sha"] = None
+        saved = json.loads(json.dumps(self.state))
         meta = self.pull()
         result = self.finish(meta, run=self.green_run(meta), jobs={"getir": "success", "kos": "success"})
+        self.assertEqual((result["verdict"], result["exit"]["transferable"]), ("rejected", False))
+        self.assertTrue(all(r["kind"] == "exit_condition" and r["ref"].startswith("not_checked:")
+                            for r in result["reasons"]), result["reasons"])
+        # ... so the import is measured as it will run once those checks exist and pass.
+        self.state = saved
+        with mock.patch("snowball_bootstrap.decide.EXIT_NOT_CHECKED", ()):
+            result = self.finish(meta, run=self.green_run(meta), jobs={"getir": "success", "kos": "success"})
         self.assertEqual(result["verdict"], "accepted", result["reasons"])
         self.assertTrue(result["exit"]["transferable"])
         self.assertEqual(result["exit"]["repeat_events"], 0)
