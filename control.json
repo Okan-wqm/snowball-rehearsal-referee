@@ -1,4 +1,4 @@
 {
-  "kill_switch": false,
+  "kill_switch": true,
   "budget_state": "ok"
 }
