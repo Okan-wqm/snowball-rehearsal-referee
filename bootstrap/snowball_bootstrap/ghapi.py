@@ -1,4 +1,5 @@
-"""Minimal GitHub REST calls the pull job needs: find and download the latest state artifact."""
+"""Minimal GitHub REST calls the pull job needs: find and download the latest state artifact, and look at the
+newest failed run of this workflow (E13). The job holds `actions: read` and nothing else."""
 
 from __future__ import annotations
 
@@ -37,6 +38,35 @@ def latest_artifact(repo: str, name: str, token: str, branch: str = "main") -> d
                   and (a.get("workflow_run") or {}).get("head_branch") == branch]
     candidates.sort(key=lambda a: a.get("created_at", ""), reverse=True)
     return candidates[0] if candidates else None
+
+
+def _get_json(path: str, query: dict, token: str) -> dict:
+    url = f"{_api_base()}/repos/{path}?{urllib.parse.urlencode(query)}"
+    with urllib.request.urlopen(_request(url, token), timeout=60) as resp:
+        data = json.load(resp)
+    return data if isinstance(data, dict) else {}
+
+
+def latest_failed_run(repo: str, token: str, workflow: str = "bootstrap.yml", branch: str = "main") -> dict | None:
+    """The newest run of this workflow on `branch` that ended in failure, or None."""
+    data = _get_json(f"{repo}/actions/workflows/{workflow}/runs", {"branch": branch, "status": "failure",
+                                                                    "per_page": 1}, token)
+    runs = [r for r in data.get("workflow_runs", []) if isinstance(r, dict)]
+    return runs[0] if runs else None
+
+
+def run_jobs(repo: str, run_id: int, token: str) -> dict[str, str | None]:
+    """Each job of a run by name, with its conclusion."""
+    data = _get_json(f"{repo}/actions/runs/{int(run_id)}/jobs", {"per_page": 50}, token)
+    return {j.get("name"): j.get("conclusion") for j in data.get("jobs", []) if isinstance(j, dict)}
+
+
+def run_artifact(repo: str, run_id: int, name: str, token: str) -> dict | None:
+    """A run's unexpired artifact of this exact name, or None."""
+    data = _get_json(f"{repo}/actions/runs/{int(run_id)}/artifacts", {"name": name, "per_page": 10}, token)
+    found = [a for a in data.get("artifacts", []) if isinstance(a, dict) and a.get("name") == name
+             and not a.get("expired")]
+    return found[0] if found else None
 
 
 def download_zip(repo: str, artifact_id: int, token: str) -> bytes:

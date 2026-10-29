@@ -145,6 +145,19 @@ def check_control(root: Path) -> None:
         raise ConfigError("control.json: budget_state is not 'ok'")
 
 
+WAIVER_RE = re.compile(r"^[0-9a-f]{16}\Z")
+
+
+def load_waivers(root: Path) -> list[str]:
+    """Proven defects the operator closed by hand: ``control.json`` ``waived_refutations``, a list of the
+    16-character reproducer keys a rejection names as ``repro:<key>`` (`tohum/29`, E08). Optional."""
+    data = _load(root / "control.json")
+    waived = data.get("waived_refutations", []) if isinstance(data, dict) else []
+    if not isinstance(waived, list) or not all(isinstance(w, str) and WAIVER_RE.match(w) for w in waived):
+        raise ConfigError("control.json.waived_refutations must be a list of 16-character reproducer keys")
+    return sorted(set(waived))
+
+
 SPDX_ID_RE = re.compile(r"^[A-Za-z0-9.+-]{1,64}\Z")
 PIN_RE = re.compile(r"^[a-z0-9][a-z0-9-]*==[A-Za-z0-9.+!-]+\Z")
 

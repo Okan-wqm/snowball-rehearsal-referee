@@ -62,6 +62,18 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(classify([".github/workflows/x.yml"]), ("rejected", ["root_workflow_modified"]))
         self.assertEqual(classify(["referee/.github/workflows/x.yml"]), ("code", []))
 
+    def test_the_founders_ledger_and_reports_are_neither_spec_nor_code(self):
+        # A spec request that also appends the Founder's ledger is still a spec request, not a mixed push.
+        self.assertEqual(classify(["spec/asama-0/x.md", "founder-ledger.jsonl"]), ("spec", []))
+        self.assertEqual(classify(["referee/a.py", "reports/r1.json", "founder-ledger.jsonl"]), ("code", []))
+        # Nothing but the Founder's records: nothing to judge.
+        self.assertEqual(classify(["founder-ledger.jsonl"]), ("none", []))
+        self.assertEqual(classify(["founder-ledger.jsonl", "reports/a/b.json"]), ("none", []))
+        # Only the root ledger and the root reports/ directory; look-alikes are code, the seed stays the seed.
+        self.assertEqual(classify(["referee/founder-ledger.jsonl"]), ("code", []))
+        self.assertEqual(classify(["reportsx/a.json"]), ("code", []))
+        self.assertEqual(classify(["founder-ledger.jsonl", "seed/x.py"]), ("rejected", ["seed_modified"]))
+
     def test_spec_dirs(self):
         self.assertEqual(spec_stage_dirs(["spec/asama-0/a.md", "spec/asama-1/b.md", "spec/INDEX.md"]),
                          ["spec/asama-0", "spec/asama-1"])

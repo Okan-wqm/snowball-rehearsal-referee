@@ -15,6 +15,9 @@ from typing import Any
 from .container import Runner
 
 CWD = "referee"
+# `docker run` exits with this when docker itself failed. Since E01 the container turns a command's own 125 into 1,
+# so 125 here never comes from the Founder's code: such a vector is the sandbox failing, not a wrong answer (E141).
+DOCKER_ERROR = 125
 
 
 def _last_json(stdout: bytes) -> dict[str, Any] | None:
@@ -46,10 +49,12 @@ class VectorRun:
         self.timeout_s = timeout_s
         self.results: list[dict[str, Any]] = []
         self.fault = ""
+        self.exit: int | None = None  # the exit code of the last try of the last call
 
     def call(self, cmd: str, stdin: bytes = b"") -> dict[str, Any] | None:
         for _ in range(2):  # a container the host killed under load answers nothing: ask again before blaming the judge
             res = self.runner.run(cmd, cwd=CWD, stdin=stdin, timeout_s=self.timeout_s)
+            self.exit = res.exit_code
             if not res.timed_out and res.stdout.strip():
                 self.fault = ""
                 return _last_json(res.stdout)
@@ -61,7 +66,8 @@ class VectorRun:
         if not ok and self.fault:
             detail = f"{detail} | {self.fault}"
             self.fault = ""
-        self.results.append({"id": vid, "ok": ok, "detail": detail[:200]})
+        self.results.append({"id": vid, "ok": ok, "detail": detail[:200], "exit": self.exit,
+                             "runner_fault": not ok and self.exit == DOCKER_ERROR})
 
 
 def _chain(run: VectorRun, spec: dict[str, Any]) -> None:

@@ -11,19 +11,21 @@ import os
 import subprocess
 import sys
 import tarfile
+import tempfile
 import zipfile
 from pathlib import Path
 from typing import Any
 
 from . import canon, config, ghapi, gitio, licenses, state as st
-from .classify import classify, spec_stage_dirs
+from .classify import classify, is_founder_record, spec_stage_dirs
 from .container import DockerRunner
 from .controls import run_controls
-from .decide import OUTAGE_RETRY_LIMIT, decide
+from .decide import OUTAGE_GIVE_UP_DAYS, OUTAGE_RETRY_LIMIT, decide, utc_now
 from .importer import ImportErrorStop, run_import, verify_signature
 from .manifest import ManifestError, check_stage0, parse_lockfile, parse_manifest
-from .reproduce import run_reproducers
-from .rival import build_context, extract_seat_prompt, resolve_claude, run_rival
+from .reproduce import run_reproducers, run_state_reproducers
+from .rival import (HIDDEN_NAMES, RivalOutcome, build_context, extract_seat_prompt, hidden, resolve_claude,
+                    run_rival)
 from .treehash import path_problem, TreeError, extract, is_utf8_name, iter_files, shown, tree_hash
 from .vectors import run_vectors
 
@@ -135,11 +137,41 @@ def cmd_config_value(args: argparse.Namespace) -> int:
     return 0
 
 
+def _when(text: str) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(str(text).replace("Z", "+00:00"))
+
+
+def _unsigned_rival_run(repo: str, token: str, head: str, signed_at: datetime.datetime,
+                        now: datetime.datetime) -> bool:
+    """E13, W4: the newest failed run judged this head with the rival (`cagir` succeeded) but never signed (`yaz`
+    failed), and no state was signed since. Running it again would call the rival again, so it waits a day."""
+    try:
+        run = ghapi.latest_failed_run(repo, token)
+        if run is None or _when(run["created_at"]) <= signed_at:
+            return False
+        if now - _when(run.get("updated_at") or run["created_at"]) >= datetime.timedelta(days=1):
+            return False  # a day has passed: one more try
+        jobs = ghapi.run_jobs(repo, run["id"], token)
+        if jobs.get("cagir") != "success" or jobs.get("yaz") not in ("failure", "timed_out"):
+            return False
+        art = ghapi.run_artifact(repo, run["id"], "rival", token)
+        if art is None:
+            return False
+        with zipfile.ZipFile(io.BytesIO(ghapi.download_zip(repo, art["id"], token))) as zf:
+            rival_doc = json.loads(tar_file(zf.read("rival.tar"), "rival.json") or b"{}")
+        return isinstance(rival_doc, dict) and rival_doc.get("head") == head
+    except Exception as exc:  # the runs API only spares a rival call here: when it fails, judge as before
+        print(f"::warning::poll could not read the previous failed run: {type(exc).__name__}")
+        return False
+
+
 def cmd_poll(args: argparse.Namespace) -> int:
     """Cheap first look: is there anything new to judge? Installs nothing and verifies nothing.
 
     The previous state is read unverified here only to decide whether to skip; skipping is the
     safe outcome. Anything that is evaluated goes through ``fetch-state``, which verifies it.
+    A commit that keeps failing is parked (one retry a day), stops visibly after a week or at once after an
+    isolation fault (E12); a run the operator starts by hand (`workflow_dispatch`) tries it anyway.
     """
     root, out = Path(args.root), Path(args.out)
     boot = config.load_bootstrap(root)
@@ -156,19 +188,36 @@ def cmd_poll(args: argparse.Namespace) -> int:
     with zipfile.ZipFile(io.BytesIO(ghapi.download_zip(repo, art["id"], token))) as zf:
         for name in ("result.json", "result.json.sigstore.json"):
             (prev_dir / name).write_bytes(zf.read(name))
+    now = datetime.datetime.now(datetime.timezone.utc)
+    dispatched = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"  # the operator asked for this run
     try:
         prev = read_json(prev_dir / "result.json")["state"]
         seen = {prev["last_accepted_sha"], prev["last_evaluated_sha"]}
-        parked = prev.get("outage_sha") if int(prev.get("outage_count", 0)) >= OUTAGE_RETRY_LIMIT else None
+        failing = prev.get("outage_sha") == head
+        parked = failing and int(prev.get("outage_count", 0)) >= OUTAGE_RETRY_LIMIT
+        stopped = prev.get("outage_stop") if failing else None
+        since = prev.get("outage_since")
+        given_up = bool(parked and since and now - _when(since) >= datetime.timedelta(days=OUTAGE_GIVE_UP_DAYS))
     except (KeyError, TypeError, ValueError, AttributeError, json.JSONDecodeError):
-        seen, parked = set(), None
-    created = datetime.datetime.fromisoformat(art["created_at"].replace("Z", "+00:00"))
-    age = datetime.datetime.now(datetime.timezone.utc) - created
-    waiting = parked == head and age < datetime.timedelta(days=1)  # parked: one retry a day, not one an hour
+        seen, parked, stopped, given_up = set(), False, None, False
+    created = _when(art["created_at"])
+    age = now - created
+    reupload = age.days >= 7
+    if head not in seen and not dispatched and (stopped or given_up):
+        why = f"an isolation fault ({stopped})" if stopped else f"infrastructure failures for {OUTAGE_GIVE_UP_DAYS} days"
+        print(f"::error title=Commit stopped for the operator::{head} stopped after {why}. Fix the cause, then run "
+              "the workflow by hand (workflow_dispatch) to try it again.")
+        output(skip=True, reupload=reupload, head=head)
+        return 1
+    waiting = parked and age < datetime.timedelta(days=1) and not dispatched  # parked: one retry a day
     if waiting:
         print(f"::notice title=Commit parked::{head} failed {OUTAGE_RETRY_LIMIT} times for infrastructure "
               "reasons and is retried once a day")
-    output(skip=head in seen or waiting, reupload=age.days >= 7, head=head)
+    unsigned = head not in seen and not waiting and not dispatched and _unsigned_rival_run(repo, token, head, created, now)
+    if unsigned:
+        print(f"::notice title=Result never signed::{head} was judged by the rival but `yaz` failed; it is retried "
+              "once a day instead of calling the rival every hour")
+    output(skip=head in seen or waiting or unsigned, reupload=reupload, head=head)
     return 0
 
 
@@ -206,7 +255,11 @@ def cmd_fetch_state(args: argparse.Namespace) -> int:
                 (prev_dir / name).write_bytes(zf.read(name))
         verify_signature(prev_dir / "result.json", prev_dir / "result.json.sigstore.json",
                          args.identity, args.sigstore_python)
-        prev = st.rollover(st.validate(read_json(prev_dir / "result.json")["state"]), month_now())
+        raw = read_json(prev_dir / "result.json")["state"]
+        carried = st.migrate(raw, utc_now())  # an older schema is carried forward, never thrown away (`25`)
+        if carried is not raw:
+            summary(f"The previous state ({raw.get('schema')}) was carried forward to {st.SCHEMA}.")
+        prev = st.rollover(st.validate(carried), month_now())
         created = datetime.datetime.fromisoformat(art["created_at"].replace("Z", "+00:00"))
         reupload = (datetime.datetime.now(datetime.timezone.utc) - created).days >= 7
     write_json(out / "state.json", prev)
@@ -228,19 +281,20 @@ def cmd_pull(args: argparse.Namespace) -> int:
     meta = _pull_meta(head, base, prev)
     if head in (base, prev["last_evaluated_sha"]):
         write_json(out / "meta.json", meta)
-        output(skip=True, kind="none", head=head, run_tests=False, run_rival=False)
+        output(skip=True, kind="none", head=head, run_tests=False, run_rival=False, repro=False)
         return 0
+    waived = config.load_waivers(root)
     try:
-        return _pull_classify(boot, policy, summary_cfg, prev, repo, base, head, meta, out)
+        return _pull_classify(boot, policy, summary_cfg, prev, repo, base, head, meta, out, waived)
     except (ValueError, TypeError, KeyError, IndexError, AttributeError, RecursionError) as exc:
         # Content of the commit broke a step that should have named it. Rejecting it is the only safe
         # answer that does not wedge the referee: without a signed result the same head comes back every
         # hour and nothing is ever parked (E02). Git, network and operator-file errors still stop the run.
         print(f"::warning::pull could not classify {head}: {type(exc).__name__}: {str(exc)[:200]!r}")
         meta = _pull_meta(head, base, prev)
-        meta.update(kind="rejected", pre_reasons=["pull_error"])
+        meta.update(kind="rejected", pre_reasons=["pull_error"], waived=waived)
         write_json(out / "meta.json", meta)
-        output(skip=False, kind="rejected", head=head, run_tests=False, run_rival=False)
+        output(skip=False, kind="rejected", head=head, run_tests=False, run_rival=False, repro=False)
         return 0
 
 
@@ -248,7 +302,8 @@ def _pull_meta(head: str, base: str, prev: dict[str, Any]) -> dict[str, Any]:
     return {"schema": "snowball-bootstrap-pull/1", "head": head, "base": base, "state": prev,
             "kind": "none", "changed": [], "pre_reasons": [], "evaluate": True,
             "run_tests": False, "run_rival": False, "manifest": None, "exit_request": None,
-            "referee_tree_sha256": None, "spec_dir_hashes": {}}
+            "referee_tree_sha256": None, "spec_dir_hashes": {}, "state_repro": [], "reuse_rival": False,
+            "waived": []}
 
 
 def _well_formed_exit_request(req: Any) -> bool:
@@ -260,7 +315,7 @@ def _well_formed_exit_request(req: Any) -> bool:
 
 def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: config.Summary,
                    prev: dict[str, Any], repo: Path, base: str, head: str, meta: dict[str, Any],
-                   out: Path) -> int:
+                   out: Path, waived: list[str]) -> int:
     pre: list[str] = []
     base_ok = gitio.has_commit(repo, base)
     if not base_ok:
@@ -274,12 +329,13 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     elif any(path_problem(p) for p in names):
         pre.append("unsafe_path")  # a control character, a .git component, ':' or '\\' (E03, E04)
     changed = [shown(p) for p in changed]
-    if changed == [EXIT_FILE]:
+    judged = [p for p in changed if not is_founder_record(p)]  # the Founder's ledger rows may ride along
+    if judged == [EXIT_FILE]:
         kind = "exit"
     else:
         kind, reasons = classify(changed)
         pre += reasons
-        if EXIT_FILE in changed:
+        if EXIT_FILE in judged:
             pre.append("exit_request_not_alone")
     if {"base_unreachable", "history_rewritten", "non_utf8_path", "unsafe_path"} & set(pre):  # nothing can be read safely
         kind = "rejected"
@@ -352,17 +408,28 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
                 pre.append(f"spec_dir_empty:{d}")
 
     needs_rival = kind in ("spec", "code")
-    if needs_rival and remaining_budget(policy, prev) <= 0:
+    # A valid rival result whose reproducers never ran is reused for the same head, not asked for again (E20).
+    pending = prev.get("pending_rival")
+    reuse = needs_rival and isinstance(pending, dict) and pending.get("sha") == head
+    if needs_rival and not reuse and remaining_budget(policy, prev) <= 0:
         # Recorded once for this commit; re-evaluating it every poll would only churn signatures.
         # The founder pushes again after the month or the stage budget changes.
         pre.append("budget")
-    meta.update(kind=kind, changed=changed, pre_reasons=sorted(set(pre)))
+    meta.update(kind=kind, changed=changed, pre_reasons=sorted(set(pre)), waived=waived)
     meta["run_tests"] = kind in ("code", "exit") and not pre
-    meta["run_rival"] = needs_rival and not pre
+    meta["run_rival"] = needs_rival and not pre and not reuse
+    meta["reuse_rival"] = reuse and not pre
+    # Every code head (an exit request too) is checked again for the proven defects and open claims the state
+    # keeps (E07, E08): the `yeniden` job runs them even when the rival finds nothing or is not called.
+    if meta["run_tests"]:
+        meta["state_repro"] = ([e["key"] for e in prev.get("open_refutations", []) if e["key"] not in waived]
+                               + [c["id"] for c in prev.get("open_claims", []) if c["reproducer"] is not None])
+    repro = bool(meta["state_repro"]) or (meta["reuse_rival"] and any("reproducer" in a for a in pending["rival"]["attempts"]))
     write_json(out / "meta.json", meta)
     (out / "brain.tar").write_bytes(tar_bytes)
-    (out / "diff.patch").write_text(gitio.diff_text(repo, base, head) if base_ok else "", encoding="utf-8")
-    output(skip=False, kind=kind, head=head, run_tests=meta["run_tests"], run_rival=meta["run_rival"])
+    (out / "diff.patch").write_text(gitio.diff_text(repo, base, head, exclude=HIDDEN_NAMES) if base_ok else "",
+                                    encoding="utf-8")
+    output(skip=False, kind=kind, head=head, run_tests=meta["run_tests"], run_rival=meta["run_rival"], repro=repro)
     return 0
 
 
@@ -451,31 +518,59 @@ def cmd_rival(args: argparse.Namespace) -> int:
     tree = Path(args.work) / "tree"
     extract(tar_bytes, tree, boot.limits.max_tree_bytes)
     seat = extract_seat_prompt((root / "seats" / SEATS_FILE).read_text(encoding="utf-8"))
-    context = build_context(meta["kind"], meta["base"], meta["head"], meta["changed"],
-                            (pulled / "diff.patch").read_text(encoding="utf-8"), _pages(tar_bytes, meta["kind"]))
-    outcome = run_rival(boot.rival, claude_bin=resolve_claude(args.claude), seat_prompt=seat, context=context,
-                        tree_root=tree, budget_usd_micros=remaining_budget(policy, meta["state"]),
-                        max_prompt_chars=boot.limits.max_prompt_chars)
-    result = outcome.as_dict()
-    write_json(out / "rival.json", result)
+    changed = [p for p in meta["changed"] if not hidden(p)]  # the Founder's ledger is not the rival's to see (E10)
+    context = build_context(meta["kind"], meta["base"], meta["head"], changed,
+                            (pulled / "diff.patch").read_text(encoding="utf-8"), _pages(tar_bytes, meta["kind"]),
+                            open_claims=meta["state"].get("open_claims", []))
+    outcome = RivalOutcome()
+    try:
+        run_rival(boot.rival, claude_bin=resolve_claude(args.claude), seat_prompt=seat, context=context,
+                  tree_root=tree, budget_usd_micros=remaining_budget(policy, meta["state"]),
+                  max_prompt_chars=boot.limits.max_prompt_chars, out=outcome)
+    finally:  # on every path, an interrupt too: what the run spent must reach `decide` (E13)
+        result = outcome.as_dict()
+        result["head"] = meta["head"]  # `poll` reads it from a run whose result was never signed
+        write_json(out / "rival.json", result)
     output(has_repro=result["reproducer_count"] > 0 and result["verdict"] in ("refuted", "not_refuted"))
     outage = [r for r in result["reasons"] if str(r).startswith("api_error")]
     if outage:  # the job stays green so rival.json reaches `decide`, which books the cost and retries the commit
         print(f"::warning title=The seed rival could not run::{', '.join(outage)}")
+    rejected = [r for r in result["reasons"] if str(r).startswith("request_rejected")]
+    if rejected:
+        print(f"::warning title=The API rejected the rival's request::{', '.join(rejected)}")
     return 0
 
 
 def cmd_reproduce(args: argparse.Namespace) -> int:
+    """The rival's reproducers (of this run, or of the pending result a retry reuses, E20) and the state's
+    (proven defects and open claims, E07 E08), each on the head and, if it showed, on an empty tree (E09)."""
     root, pulled, out = Path(args.root), Path(args.pulled), Path(args.out)
     boot = config.load_bootstrap(root)
     meta = read_json(pulled / "meta.json")
-    rival = read_json(Path(args.rival) / "rival.json")
-    src = Path(args.work) / "src"
+    state = meta.get("state") or {}
+    rival_file = Path(args.rival) / "rival.json"
+    rival = read_json(rival_file) if rival_file.exists() else None
+    if rival is None and meta.get("reuse_rival"):
+        rival = (state.get("pending_rival") or {}).get("rival")
+    attempts = rival["attempts"] if rival and rival.get("verdict") in ("refuted", "not_refuted") else []
+    work = Path(args.work)
+    src = work / "src"
     extract((pulled / "brain.tar").read_bytes(), src, boot.limits.max_tree_bytes)
+    work.mkdir(parents=True, exist_ok=True)
+    empty = Path(tempfile.mkdtemp(prefix="control-", dir=work))  # the control tree: nothing in it at all
+    empty.chmod(0o755)  # mkdtemp makes it 0700; the container's user (65534) must be able to copy it like /src
     locks = (meta.get("manifest") or {}).get("lockfiles", [])
     runner = _runner(boot, src, Path(args.deps), root / "vectors", locks)
-    repro = run_reproducers(runner, rival["attempts"], boot.limits.reproducer_timeout_s)
-    write_json(out / "repro.json", {"results": repro})
+    control = _runner(boot, empty, Path(args.deps), root / "vectors", [])
+    timeout = boot.limits.reproducer_timeout_s
+    repro = run_reproducers(runner, attempts, timeout, control=control)
+    wanted = set(meta.get("state_repro") or [])
+    entries = ([{"key": e["key"], "source": "refutation", "reproducer": e["reproducer"]}
+                for e in state.get("open_refutations", []) if e["key"] in wanted]
+               + [{"key": c["id"], "source": "claim", "reproducer": c["reproducer"]}
+                  for c in state.get("open_claims", []) if c["id"] in wanted and c["reproducer"] is not None])
+    state_results = run_state_reproducers(runner, entries, timeout, control=control)
+    write_json(out / "repro.json", {"results": repro, "state": state_results})
     return 0
 
 
@@ -495,7 +590,8 @@ def cmd_decide(args: argparse.Namespace) -> int:
     repro_doc = optional(args.repro, "repro.json")
     jobs = dict(item.split("=", 1) for item in args.job or [])
     result = decide(meta, run, rival, None if repro_doc is None else repro_doc["results"], jobs,
-                    policy.rival_min_attempts, policy.repeat_reject_limit)
+                    policy.rival_min_attempts, policy.repeat_reject_limit,
+                    state_repro=None if repro_doc is None else repro_doc.get("state", []), now=utc_now())
     result["run"] = {"id": os.environ.get("GITHUB_RUN_ID", "local"),
                      "attempt": os.environ.get("GITHUB_RUN_ATTEMPT", "1")}
     write_json(out / "result.json", result)
@@ -505,9 +601,22 @@ def cmd_decide(args: argparse.Namespace) -> int:
         lines.append(f"- reason: `{r['kind']}` {r.get('test_id', '')} `{r['ref']}`")
     for sig in result["learning"]["not_learning"]:
         lines.append(f"- **not learning**: `{sig}` rejected {policy.repeat_reject_limit} or more times in a row")
+    for warning in result["warnings"]:
+        lines.append(f"- **warning**: `{warning}`")
     if result["exit"].get("transferable"):
         lines.append(f"- **transferable**: referee tree `{result['exit']['referee_tree_sha256']}`")
     summary("\n".join(lines))
+    # What only the operator can act on is said where GitHub shows it; the run itself stays green and signs.
+    streak = [w for w in result["warnings"] if w.startswith("rival_side_streak")]
+    if streak:
+        print(f"::warning title=Rival-side failures::{streak[0]}: the rival itself failed on consecutive pushes "
+              "(model, verdict, refusal, budget); none of it counts against the Founder")
+    rejected = [w for w in result["warnings"] if w.startswith("request_rejected")]
+    if rejected:
+        print(f"::warning title=Request rejected by the API::{', '.join(rejected)}")
+    if result["state"].get("outage_stop"):
+        print(f"::error title=Stopped for the operator::{result['state']['outage_stop']} on {result['head']}: the "
+              "referee will not retry it by itself")
     output(verdict=result["verdict"])
     return 0
 

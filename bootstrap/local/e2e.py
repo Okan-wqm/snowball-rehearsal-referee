@@ -34,7 +34,8 @@ BOOT = HERE.parent
 SEED = BOOT.parent
 sys.path.insert(0, str(BOOT))
 
-from snowball_bootstrap import cli, gitio  # noqa: E402
+from snowball_bootstrap import cli, gitio, state as st  # noqa: E402
+from snowball_bootstrap.config import Summary  # noqa: E402
 from snowball_bootstrap.decide import decide  # noqa: E402
 from snowball_bootstrap.rival import RivalOutcome  # noqa: E402
 from snowball_bootstrap.treehash import tree_hash  # noqa: E402
@@ -99,11 +100,7 @@ def main() -> int:
         "monthly_cap_usd": 300, "stage_params": {"rival_min_attempts": 5, "repeat_reject_limit": 3},
         "stage_budgets": {"asama_0": {"rival_usd": 30}}, "license_allowlist": allow, "license_exceptions": {}}}))
 
-    state = json.loads(json.dumps({"schema": "snowball-bootstrap-state/1", "origin": "initial",
-                                   "last_accepted_sha": seed_sha, "last_evaluated_sha": None, "frozen_specs": {},
-                                   "rival_artifacts": [], "month": cli.month_now(), "month_spend_usd_micros": 0,
-                                   "stage_spend_usd_micros": 0, "runs": 0, "reject_streaks": {},
-                                   "repeat_events": 0, "outage_sha": None, "outage_count": 0}))
+    state = st.initial(Summary(seed_sha, "0" * 64), cli.month_now())
 
     def pull(n: int) -> tuple[dict, Path]:
         (work / f"state{n}.json").write_text(json.dumps(state))

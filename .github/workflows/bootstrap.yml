@@ -58,6 +58,7 @@ jobs:
       kind: ${{ steps.pull.outputs.kind }}
       run_tests: ${{ steps.pull.outputs.run_tests }}
       run_rival: ${{ steps.pull.outputs.run_rival }}
+      repro: ${{ steps.pull.outputs.repro }}
       image: ${{ steps.cfg.outputs.image }}
       snap_sha: ${{ steps.pack.outputs.snap_sha }}
       pulled_sha: ${{ steps.pack.outputs.pulled_sha }}
@@ -253,8 +254,14 @@ jobs:
           if-no-files-found: error
 
   yeniden:
-    needs: [cek, getir, cagir]
-    if: always() && needs.cagir.result == 'success' && needs.cagir.outputs.has_repro == 'true'
+    # The rival's reproducers, and those the signed state keeps (proven defects and open claims, or the
+    # reproducers of a reused rival result): the latter run on every green code head even when the rival
+    # finds nothing or is not called at all (tohum/29 "Hafıza", E07 E08 E20).
+    needs: [cek, getir, kos, cagir]
+    if: >-
+      always() && needs.cek.result == 'success' &&
+      ((needs.cagir.result == 'success' && needs.cagir.outputs.has_repro == 'true') ||
+       (needs.cek.outputs.repro == 'true' && (needs.cek.outputs.kind == 'spec' || needs.kos.outputs.green == 'true')))
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions: {}
@@ -265,7 +272,8 @@ jobs:
         with: { name: snapshot }
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with: { name: pulled }
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      - if: needs.cagir.result == 'success'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with: { name: rival }
       - if: needs.getir.result == 'success'
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -274,9 +282,12 @@ jobs:
         run: |
           echo "${{ needs.cek.outputs.snap_sha }}  snapshot.tar" | sha256sum -c -
           echo "${{ needs.cek.outputs.pulled_sha }}  pulled.tar" | sha256sum -c -
-          echo "${{ needs.cagir.outputs.rival_sha }}  rival.tar" | sha256sum -c -
           mkdir snap pulled rival deps
-          tar -xf snapshot.tar -C snap && tar -xf pulled.tar -C pulled && tar -xf rival.tar -C rival
+          tar -xf snapshot.tar -C snap && tar -xf pulled.tar -C pulled
+          if [ -f rival.tar ]; then
+            echo "${{ needs.cagir.outputs.rival_sha }}  rival.tar" | sha256sum -c -
+            tar -xf rival.tar -C rival
+          fi
           if [ -f deps.tar ]; then
             echo "${{ needs.getir.outputs.deps_sha }}  deps.tar" | sha256sum -c -
             tar -xf deps.tar -C deps

@@ -6,6 +6,8 @@ import re
 
 SPEC_STAGE_RE = re.compile(r"^spec/asama-\d+/")
 SPEC_INDEX = "spec/INDEX.md"
+LEDGER_FILE = "founder-ledger.jsonl"
+REPORTS_DIR = "reports/"
 
 # Reasons are stable identifiers; they appear in rejection artefacts the founder reads.
 SEED_MODIFIED = "seed_modified"
@@ -17,13 +19,19 @@ def is_spec_path(path: str) -> bool:
     return bool(SPEC_STAGE_RE.match(path)) or path == SPEC_INDEX
 
 
+def is_founder_record(path: str) -> bool:
+    """The Founder's memory and reports: neither spec nor code. They never turn a spec request into a mixed one,
+    and a push of nothing else is not judged (`29b`, "Push türleri"; the `ledger` push of the narrowed Stage 0)."""
+    return path == LEDGER_FILE or path.startswith(REPORTS_DIR)
+
+
 def classify(changed: list[str]) -> tuple[str, list[str]]:
     """Return (kind, reasons). kind is one of none, spec, code, rejected."""
-    if not changed:
-        return "none", []
     reasons: set[str] = set()
     spec = code = False
     for path in changed:
+        if is_founder_record(path):
+            continue
         if path.startswith("seed/") or (path.startswith("spec/") and not is_spec_path(path)):
             reasons.add(SEED_MODIFIED)  # spec/tohum/**, any other non-stage spec path, the bootstrap
         elif path.startswith(".github/"):
@@ -36,6 +44,8 @@ def classify(changed: list[str]) -> tuple[str, list[str]]:
         reasons.add(MIXED)
     if reasons:
         return "rejected", sorted(reasons)
+    if not (spec or code):
+        return "none", []
     return ("spec" if spec else "code"), []
 
 

@@ -22,7 +22,7 @@ from snowball_bootstrap.rival import ToolBox, run_rival, validate_verdict
 from snowball_bootstrap.rival_mcp import RivalServer, serve
 from snowball_bootstrap.treehash import TreeError, extract, iter_files, tree_hash
 
-from helpers import install_fake_claude, ok_result, posix_only, submit
+from helpers import good_init, install_fake_claude, ok_result, posix_only, submit
 
 CFG = RivalConfig(model="claude-sonnet-5-5", effort="medium", max_turns=5, per_run_cap_usd_micros=5_000_000)
 REFS = [{"path": "referee/a.py", "line_start": 1, "line_end": 1}]
@@ -168,8 +168,7 @@ class RivalRunGaps(FakeCliMixin, unittest.TestCase):
 
     def test_synthetic_and_modelless_assistant_events_do_not_change_the_served_model(self):
         """R29 R30"""
-        init = {"type": "system", "subtype": "init", "apiKeySource": "none", "tools": rival.TOOL_NAMES,
-                "skills": [], "slash_commands": [], "mcp_servers": [{"name": "snowball", "status": "connected"}]}
+        init = good_init()
         events = [init, {"type": "assistant", "message": {"model": "<synthetic>"}},
                   {"type": "assistant", "message": {"content": []}}, {"type": "assistant", "message": "text"},
                   {"type": "assistant", "message": {"model": "claude-sonnet-5-5"}}, ok_result()]

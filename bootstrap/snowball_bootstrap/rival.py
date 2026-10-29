@@ -16,6 +16,7 @@ an exhausted budget or turn limit) is ``unresolved``, which is never acceptance.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
@@ -26,6 +27,8 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -55,12 +58,26 @@ Protocol for this review (bootstrap referee):
   cannot run code.
 - A refutation about behaviour counts only if it carries a reproducer the referee can run: a
   shell command run at the repository root inside a container with no network and Python 3.12,
-  plus the observable that shows the defect (expected exit code and/or a substring of stdout).
-  Refutations without a reproducer are recorded but do not block. At most 5 attempts may carry a
-  reproducer.
+  plus what to observe: an exit code (expect_exit), a substring of stdout (expect_stdout_contains),
+  a substring of stderr (expect_stderr_contains), or several; every one given must hold. A substring
+  is matched exactly, as plain text.
+- The observable must show because of the defect: it must not show if the code were correct. Write the
+  command so that it exposes the wrong behaviour (print the wrong value and expect it, or assert the
+  right value and expect the assertion's message). An exit code alone is weak: a missing module or a
+  syntax error exits 1 too. Python writes tracebacks to stderr: expect them with expect_stderr_contains
+  or end the command with 2>&1 and match stdout; never send output to /dev/null.
+- The referee runs a reproducer whose observable showed again on an empty tree in the same container;
+  if it shows there too it is tautological and does not count. A run that times out never counts.
+- Refutations without a reproducer, or whose reproducer does not show its observable, do not block:
+  they are kept as open claims and shown to the next review. At most 5 attempts may carry a reproducer.
+- Open claims of earlier reviews, if any, are listed in the request with an id. You may correct the
+  reproducer of an open claim once: send an attempt with open_claim set to that id.
 - Finish by calling submit_verdict (mcp__snowball__submit_verdict) exactly once. Write claims in English, one sentence each,
   with at least one path:line reference.
 """
+
+# The Founder's ledger is its own reasoning; the rival judges the artefact, not the Founder's account of it (`29`).
+HIDDEN_NAMES = ("founder-ledger.jsonl",)
 
 TOOLS: list[dict[str, Any]] = [
     {
@@ -102,9 +119,11 @@ TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "submit_verdict",
-        "description": "Submit the final verdict. Call exactly once, at the end. A malformed submission (wrong "
-                       "types, a missing field, an empty claim or evidence list, an invalid reproducer, too many "
-                       "attempts) is returned as an error so you can correct it and submit again.",
+        "description": "Submit the final verdict. Call exactly once, at the end. A reproducer's observable must "
+                       "show because of the defect and must not show if the code were correct. A malformed "
+                       "submission (wrong types, a missing field, an empty claim or evidence list, an invalid "
+                       "reproducer, too many attempts) is returned as an error so you can correct it and submit "
+                       "again.",
         "input_schema": {
             "type": "object",
             "properties": {
@@ -132,17 +151,24 @@ TOOLS: list[dict[str, Any]] = [
                             },
                             "reproducer": {
                                 "type": "object",
-                                "description": "Give expect_exit, expect_stdout_contains or both. Leave out the "
-                                               "one you do not check; never send an empty string for it.",
+                                "description": "Give one or more of expect_exit, expect_stdout_contains and "
+                                               "expect_stderr_contains (plain substrings); every one given must "
+                                               "hold, because of the defect. Leave out what you do not check; "
+                                               "never send an empty string for it.",
                                 "properties": {
                                     "cmd": {"type": "string", "minLength": 1, "maxLength": MAX_CMD_CHARS},
                                     "expect_exit": {"type": "integer"},
                                     "expect_stdout_contains": {"type": "string", "minLength": 1,
                                                                "maxLength": MAX_EXPECT_CHARS},
+                                    "expect_stderr_contains": {"type": "string", "minLength": 1,
+                                                               "maxLength": MAX_EXPECT_CHARS},
                                 },
                                 "required": ["cmd"],
                                 "additionalProperties": False,
                             },
+                            "open_claim": {"type": "string", "pattern": "^[0-9a-f]{12}$",
+                                           "description": "The id of an open claim whose reproducer this "
+                                                          "attempt corrects (once per claim)."},
                         },
                         "required": ["claim", "evidence_refs"],
                         "additionalProperties": False,
@@ -179,10 +205,15 @@ class SecretWithheld(ValueError):
 
 
 class ToolBox:
-    """Read-only access to one extracted tree; nothing outside it is reachable."""
+    """Read-only access to one extracted tree; nothing outside it is reachable, and the Founder's ledger
+    inside it is not either (E10)."""
 
     def __init__(self, root: Path):
         self.root = root.resolve()
+
+    def _hidden(self, target: Path) -> bool:
+        """A name check only: staying inside the tree is `_resolve`'s job, and stays measured there."""
+        return any(part in HIDDEN_NAMES for part in target.parts[len(self.root.parts):])
 
     def _resolve(self, rel: str) -> Path:
         if not isinstance(rel, str) or not rel or "\x00" in rel or len(rel) > 1000:
@@ -196,7 +227,7 @@ class ToolBox:
 
     def read_file(self, path: str, start_line: int = 1, end_line: int | None = None) -> str:
         target = self._resolve(path)
-        if not target.is_file():
+        if not target.is_file() or self._hidden(target):
             raise ValueError(f"no such file: {path}")
         if target.stat().st_size > MAX_FILE_BYTES:
             raise ValueError("file too large to read")
@@ -215,6 +246,7 @@ class ToolBox:
         regex = re.compile(pattern)
         base = self._resolve(path_prefix) if path_prefix else self.root
         files = [base] if base.is_file() else sorted(p for p in base.rglob("*") if p.is_file() and not p.is_symlink())
+        files = [p for p in files if not self._hidden(p)]
         matches: list[str] = []
         skipped = withheld = 0
         for file in files:
@@ -244,7 +276,7 @@ class ToolBox:
                 or "\\" in pattern or ":" in pattern):
             raise ValueError("pattern must be a relative glob without '..', ':' or backslashes")
         found = sorted(p.relative_to(self.root).as_posix() for p in self.root.glob(pattern)
-                       if p.is_file() and not p.is_symlink())
+                       if p.is_file() and not p.is_symlink() and not self._hidden(p))
         if len(found) > MAX_GLOB_RESULTS:
             return "\n".join(found[:MAX_GLOB_RESULTS]) + f"\n(truncated at {MAX_GLOB_RESULTS})"
         return "\n".join(found) if found else "(no matches)"
@@ -252,7 +284,7 @@ class ToolBox:
     def line_count(self, path: str) -> int | None:
         try:
             target = self._resolve(path)
-            if not target.is_file() or target.stat().st_size > MAX_FILE_BYTES:
+            if not target.is_file() or target.stat().st_size > MAX_FILE_BYTES or self._hidden(target):
                 return None
             return len(target.read_text(encoding="utf-8", errors="replace").splitlines())
         except (ValueError, OSError):
@@ -297,14 +329,22 @@ def validate_verdict(raw: Any, box: ToolBox) -> dict[str, Any]:
             if any(ord(c) < 32 and c not in "\n\t" for c in rep["cmd"]):
                 raise ValueError("reproducer cmd must not contain control characters")
             exp_exit = rep.get("expect_exit")
-            exp_out = rep.get("expect_stdout_contains")
-            if exp_exit is None and exp_out is None:
-                raise ValueError("reproducer needs expect_exit or expect_stdout_contains")
+            if exp_exit is None and rep.get("expect_stdout_contains") is None and rep.get("expect_stderr_contains") is None:
+                raise ValueError("reproducer needs expect_exit, expect_stdout_contains or expect_stderr_contains")
             if exp_exit is not None and (not isinstance(exp_exit, int) or isinstance(exp_exit, bool)):
                 raise ValueError("expect_exit must be an integer")
-            if exp_out is not None and (not isinstance(exp_out, str) or not exp_out or len(exp_out) > MAX_EXPECT_CHARS):
-                raise ValueError(f"expect_stdout_contains must be 1-{MAX_EXPECT_CHARS} characters")
-            item["reproducer"] = {"cmd": rep["cmd"], "expect_exit": exp_exit, "expect_stdout_contains": exp_out}
+            clean_rep = {"cmd": rep["cmd"], "expect_exit": exp_exit}
+            for stream in ("expect_stdout_contains", "expect_stderr_contains"):
+                text = rep.get(stream)
+                if text is not None and (not isinstance(text, str) or not text or len(text) > MAX_EXPECT_CHARS):
+                    raise ValueError(f"{stream} must be 1-{MAX_EXPECT_CHARS} characters")
+                clean_rep[stream] = text
+            item["reproducer"] = clean_rep
+        claim_id = a.get("open_claim")
+        if claim_id is not None:
+            if not isinstance(claim_id, str) or not re.fullmatch(r"[0-9a-f]{12}", claim_id):
+                raise ValueError("open_claim must be the 12-character id of an open claim")
+            item["open_claim"] = claim_id
         clean.append(item)
     if raw["verdict"] == "refuted" and not clean:
         raise ValueError("a refutation needs at least one attempt")
@@ -327,6 +367,12 @@ class RivalOutcome:
     turns: int = 0
     cost_usd_micros: int = 0
     withheld_tool_results: int = 0
+    # Provenance (E33): what ran, with what, on what request, for how long.
+    cli_version: str = ""
+    effort: str = ""
+    prompt_sha256: str = ""
+    tokens: dict[str, int] = field(default_factory=dict)
+    duration_ms: int = 0
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -335,14 +381,29 @@ class RivalOutcome:
             "turns": self.turns, "cost_usd_micros": self.cost_usd_micros,
             "withheld_tool_results": self.withheld_tool_results,
             "reproducer_count": sum(1 for a in self.attempts if "reproducer" in a),
+            "cli_version": self.cli_version, "effort": self.effort, "prompt_sha256": self.prompt_sha256,
+            "tokens": dict(self.tokens), "duration_ms": self.duration_ms,
         }
 
 
 MCP_SERVER = "snowball"
 TOOL_NAMES = [f"mcp__{MCP_SERVER}__{t['name']}" for t in TOOLS]
 MCP_SCRIPT = Path(__file__).resolve().with_name("rival_mcp.py")
+# The workflow installs exactly this version (`npm ci`) and checks `claude --version` against it; the init event
+# of every run must report it too (E33), so a CLI that changed under the referee is caught at once.
+PIN_FILE = Path(__file__).resolve().parents[1] / "requirements" / "claude-cli" / "package.json"
 CLI_TIMEOUT_S = 900
 CLI_KILL_WAIT_S = 10  # how long to wait for the pipe after the kill: a descendant in another session may hold it
+REJECTED_STATUSES = (400, 404, 413, 422)  # the request itself is refused: sending it again cannot help (E12)
+TOKEN_FIELDS = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
+
+
+def pinned_cli_version() -> str:
+    """The pinned CLI version, or "" when the pin cannot be read (then no version matches: fail closed)."""
+    try:
+        return str(json.loads(PIN_FILE.read_text(encoding="utf-8"))["dependencies"]["@anthropic-ai/claude-code"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return ""
 # The CLI prefers a key, a gateway or a third-party provider over the login, and lets some variables
 # override the flags passed below. While this system is for internal use the rival runs on the
 # operator's login or CLAUDE_CODE_OAUTH_TOKEN: everything that could redirect the credential, the
@@ -386,32 +447,114 @@ def _terminate(signum: int, frame: Any) -> None:
     raise SystemExit(128 + signum)
 
 
-def _run_cli(argv: list[str], stdin: str, cwd: Path, env: dict[str, str]) -> tuple[int, str]:
+class CliNotStarted(Exception):
+    """The CLI process could not be started (no binary, no permission): nothing ran and nothing was spent."""
+
+
+class EarlyStop(Exception):
+    """The init event showed a run that must not reach the model: the CLI was killed before its first request."""
+
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason
+
+
+INIT_SCAN_LIMIT = 1_000_000  # the init event is the stream's first line; past this much output, stop looking for it
+
+
+def _init_event(line: bytes) -> dict[str, Any] | None:
+    if not line.startswith(b"{"):
+        return None
+    try:
+        event = json.loads(line.decode("utf-8", "replace"))
+    except (ValueError, RecursionError):
+        return None
+    if isinstance(event, dict) and event.get("type") == "system" and event.get("subtype") == "init":
+        return event
+    return None
+
+
+def _run_cli(argv: list[str], stdin: str, cwd: Path, env: dict[str, str],
+             on_init: Any = None) -> tuple[int, str]:
+    """Run the CLI and read its stream as it comes: the init event goes to ``on_init`` the moment it is printed,
+    and a fault it names kills the whole process tree before the model is asked anything (E27)."""
     group = {"start_new_session": True} if os.name != "nt" else {}
     try:  # a plain SIGTERM would end this process and leave the CLI (and its spend) running
         previous = signal.signal(signal.SIGTERM, _terminate)
     except ValueError:  # not the main thread
         previous = None
     try:
-        # The request goes in through a file, not a pipe: on Windows `communicate` writes a pipe's input
-        # before the timeout starts to count, so a CLI that stalls before reading its prompt would hang the run.
+        # The request goes in through a file, not a pipe: on Windows a pipe's input is written before any
+        # timeout starts to count, so a CLI that stalls before reading its prompt would hang the run.
         with tempfile.TemporaryFile() as request:  # bytes: no newline translation on Windows
             request.write(stdin.encode("utf-8"))
             request.seek(0)
-            with subprocess.Popen(argv, stdin=request, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                                  cwd=cwd, env=env, **group) as proc:
+            try:
+                proc = subprocess.Popen(argv, stdin=request, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                        cwd=cwd, env=env, **group)
+            except OSError as exc:
+                raise CliNotStarted(type(exc).__name__) from exc
+            chunks: list[bytes] = []
+            faults: list[str] = []
+            done = threading.Event()
+
+            def pump() -> None:
+                # os.read, not the buffered reader: the kill below must never wait for a lock this thread holds.
+                pending, partial = on_init, b""
                 try:
-                    stdout, _ = proc.communicate(timeout=CLI_TIMEOUT_S)
-                except BaseException:  # a timeout, Ctrl-C, SIGTERM or any error: nothing of the CLI may outlive this call
-                    if previous is not None:
-                        signal.signal(signal.SIGTERM, signal.SIG_IGN)  # a second SIGTERM must not interrupt the kill
-                    _kill_tree(proc)
-                    try:
-                        proc.communicate(timeout=CLI_KILL_WAIT_S)
-                    except subprocess.TimeoutExpired:  # a descendant that left the process group still holds the pipe
-                        pass
-                    raise
-                return proc.returncode, stdout.decode("utf-8", "replace")
+                    while True:
+                        data = os.read(proc.stdout.fileno(), 65536)
+                        if not data:
+                            return
+                        chunks.append(data)
+                        if pending is None:
+                            continue
+                        partial += data
+                        while pending is not None and b"\n" in partial:
+                            line, partial = partial.split(b"\n", 1)
+                            event = _init_event(line)
+                            if event is None:
+                                continue
+                            pending = None
+                            try:
+                                fault = on_init(event)
+                            except Exception:  # an init the check cannot read is not one it has passed
+                                fault = "api_error:isolation_init_unreadable"
+                            if fault:
+                                faults.append(fault)
+                                return
+                        if len(partial) > INIT_SCAN_LIMIT:
+                            pending = None
+                except OSError:
+                    pass
+                finally:
+                    done.set()
+
+            reader = threading.Thread(target=pump, daemon=True)
+            reader.start()
+            try:
+                deadline = time.monotonic() + CLI_TIMEOUT_S
+                while not done.wait(0.05):  # short waits: a signal is handled between them on every platform
+                    if time.monotonic() >= deadline:
+                        raise subprocess.TimeoutExpired(argv, CLI_TIMEOUT_S)
+                if faults:
+                    raise EarlyStop(faults[0])
+                returncode = proc.wait(timeout=max(0.0, deadline - time.monotonic()))
+            except BaseException:  # a timeout, Ctrl-C, SIGTERM, a bad init or any error: nothing of the CLI may outlive this call
+                if previous is not None:
+                    signal.signal(signal.SIGTERM, signal.SIG_IGN)  # a second SIGTERM must not interrupt the kill
+                _kill_tree(proc)
+                try:
+                    proc.wait(timeout=CLI_KILL_WAIT_S)
+                except subprocess.TimeoutExpired:
+                    pass
+                reader.join(CLI_KILL_WAIT_S)  # a descendant that left the process group may still hold the pipe
+                if not reader.is_alive():
+                    proc.stdout.close()
+                raise
+            reader.join()
+            proc.stdout.close()
+            return returncode, b"".join(chunks).decode("utf-8", "replace")
     finally:
         if previous is not None:
             signal.signal(signal.SIGTERM, previous)
@@ -480,6 +623,19 @@ def _isolation_fault(init: dict[str, Any] | None, usage: dict[str, Any]) -> str 
     return None
 
 
+def _init_fault(init: dict[str, Any], model: str, pinned: str) -> str | None:
+    """The init event, judged the moment it is printed and before the CLI's first request (E27): the isolation
+    first, then the pinned CLI version (E33), then the model the CLI is about to ask for."""
+    fault = _isolation_fault(init, {})
+    if fault:
+        return f"api_error:isolation_{fault}"
+    if init.get("claude_code_version") != pinned:
+        return "api_error:isolation_version"
+    if init.get("model") != model:
+        return "model_mismatch"
+    return None
+
+
 def _texts(value: Any):
     """Every string inside a verdict, as written: JSON turns a newline into two characters and a letter into an
     escape, and the secret patterns' word boundaries then no longer see where a key starts."""
@@ -494,9 +650,15 @@ def _texts(value: Any):
 
 
 def run_rival(cfg: RivalConfig, *, claude_bin: str | None, seat_prompt: str, context: str, tree_root: Path,
-              budget_usd_micros: int, max_prompt_chars: int) -> RivalOutcome:
-    out = RivalOutcome(model_requested=cfg.model)
+              budget_usd_micros: int, max_prompt_chars: int, pinned_version: str | None = None,
+              out: RivalOutcome | None = None) -> RivalOutcome:
+    """One rival run. ``out`` may be handed in, so that a caller interrupted mid-run still holds what the run
+    booked (E13); ``pinned_version`` defaults to the pin the workflow installs."""
+    out = RivalOutcome() if out is None else out
+    out.model_requested, out.effort = cfg.model, cfg.effort
+    pinned = pinned_cli_version() if pinned_version is None else pinned_version
     system_text = seat_prompt + PROTOCOL
+    out.prompt_sha256 = hashlib.sha256((system_text + "\n" + context).encode("utf-8", "replace")).hexdigest()
     if len(system_text) + len(context) > max_prompt_chars:
         out.reasons.append("prompt_too_large")
         return out
@@ -517,15 +679,34 @@ def run_rival(cfg: RivalConfig, *, claude_bin: str | None, seat_prompt: str, con
         cwd = run_dir / "cwd"
         cwd.mkdir()
         argv = _cli_argv(claude_bin, cfg, run_dir, tree_root, budget)
+        seen_init: dict[str, Any] = {}
+
+        def check_init(init: dict[str, Any]) -> str | None:
+            seen_init.update(init)
+            return _init_fault(init, cfg.model, pinned)
+
+        started = time.monotonic()
         try:
-            returncode, stdout = _run_cli(argv, context, cwd, _cli_env())
-        except Exception as exc:  # a missing binary, a timeout or any spawn failure fails closed
-            if isinstance(exc, subprocess.TimeoutExpired):
-                out.cost_usd_micros = budget  # the spend is unknown: assume the cap, so retries are not free
-            out.reasons.append(f"api_error:{type(exc).__name__}")
+            returncode, stdout = _run_cli(argv, context, cwd, _cli_env(), on_init=check_init)
+        except CliNotStarted as exc:  # no process ever ran, so nothing was spent
+            out.reasons.append(f"api_error:{exc}")
             return out
+        except EarlyStop as stop:  # killed at its init event, before its first request: nothing was spent
+            out.cli_version = str(seen_init.get("claude_code_version") or "")
+            out.reasons.append(stop.reason)
+            return out
+        except BaseException as exc:  # a timeout, an interrupt or any failure once the CLI was running
+            out.cost_usd_micros = budget  # unknown spend: book what the run was allowed, so retries are not free
+            out.reasons.append(f"api_error:{type(exc).__name__}")
+            if not isinstance(exc, Exception):  # Ctrl-C or SIGTERM: the caller writes the record, then stops
+                raise
+            return out
+        finally:
+            out.duration_ms = int((time.monotonic() - started) * 1000)
         init, result, api_models = _parse_stream(stdout)
+        out.cli_version = str((init or {}).get("claude_code_version") or "")
         if result is None:
+            out.cost_usd_micros = budget  # the CLI ran and never said what it spent (E13)
             out.reasons.append(f"api_error:cli_exit_{returncode}")
             return out
         stats = _read_json(run_dir / "stats.json")
@@ -540,8 +721,12 @@ def run_rival(cfg: RivalConfig, *, claude_bin: str | None, seat_prompt: str, con
             out.turns = int(result["num_turns"])
             out.cost_usd_micros = math.ceil(cost * 1_000_000)
         except (KeyError, TypeError, ValueError, OverflowError):
+            out.cost_usd_micros = budget  # a cost that cannot be read is still a cost the books must carry (E13)
             out.reasons.append("api_error:bad_cli_result")
             return out
+        tokens = result.get("usage") if isinstance(result.get("usage"), dict) else {}
+        out.tokens = {k: tokens[k] for k in TOKEN_FIELDS
+                      if isinstance(tokens.get(k), int) and not isinstance(tokens[k], bool) and 0 <= tokens[k] < 2**53}
         # The CLI names models in modelUsage by what it asked for; the API's own replies say what served it.
         served = sorted(api_models | set(usage))
         out.model_served = ",".join(served)
@@ -566,12 +751,16 @@ def run_rival(cfg: RivalConfig, *, claude_bin: str | None, seat_prompt: str, con
                     code = subtype
                 else:
                     code = terminal if terminal not in ("", "api_error", "completed") else "unknown"
-                out.reasons.append(f"api_error:{code}")
+                # A request the API refuses as such is answered, not lost: retrying it cannot help (E12).
+                rejected = str(status) in {str(s) for s in REJECTED_STATUSES}
+                out.reasons.append(f"{'request_rejected' if rejected else 'api_error'}:{code}")
             return out
         if served != [cfg.model]:
             out.reasons.append("model_mismatch")
             return out
         fault = _isolation_fault(init, usage)
+        if fault is None and init.get("claude_code_version") != pinned:  # init was not checked as it came
+            fault = "version"
         if fault:
             out.reasons.append(f"api_error:isolation_{fault}")
             return out
@@ -604,10 +793,16 @@ def _read_json(path: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
+def hidden(path: str) -> bool:
+    """A path the rival is not shown (E10)."""
+    return any(part in HIDDEN_NAMES for part in path.split("/"))
+
+
 def build_context(kind: str, base: str, head: str, changed: list[str], diff: str, pages: dict[str, str],
-                  fence: str | None = None) -> str:
+                  fence: str | None = None, open_claims: list[dict[str, Any]] | tuple = ()) -> str:
     """The rival's request. Section headers carry a random fence the pushed content cannot know, so a file
-    name or a diff line cannot open a section of its own (E03); paths are shown as JSON strings."""
+    name or a diff line cannot open a section of its own (E03); paths are shown as JSON strings. The open
+    claims of earlier reviews come with their ids, so the rival can correct a reproducer once (E07)."""
     fence = fence or secrets.token_hex(8)
     parts = [
         f"Review request: {kind} push to the brain repository. Every section the referee adds starts with"
@@ -618,5 +813,11 @@ def build_context(kind: str, base: str, head: str, changed: list[str], diff: str
     ]
     for name, text in pages.items():
         parts.append(f"=== {fence} seed page {json.dumps(name)} ===\n{text}")
+    if open_claims:
+        rows = [json.dumps({"id": c["id"], "claim": c["claim"], "evidence_refs": c["evidence_refs"],
+                            "reproducer": c["reproducer"], "observed": c["observed"], "first_head": c["first_head"],
+                            "rewrite_allowed": not c["rewritten"]}, ensure_ascii=False, sort_keys=True)
+                for c in open_claims]
+        parts.append(f"=== {fence} open claims of earlier reviews, one JSON object per line ===\n" + "\n".join(rows))
     parts.append(f"=== {fence} full diff from base to head ===\n" + diff)
     return "\n\n".join(parts)

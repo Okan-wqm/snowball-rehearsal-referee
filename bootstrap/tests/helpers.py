@@ -170,6 +170,12 @@ FAKE_CLAUDE = textwrap.dedent('''\
     scenario = json.load(open(os.path.join(here, "scenario.json")))
     argv = sys.argv[1:]
     mcp_cfg = json.load(open(argv[argv.index("--mcp-config") + 1]))["mcpServers"]["snowball"] if "--mcp-config" in argv else {{}}
+    allowed = [a.split("=", 1)[1] for a in argv if a.startswith("--allowedTools=")]
+    # The init event a correctly isolated run of the pinned CLI prints: the model it was asked for, its version.
+    init = scenario["init"] if "init" in scenario else {{
+        "type": "system", "subtype": "init", "model": argv[argv.index("--model") + 1] if "--model" in argv else "x",
+        "claude_code_version": "{version}", "apiKeySource": "none", "tools": allowed[0].split(",") if allowed else [],
+        "skills": [], "slash_commands": [], "mcp_servers": [{{"name": "snowball", "status": "connected"}}]}}
     open(os.path.join(here, "claude.pid"), "w").write(str(os.getpid()))
     stdin = sys.stdin.buffer.read()
     system_path = argv[argv.index("--system-prompt-file") + 1] if "--system-prompt-file" in argv else None
@@ -182,6 +188,8 @@ FAKE_CLAUDE = textwrap.dedent('''\
     if scenario.get("grandchild"):
         child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
         open(os.path.join(here, "grandchild.pid"), "w").write(str(child.pid))
+    if scenario.get("init_first") and init is not None:  # as the real CLI does: init first, then the model's turns
+        sys.stdout.write(json.dumps(init) + "\\n"); sys.stdout.flush()
     if scenario.get("sleep"):
         time.sleep(scenario["sleep"])
     if scenario.get("garbage"):
@@ -194,6 +202,7 @@ FAKE_CLAUDE = textwrap.dedent('''\
         return json.loads(proc.stdout.readline())
     rpc(0, "initialize", {{"protocolVersion": "2024-11-05"}})
     listed = rpc(1, "tools/list")["result"]["tools"]
+    open(os.path.join(here, "calls.started"), "w").write("")  # from here on the model's tool calls reach the server
     replies = []
     for n, (name, args) in enumerate(scenario.get("calls", []), start=2):
         replies.append(rpc(n, "tools/call", {{"name": name, "arguments": args}})["result"])
@@ -208,20 +217,19 @@ FAKE_CLAUDE = textwrap.dedent('''\
     events = scenario.get("events")
     if events is None:
         result = scenario.get("result", {{}})
-        allowed = [a.split("=", 1)[1] for a in argv if a.startswith("--allowedTools=")]
-        init = scenario.get("init", {{"type": "system", "subtype": "init", "model": "x", "apiKeySource": "none",
-                                      "tools": allowed[0].split(",") if allowed else [], "skills": [],
-                                      "slash_commands": [],
-                                      "mcp_servers": [{{"name": "snowball", "status": "connected"}}]}})
         usage = result.get("modelUsage", {{}}) if isinstance(result, dict) else {{}}
         models = scenario.get("api_models", list(usage) if isinstance(usage, dict) else [])
-        events = ([init] if init is not None else []) + [
+        events = ([init] if init is not None and not scenario.get("init_first") else []) + [
             {{"type": "assistant", "message": {{"model": m, "content": [{{"type": "text"}}]}}}} for m in models]
-        events.append(result)
+        if result is not None:
+            events.append(result)
     for event in events:
         print(json.dumps(event))
     sys.exit(scenario.get("exit", 0))
 ''')
+
+PINNED_CLI = json.loads((Path(__file__).resolve().parents[1] / "requirements" / "claude-cli" / "package.json")
+                        .read_text(encoding="utf-8"))["dependencies"]["@anthropic-ai/claude-code"]
 
 
 def ok_result(model="claude-sonnet-5-5", **extra):
@@ -238,8 +246,9 @@ def submit(verdict="not_refuted", attempts=None):
 
 def good_init(**over):
     """The init event of a correctly isolated run (shape recorded from the real CLI)."""
-    init = {"type": "system", "subtype": "init", "model": "x", "apiKeySource": "none", "skills": [],
-            "slash_commands": [], "tools": list(TOOL_NAMES), "mcp_servers": [{"name": "snowball", "status": "connected"}]}
+    init = {"type": "system", "subtype": "init", "model": "claude-sonnet-5-5", "claude_code_version": PINNED_CLI,
+            "apiKeySource": "none", "skills": [], "slash_commands": [], "tools": list(TOOL_NAMES),
+            "mcp_servers": [{"name": "snowball", "status": "connected"}]}
     init.update(over)
     return init
 
@@ -247,7 +256,7 @@ def good_init(**over):
 def install_fake_claude(bin_dir: Path) -> Path:
     """A POSIX shebang script, or on Windows a claude.cmd that runs the same script like the real npm shim."""
     script = bin_dir / ("fake_claude.py" if os.name == "nt" else "claude")
-    script.write_text(FAKE_CLAUDE.format(python=sys.executable))
+    script.write_text(FAKE_CLAUDE.format(python=sys.executable, version=PINNED_CLI))
     script.chmod(script.stat().st_mode | stat.S_IEXEC)
     if os.name != "nt":
         return script

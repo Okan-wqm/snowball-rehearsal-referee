@@ -56,11 +56,13 @@ class Flow(unittest.TestCase):
             "stage_budgets": {"asama_0": {"rival_usd": 30}},
             "license_allowlist": ["MIT", "Apache-2.0"], "license_exceptions": {}}}))
         (self.referee / "control.json").write_text(json.dumps({"kill_switch": False, "budget_state": "ok"}))
-        self.state = {"schema": "snowball-bootstrap-state/1", "origin": "initial",
+        self.state = {"schema": "snowball-bootstrap-state/2", "origin": "initial",
                       "last_accepted_sha": self.seed_sha, "last_evaluated_sha": None, "frozen_specs": {},
                       "rival_artifacts": [], "month": "2026-10", "month_spend_usd_micros": 0,
                       "stage_spend_usd_micros": 0, "runs": 0, "reject_streaks": {}, "repeat_events": 0,
-                      "outage_sha": None, "outage_count": 0}
+                      "outage_sha": None, "outage_count": 0, "outage_since": None,
+                      "outage_stop": None, "rival_side_streak": 0, "open_refutations": [], "open_claims": [],
+                      "pending_rival": None}
         self.n = 0
 
     def tearDown(self):
@@ -254,6 +256,7 @@ class Flow(unittest.TestCase):
             stack.enter_context(mock.patch.object(cli.ghapi, "latest_artifact", return_value={
                 "id": 1, "created_at": created.isoformat().replace("+00:00", "Z")}))
             stack.enter_context(mock.patch.object(cli.ghapi, "download_zip", return_value=archive.getvalue()))
+            stack.enter_context(mock.patch.object(cli.ghapi, "latest_failed_run", return_value=None))
             stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
             rc = cli.main(["poll", "--root", str(self.referee), "--out", str(Path(self.tmp.name) / "poll_out"),
                            "--remote", "x"])
@@ -367,7 +370,7 @@ class Flow(unittest.TestCase):
         result = self.finish(meta, rival=self.rival_ok(), jobs={"cagir": "success"})
         self.assertEqual(result["verdict"], "frozen")
         self.assertIn("spec/asama-0", result["state"]["frozen_specs"])
-        self.assertEqual(result["state"]["rival_artifacts"], [meta["head"]])
+        self.assertEqual(result["state"]["rival_artifacts"], [{"sha": meta["head"], "outcome": "survived"}])
 
         # MF1 as a code request.
         commit(self.brain, {"referee/ledger/chain.py": "x = 1\n", "snowball-tests.json": all_tests_manifest([1])},
@@ -430,7 +433,8 @@ class Flow(unittest.TestCase):
         # An exit request must name the last accepted commit, and that commit needs its own review.
         self.state["last_evaluated_sha"] = None
         saved = json.loads(json.dumps(self.state))
-        self.state["rival_artifacts"] = [a for a in self.state["rival_artifacts"] if a != exit_sha] + ["e" * 40]
+        self.state["rival_artifacts"] = ([a for a in self.state["rival_artifacts"] if a["sha"] != exit_sha]
+                                       + [{"sha": "e" * 40, "outcome": "survived"}])
         meta = self.pull()
         result = self.finish(meta, run=self.green_run(meta), jobs={"getir": "success", "kos": "success"})
         self.assertIn("no_rival_attempt_on_exit_sha", [r["ref"] for r in result["reasons"]])
@@ -443,7 +447,7 @@ class Flow(unittest.TestCase):
                "exit request again")
 
         # One more independently reviewed artefact, then the exit request passes.
-        self.state["rival_artifacts"].append("f" * 40)
+        self.state["rival_artifacts"].append({"sha": "f" * 40, "outcome": "survived"})
         self.state["last_accepted_sha"] = exit_sha
         self.state["last_evaluated_sha"] = None
         meta = self.pull()

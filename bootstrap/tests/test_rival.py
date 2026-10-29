@@ -235,9 +235,7 @@ class RivalTest(unittest.TestCase):
         self.assertEqual((out.verdict, out.reasons), ("unresolved", ["refusal"]))
 
     def test_a_run_that_was_not_isolated_as_asked_is_refused(self):
-        good = {"type": "system", "subtype": "init", "model": "x", "apiKeySource": "none", "skills": [],
-                "slash_commands": [], "tools": list(rival.TOOL_NAMES),
-                "mcp_servers": [{"name": "snowball", "status": "connected"}]}
+        good = good_init()
         cases = {
             "tools": dict(good, tools=[*rival.TOOL_NAMES, "Bash"]),
             "mcp_servers": dict(good, mcp_servers=[{"name": "snowball", "status": "failed"}]),
@@ -257,8 +255,7 @@ class RivalTest(unittest.TestCase):
 
     def test_every_way_an_api_key_could_be_in_use_is_refused(self):
         """A real CLI started with ANTHROPIC_API_KEY reports that name as its apiKeySource, not just `user`."""
-        good = {"type": "system", "subtype": "init", "model": "x", "skills": [], "slash_commands": [],
-                "tools": list(rival.TOOL_NAMES), "mcp_servers": [{"name": "snowball", "status": "connected"}]}
+        good = {k: v for k, v in good_init().items() if k != "apiKeySource"}
         for source in ("ANTHROPIC_API_KEY", "apiKeyHelper", "/login managed key",  # what 2.1.293 documents
                        "user", "project", "org", "temporary", "ANTHROPIC_AUTH_TOKEN"):
             out = self.run_with({"calls": [submit()], "result": ok_result(), "init": dict(good, apiKeySource=source)})
@@ -292,7 +289,9 @@ class RivalTest(unittest.TestCase):
         body = self.stream_text(*self.good_stream())
         out = self.run_with({"calls": [submit()], "raw": "[" * 200_000 + chr(10) + body})  # RecursionError in json
         self.assertEqual((out.verdict, out.reasons), ("not_refuted", []))
-        broken = body.encode("utf-8").replace(b'"model": "x"', b'"model": "x' + bytes([0xFF]) + b'"', 1)
+        broken = body.encode("utf-8").replace(b'"terminal_reason": "completed"',
+                                              b'"terminal_reason": "completed' + bytes([0xFF]) + b'"', 1)
+        self.assertNotEqual(broken, body.encode("utf-8"))
         out = self.run_with({"calls": [submit()], "raw_hex": broken.hex()})  # invalid UTF-8 inside a string
         self.assertEqual((out.verdict, out.reasons), ("not_refuted", []))
 
@@ -341,8 +340,11 @@ class RivalTest(unittest.TestCase):
                     "budget_exhausted": "budget", "max_turns_exhausted": "max_turns"}
         for name, reason in expected.items():
             doc = json.loads((FIXTURES / f"{name}.json").read_text())
-            out = self.run_with({"calls": [submit()], "events": doc["events"], "exit": doc["exit_code"]})
+            init = next(e for e in doc["events"] if e.get("type") == "system")
+            cfg = RivalConfig(model=init["model"], effort="medium", max_turns=5, per_run_cap_usd_micros=5_000_000)
+            out = self.run_with({"calls": [submit()], "events": doc["events"], "exit": doc["exit_code"]}, cfg=cfg)
             self.assertEqual((out.verdict, out.reasons), ("unresolved", [reason]), name)
+            self.assertEqual(out.cli_version, init["claude_code_version"], name)
         doc = json.loads((FIXTURES / "success_one_model.json").read_text())
         out = self.run_with({"calls": [submit()], "events": doc["events"]})
         self.assertEqual((out.verdict, out.reasons, out.model_served), ("not_refuted", [], "claude-sonnet-5-5"))

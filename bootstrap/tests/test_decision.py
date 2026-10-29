@@ -16,6 +16,7 @@ from snowball_bootstrap.config import ConfigError, Policy
 from snowball_bootstrap.container import RunResult
 from snowball_bootstrap.controls import run_controls
 from snowball_bootstrap.decide import decide
+from snowball_bootstrap.reproduce import reproducer_key
 
 import test_flow
 import test_state
@@ -25,12 +26,17 @@ A, B, C = "a" * 40, "b" * 40, "c" * 40
 
 
 def state0(**kw):
-    s = {"schema": "snowball-bootstrap-state/1", "origin": "artifact", "last_accepted_sha": A,
+    s = {"schema": "snowball-bootstrap-state/2", "origin": "artifact", "last_accepted_sha": A,
          "last_evaluated_sha": None, "frozen_specs": {}, "rival_artifacts": [], "month": "2026-10",
          "month_spend_usd_micros": 1000, "stage_spend_usd_micros": 2000, "runs": 4, "reject_streaks": {},
-         "repeat_events": 0, "outage_sha": None, "outage_count": 0}
+         "repeat_events": 0, "outage_sha": None, "outage_count": 0, "outage_since": None, "outage_stop": None,
+         "rival_side_streak": 0, "open_refutations": [], "open_claims": [], "pending_rival": None}
     s.update(kw)
     return s
+
+
+def survived(*shas):
+    return [{"sha": s, "outcome": "survived"} for s in shas]
 
 
 def meta_(kind, state, **kw):
@@ -48,7 +54,8 @@ def green_run():
 
 
 def refuted(*claims, cost=7):
-    attempts = [{"claim": c, "evidence_refs": [], "reproducer": {"cmd": "x"}} for c in claims]
+    """One attempt per claim, each with its own reproducer: a proven defect is named by its reproducer (E08)."""
+    attempts = [{"claim": c, "evidence_refs": [], "reproducer": {"cmd": f"check {c}", "expect_exit": 1}} for c in claims]
     return {"verdict": "refuted", "attempts": attempts, "reasons": [], "cost_usd_micros": cost,
             "reproducer_count": len(attempts)}
 
@@ -106,11 +113,13 @@ class RivalOutcomeJudgement(unittest.TestCase):
         self.assertEqual((res["verdict"], res["reasons"]), ("accepted", []))
 
     def test_the_reason_names_the_attempt_that_reproduced(self):  # D14
-        res = run_decide(meta_("code", state0()), green_run(), refuted("first claim", "second claim"),
+        rival = refuted("first claim", "second claim")
+        res = run_decide(meta_("code", state0()), green_run(), rival,
                          [{"attempt_index": 0, "reproduced": False}, {"attempt_index": 1, "reproduced": True}],
                          dict(CODE_JOBS, yeniden="success"))
+        key = reproducer_key(rival["attempts"][1]["reproducer"])
         self.assertEqual([(r["kind"], r["ref"], r["detail"]) for r in res["reasons"]],
-                         [("refutation_reproduced", "attempt:1", "second claim")])
+                         [("refutation_reproduced", f"repro:{key}", "second claim")])
 
     def test_failed_vectors_controls_and_an_empty_run_each_reject(self):  # D15 D16 D17
         for mutate, kind in ((lambda r: r.update(vectors=[{"id": "chain.V1.hash", "ok": False, "detail": "x"}]),
@@ -141,12 +150,16 @@ class RivalOutcomeJudgement(unittest.TestCase):
         res = run_decide(meta_("code", state0()), green_run(), unresolved("max_turns", cost=5), [], CODE_JOBS)
         self.assertEqual(res["state"]["rival_artifacts"], [])
 
-    def test_a_retried_commit_is_listed_as_reviewed_once(self):  # D29
+    def test_a_retried_commit_is_listed_as_reviewed_once(self):  # D29, E20
         first = run_decide(meta_("code", state0()), green_run(), refuted("c"), None, dict(CODE_JOBS, yeniden="failure"))
-        self.assertEqual(first["state"]["rival_artifacts"], [B])
-        again = run_decide(meta_("code", first["state"]), green_run(), refuted("c"), None,
-                           dict(CODE_JOBS, yeniden="failure"))
-        self.assertEqual(again["state"]["rival_artifacts"], [B])
+        self.assertEqual(first["state"]["rival_artifacts"], [])  # its reproducers never ran: not yet reviewed
+        reuse = meta_("code", first["state"], run_rival=False, reuse_rival=True)
+        again = run_decide(reuse, green_run(), None, None, dict(CODE_JOBS, cagir="skipped", yeniden="failure"))
+        self.assertEqual(again["state"]["pending_rival"], first["state"]["pending_rival"])
+        done = run_decide(meta_("code", again["state"], run_rival=False, reuse_rival=True), green_run(), None,
+                          [{"attempt_index": 0, "reproduced": False}], dict(CODE_JOBS, cagir="skipped", yeniden="success"))
+        again2 = run_decide(meta_("code", done["state"]), green_run(), not_refuted(), [], CODE_JOBS)
+        self.assertEqual(again2["state"]["rival_artifacts"], [{"sha": B, "outcome": "survived"}])
 
     def test_a_refutation_without_a_reproducer_does_not_block(self):  # D42
         rival = {"verdict": "refuted", "attempts": [{"claim": "c", "evidence_refs": []}], "reasons": [],
@@ -210,10 +223,14 @@ class ReproducersReportRunnerFaults(unittest.TestCase):
             def run(self, cmd, **kw):
                 return RunResult(1, b"boom", b"", 1)
 
+        class EmptyTree(FakeRunner):  # the control run (E09): the command finds nothing to run
+            def run(self, cmd, **kw):
+                return RunResult(2, b"", b"no such file", 1)
+
         attempts = [{"claim": "c", "evidence_refs": [], "reproducer": {"cmd": "x", "expect_exit": 1}}]
-        down = run_reproducers(DockerDown(Path(".")), attempts, 5)[0]
+        down = run_reproducers(DockerDown(Path(".")), attempts, 5, control=EmptyTree(Path(".")))[0]
         self.assertEqual((down["reproduced"], down["runner_fault"]), (False, True))
-        ordinary = run_reproducers(Ordinary(Path(".")), attempts, 5)[0]
+        ordinary = run_reproducers(Ordinary(Path(".")), attempts, 5, control=EmptyTree(Path(".")))[0]
         self.assertEqual((ordinary["reproduced"], ordinary["runner_fault"]), (True, False))
 
 
@@ -293,11 +310,11 @@ class KindsAndExit(unittest.TestCase):
                      exit_request={"stage": 0, "sha": A, "spec_sha256": "e" * 64})
 
     def test_exit_conditions_are_each_enforced(self):  # D19 D22 D23
-        ready = state0(rival_artifacts=[A, "1" * 40, "2" * 40])
+        ready = state0(rival_artifacts=survived(A, "1" * 40, "2" * 40))
         good = run_decide(self.exit_meta(ready), green_run(), None, None, {"getir": "success", "kos": "success"})
         self.assertEqual((good["verdict"], good["exit"]["transferable"]), ("accepted", True))
         cases = ((dict(done=range(1, 30)), ready, "not_all_micro_features_done"),
-                 (dict(), dict(ready, rival_artifacts=["1" * 40, "2" * 40]), "no_rival_attempt_on_exit_sha"),
+                 (dict(), dict(ready, rival_artifacts=survived("1" * 40, "2" * 40)), "no_rival_attempt_on_exit_sha"),
                  (dict(tree=None), ready, "referee_tree_hash"))
         for kw, state, missing in cases:
             res = run_decide(self.exit_meta(state, **kw), green_run(), None, None, {"getir": "success", "kos": "success"})
@@ -306,7 +323,7 @@ class KindsAndExit(unittest.TestCase):
             self.assertFalse(res["exit"]["transferable"], missing)  # D37
 
     def test_the_exit_block_carries_the_founders_repeat_count(self):  # D36
-        res = run_decide(self.exit_meta(state0(rival_artifacts=[A, "1" * 40, "2" * 40], repeat_events=4)),
+        res = run_decide(self.exit_meta(state0(rival_artifacts=survived(A, "1" * 40, "2" * 40), repeat_events=4)),
                          green_run(), None, None, {"getir": "success", "kos": "success"})
         self.assertEqual(res["exit"]["repeat_events"], 4)
 
@@ -488,7 +505,7 @@ class CommandWiring(unittest.TestCase):
         return json.loads((self.root / "out" / "result.json").read_text())
 
     def test_decide_command_hands_artifacts_jobs_and_policy_to_decide(self):  # L29 L30 L31
-        defect = "refutation_reproduced:" + hashlib.sha256(b"c").hexdigest()[:12]  # named by its claim
+        defect = "refutation:" + reproducer_key(refuted("c")["attempts"][0]["reproducer"])  # named by its reproducer (E08)
         meta = meta_("code", state0(reject_streaks={defect: 1}))
         result = self.decide_cmd(meta, green_run(), refuted("c"), {"results": [{"attempt_index": 0, "reproduced": True}]},
                                  ["getir=success", "kos=success", "cagir=success", "yeniden=success"])
@@ -593,6 +610,26 @@ class PullGates(unittest.TestCase):
         commit(self.brain, {"referee/a.py": "x = 1\n"}, "company")
         self.assertIn("exit_request_not_alone", self.pull()["pre_reasons"])
 
+    def test_the_founders_ledger_rides_along_with_any_push(self):
+        """Ledger rows written in the same session never make a spec request mixed or an exit request
+        accompanied; a push of ledger rows alone is a no-op, not a judgement."""
+        commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0 v2\n",
+                            "founder-ledger.jsonl": '{"kind":"session"}\n'}, "spec and ledger")
+        meta = self.pull()
+        self.assertEqual((meta["kind"], meta["pre_reasons"]), ("spec", []))
+        self.finish(meta, rival=self.rival_ok(), jobs={"cagir": "success"})
+        self.assertIn("spec/asama-0", self.state["frozen_specs"])
+        commit(self.brain, {"founder-ledger.jsonl": '{"kind":"session"}\n{"kind":"seed_issue"}\n'}, "ledger only")
+        meta = self.pull()
+        self.assertEqual((meta["kind"], meta["run_tests"], meta["run_rival"]), ("none", False, False))
+        request = {"stage": 0, "sha": self.state["last_accepted_sha"], "spec_sha256": "0" * 64}
+        commit(self.brain, {"exit-request.json": json.dumps(request),
+                            "founder-ledger.jsonl": '{"kind":"session"}\n{"kind":"seed_issue"}\n{"kind":"exit"}\n'},
+               "exit and ledger")
+        meta = self.pull()
+        self.assertEqual(meta["kind"], "exit")
+        self.assertNotIn("exit_request_not_alone", meta["pre_reasons"])
+
     def test_an_oversized_tree_is_refused(self):  # L20
         path = self.referee / "bootstrap.json"
         doc = json.loads(path.read_text())
@@ -666,7 +703,7 @@ class PullGates(unittest.TestCase):
         seen = {}
         real_runner, real_repro = cli._runner, cli.run_reproducers
         cli._runner = lambda *a, **k: FakeRunner(vectors)
-        cli.run_reproducers = lambda runner, attempts, timeout_s: seen.setdefault("timeout", timeout_s) and []
+        cli.run_reproducers = lambda runner, attempts, timeout_s, **kw: seen.setdefault("timeout", timeout_s) and []
         self.addCleanup(setattr, cli, "_runner", real_runner)
         self.addCleanup(setattr, cli, "run_reproducers", real_repro)
         rc = cli.main(["reproduce", "--root", str(self.referee), "--pulled", str(pulled), "--deps", str(deps),

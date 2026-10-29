@@ -31,9 +31,10 @@ class LiveCliContractTest(unittest.TestCase):
             tree.mkdir()
             (tree / "a.py").write_text("x = 1" + chr(10))
             env = {"CLAUDE_CODE_OAUTH_TOKEN": "not-a-real-token", "CLAUDE_CONFIG_DIR": str(Path(tmp) / "cfg")}
-            with mock.patch.dict(os.environ, env):
+            installed = subprocess.run([CLAUDE, "--version"], capture_output=True, text=True).stdout.split()[0]
+            with mock.patch.dict(os.environ, env):  # the installed CLI may be newer than the pin: judge its contract
                 out = rival.run_rival(CFG, claude_bin=CLAUDE, seat_prompt="seat", context="context", tree_root=tree,
-                                      budget_usd_micros=1_000_000, max_prompt_chars=100_000)
+                                      budget_usd_micros=1_000_000, max_prompt_chars=100_000, pinned_version=installed)
         # A renamed flag or a changed output format gives cli_exit_N or bad_cli_result instead.
         self.assertEqual(out.verdict, "unresolved")
         self.assertEqual(len(out.reasons), 1, out.reasons)
