@@ -238,6 +238,20 @@ class ImageAndEntrypointTest(unittest.TestCase):
         for key, value in rival.PINNED_ENV.items():
             self.assertRegex(env_block, rf"\b{key}={value}\b", f"{key} differs from the referee's rival pin")
 
+    def test_the_founder_fixes_root_causes_and_never_hides_them(self):  # E204, owner 2026-10-29
+        prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
+        for phrase in ("kök nedeninden ve mimari olarak onar", "`except: pass`", "susturmak",
+                       "özel durum olarak kodlamak", "düzeltilmiş gibi yapma"):
+            self.assertIn(phrase, prompt)
+
+    def test_the_founder_measures_its_own_coverage_on_the_real_target(self):  # E203: the muscle, not a per-repo patch
+        prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
+        for phrase in ("`/work/target` üzerinde salt okunur çalıştır", "kapsamını ölç", "`missing_capability:`",
+                       "tek bir repoya özel yama değil", "hedefte yeniden ölçüp farkı yaz", "herkese açıktır"):
+            self.assertIn(phrase, prompt)
+        self.assertNotIn("project.json", prompt)  # the duty is general; what is missing is the Founder's to find
+        self.assertNotIn("Nx", prompt)
+
     def test_the_session_has_no_inherited_configuration_and_no_mcp(self):
         self.assertIn('--setting-sources ""', self.entry)
         self.assertIn("--strict-mcp-config", self.entry)

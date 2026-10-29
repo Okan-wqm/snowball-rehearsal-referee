@@ -150,6 +150,13 @@ class E06ReproducerContract(unittest.TestCase):
         self.assertEqual(rep["properties"]["expect_stderr_contains"]["maxLength"], rival.MAX_EXPECT_CHARS)
         self.assertIn("because of the defect", tool["description"] + rep["description"])
 
+    def test_hiding_a_defect_is_a_refutation(self):  # E204, owner 2026-10-29: root cause, never silencing
+        text = " ".join(rival.PROTOCOL.split())
+        for phrase in ("Hiding a defect is a defect", "skipped or deleted", "an exception swallowed",
+                       "silenced", "special-cased", "its reproducer shows the defect the change hides"):
+            self.assertIn(phrase, text)
+        self.assertEqual(secretscan.scan(text), [])
+
     def test_boundary_inputs_of_a_two_sided_mechanism_are_open_claims_not_refutations(self):  # E167, pilot cycle 9
         """Five refutations of MF2 in a row, each real, the last one a value no scanner can tell from a code
         reference (a letters-only dotted name): without a bound a scanner that must also pass clean input

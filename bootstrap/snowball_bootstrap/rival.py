@@ -70,6 +70,9 @@ Protocol for this review (bootstrap referee):
   if it shows there too it is tautological and does not count. A run that times out never counts.
 - Refutations without a reproducer, or whose reproducer does not show its observable, do not block:
   they are kept as open claims and shown to the next review. At most 5 attempts may carry a reproducer.
+- Hiding a defect is a defect. A test weakened, skipped or deleted, an expectation rewritten to match wrong
+  output, an exception swallowed, a check or warning silenced, a fixture, input or path special-cased, or a
+  limit raised only so that the push passes, is a refutation: its reproducer shows the defect the change hides.
 - When the spec asks a mechanism both to catch something and to let clean input pass (a scanner, a guard,
   a classifier), a refutation must use an input that is clearly the thing to catch and not a plausible
   clean input. An input on the boundary, one a correct implementation could reasonably treat either way,
