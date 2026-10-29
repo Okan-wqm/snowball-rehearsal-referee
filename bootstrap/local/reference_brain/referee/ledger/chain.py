@@ -180,7 +180,7 @@ def _load(path: str) -> tuple[list[Any], Problem | None]:
     for number, raw in enumerate(lines, start=1):
         try:
             rows.append(_loads(raw.decode("utf-8")))
-        except ValueError:  # UnicodeDecodeError and JSONDecodeError are ValueErrors
+        except (ValueError, RecursionError):  # bad UTF-8 or JSON; or nested deeper than the parser goes
             return rows, (f"line:{number}", "the line is not one JSON value")
     return rows, None
 
@@ -271,8 +271,8 @@ def append_row(path: str, row: Any) -> str:
 def _stdin_row() -> Any:
     try:
         return _loads(sys.stdin.buffer.read().decode("utf-8"))
-    except ValueError as exc:
-        raise ChainError(f"stdin is not one JSON value: {exc}") from exc
+    except (ValueError, RecursionError) as exc:
+        raise ChainError(f"stdin is not one JSON value: {str(exc)[:200]}") from exc
 
 
 def main(argv: list[str] | None = None) -> int:

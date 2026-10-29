@@ -74,6 +74,10 @@ MUTANTS = [
      "the writer glues a row onto a half-written line"),
     ("verify_always_exits_zero", 'code = 0 if result["valid"] else 1', "code = 0",
      "a broken chain looks fine to a shell script"),
+    ("deep_line_crashes_verify", "except (ValueError, RecursionError):  # bad UTF-8", "except ValueError:  # bad UTF-8",
+     "the second rehearsal's finding: a line nested too deeply ends verify in a traceback, not a JSON line"),
+    ("deep_stdin_crashes_the_cli", "except (ValueError, RecursionError) as exc:", "except ValueError as exc:",
+     "a deeply nested row on stdin ends hash and append in a traceback"),
 ]
 
 

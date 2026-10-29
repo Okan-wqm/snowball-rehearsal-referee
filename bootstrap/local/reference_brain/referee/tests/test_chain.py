@@ -286,6 +286,14 @@ class VerifyTest(Files):
         Path(self.path("u.jsonl")).write_bytes(b"\xff\xfe\n")
         self.assertBroken(chain.check_file(self.path("u.jsonl")), "line:1")
 
+    def test_a_line_nested_too_deeply_for_the_parser_is_a_broken_line_not_a_crash(self):
+        """Found by the rival in the second rehearsal: json.loads raises RecursionError, not ValueError."""
+        good = self.chain_file("good.jsonl", 2)
+        text = Path(good).read_text(encoding="utf-8") + "[" * 200000 + "\n"
+        Path(self.path("deep.jsonl")).write_text(text, encoding="utf-8")
+        self.assertBroken(chain.check_file(self.path("deep.jsonl")), "line:3")
+        self.assertBroken(chain.check_file(good, self.path("deep.jsonl")), "line:3")
+
     def test_a_row_without_a_usable_id_is_named_by_line(self):
         rows = self.rows(self.chain_file("good.jsonl", 3))
         for bad in (None, "", 7):
@@ -452,11 +460,23 @@ class CommandLineTest(Files):
         self.assertNotEqual(self.one_json_line(out)["row_hash"], V1_HASH)
 
     def test_hash_of_input_it_cannot_use_is_exit_2_with_an_error_and_no_traceback(self):
-        for stdin in (b"", b"not json", b'{"a":1}\n{"b":2}', b"[1]", b'{"prev_hash":"x"}', b"\xff"):
+        for stdin in (b"", b"not json", b'{"a":1}\n{"b":2}', b"[1]", b'{"prev_hash":"x"}', b"\xff", b"[" * 200000):
             code, out, err = run_cli("hash", stdin=stdin)
-            self.assertEqual(code, 2, stdin)
+            self.assertEqual(code, 2, stdin[:20])
             self.assertIn("error", self.one_json_line(out))
             self.assertNotIn("Traceback", err)
+
+    def test_a_deeply_nested_file_or_row_keeps_the_one_json_line_contract(self):
+        deep = self.path("deep.jsonl")
+        Path(deep).write_text("[" * 200000 + "\n", encoding="utf-8")
+        code, out, err = run_cli("verify", deep)
+        self.assertEqual((code, self.one_json_line(out)["broken_row"]), (1, "line:1"))
+        self.assertNotIn("Traceback", err)
+        code, out, err = run_cli("append", self.path("a.jsonl"), stdin=b'{"row_id":"r1","x":' + b"[" * 200000)
+        self.assertEqual(code, 2)
+        self.assertIn("error", self.one_json_line(out))
+        self.assertNotIn("Traceback", err)
+        self.assertFalse(os.path.exists(self.path("a.jsonl")))
 
     def test_verify_answers_by_exit_code_and_by_json(self):
         good = self.chain_file("good.jsonl", 3)
