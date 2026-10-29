@@ -149,6 +149,16 @@ class E06ReproducerContract(unittest.TestCase):
         self.assertEqual(rep["properties"]["expect_stderr_contains"]["maxLength"], rival.MAX_EXPECT_CHARS)
         self.assertIn("because of the defect", tool["description"] + rep["description"])
 
+    def test_boundary_inputs_of_a_two_sided_mechanism_are_open_claims_not_refutations(self):  # E167, pilot cycle 9
+        """Five refutations of MF2 in a row, each real, the last one a value no scanner can tell from a code
+        reference (a letters-only dotted name): without a bound a scanner that must also pass clean input
+        never ends. Boundary cases are kept as open claims, not lost."""
+        text = " ".join(rival.PROTOCOL.split())  # the protocol is wrapped; the rule is read as prose
+        for phrase in ("both to catch something and to let clean input pass", "clearly the thing to catch",
+                       "not a plausible clean input", "without a reproducer, as an open claim"):
+            self.assertIn(phrase, text)
+        self.assertEqual(secretscan.scan(text), [])
+
     def test_the_protocol_tells_the_rival_to_build_secret_shaped_strings_at_run_time(self):  # E165, pilot cycle 5
         """Reviewing a secret scanner, the rival quoted a credential-shaped value and its verdict was withheld."""
         self.assertIn("build it at run time from parts", rival.PROTOCOL)

@@ -70,6 +70,10 @@ Protocol for this review (bootstrap referee):
   if it shows there too it is tautological and does not count. A run that times out never counts.
 - Refutations without a reproducer, or whose reproducer does not show its observable, do not block:
   they are kept as open claims and shown to the next review. At most 5 attempts may carry a reproducer.
+- When the spec asks a mechanism both to catch something and to let clean input pass (a scanner, a guard,
+  a classifier), a refutation must use an input that is clearly the thing to catch and not a plausible
+  clean input. An input on the boundary, one a correct implementation could reasonably treat either way,
+  is not a refutation: send it without a reproducer, as an open claim, so the trade-off is recorded.
 - Open claims of earlier reviews, if any, are listed in the request with an id. You may correct the
   reproducer of an open claim once: send an attempt with open_claim set to that id.
 - Never write a secret-shaped string anywhere in your verdict (a token or key, or a credential name such

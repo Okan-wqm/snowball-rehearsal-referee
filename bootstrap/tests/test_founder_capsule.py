@@ -127,6 +127,7 @@ class RefereeRetryTest(unittest.TestCase):  # E166: the loop never waits on the 
 
         pilot = Fake(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
         pilot.idle = 0
+        pilot.seed = before  # a fresh pilot: nothing to judge before the first session
         args = type("Args", (), dict(model="m", max_turns=1, budget_usd=1, session_timeout=1, referee_timeout=1))
         with mock.patch.object(launch, "say"):
             pilot.cycle(1, args)
@@ -141,6 +142,47 @@ class RefereeRetryTest(unittest.TestCase):  # E166: the loop never waits on the 
         for key in ("reasons", "warnings", "rival_attempts", "reproduced", "old_refutations_still_reproducing",
                     "ledger_new", "reports_new", "minutes", "cost_usd"):
             self.assertIn(key, m)
+
+    def catch_up(self, prior_head):
+        launch = load_launch()
+        head, calls = "b" * 40, []
+
+        class Fake(launch.Pilot):
+            dispatches = 0
+
+            def fetch_result(self):
+                judged = head if self.dispatches else prior_head
+                return {"head": judged, "verdict": "rejected", "state": {"last_evaluated_sha": judged},
+                        "warnings": [], "reasons": []}
+
+            def dispatch_referee(self, timeout_s):
+                self.dispatches += 1
+                calls.append("referee")
+                return {"id": "1", "conclusion": "success", "url": "u"}
+
+            def brain_head(self):
+                return head  # the session pushes nothing
+
+            def ledger_rows(self, sha):
+                return []
+
+            def session(self, *a):
+                calls.append("session")
+                return {"exit": 0, "minutes": 1}
+
+            def write(self, text):
+                pass
+
+        pilot = Fake(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+        pilot.idle, pilot.seed = 0, "s" * 40
+        args = type("Args", (), dict(model="m", max_turns=1, budget_usd=1, session_timeout=1, referee_timeout=1))
+        with mock.patch.object(launch, "say"):
+            pilot.cycle(1, args)
+        return calls
+
+    def test_a_push_the_referee_never_judged_is_judged_before_the_next_session(self):  # E168
+        self.assertEqual(self.catch_up(prior_head="a" * 40), ["referee", "session"])
+        self.assertEqual(self.catch_up(prior_head="b" * 40), ["session"])  # already judged: straight to work
 
     def test_a_reasons_owner_is_the_referees_own_rule(self):
         owner = load_launch().reason_owner
