@@ -2,7 +2,7 @@
 # .github/workflows/bootstrap.yml during setup (tohum/25 row 3). Only the operator edits it.
 #
 # Referee repository layout this workflow expects (all written by the operator):
-#   bootstrap/              <- copy of seed/bootstrap/ (package, requirements, workflow)
+#   bootstrap/              <- copy of seed/bootstrap/ (package, requirements, stage tables, workflow)
 #   vectors/                <- copy of seed/bootstrap/vectors/
 #   seats/                  <- spec/tohum/29-tohum-koltuklari.md
 #   bootstrap.json, control.json, policy.json, setup/summary.json
@@ -196,7 +196,7 @@ jobs:
       - name: Pull the pinned image
         run: docker pull "${{ needs.cek.outputs.image }}"
       - id: run
-        name: Red controls, founder tests and seed vectors in sandboxed containers
+        name: Red controls, founder tests, seed vectors and module-less red in sandboxed containers
         run: python3 -m snowball_bootstrap run-tests --root snap --pulled pulled --deps deps --work work --out run
       - id: pack
         run: python3 -m snowball_bootstrap pack --dir run --out run.tar | sed -n 's/^sha256=/run_sha=/p' >> "$GITHUB_OUTPUT"

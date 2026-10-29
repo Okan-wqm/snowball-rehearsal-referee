@@ -16,18 +16,19 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-from . import canon, config, ghapi, gitio, licenses, state as st
+from . import canon, config, ghapi, gitio, licenses, stages, state as st
 from .classify import classify, is_founder_record, spec_stage_dirs
 from .container import DockerRunner
 from .controls import run_controls
 from .decide import OUTAGE_GIVE_UP_DAYS, OUTAGE_RETRY_LIMIT, decide, utc_now
 from .importer import ImportErrorStop, run_import, verify_signature
 from .manifest import ManifestError, check_stage0, parse_lockfile, parse_manifest
+from .moduleless import run_module_less
 from .reproduce import run_reproducers, run_state_reproducers
 from .rival import (HIDDEN_DIRS, HIDDEN_NAMES, RivalOutcome, build_context, extract_seat_prompt, hidden, resolve_claude,
                     run_rival)
 from .treehash import path_problem, TreeError, extract, is_utf8_name, iter_files, shown, tree_hash
-from .vectors import run_vectors
+from .vectors import missing_groups, run_vectors
 
 EXIT_FILE = "exit-request.json"
 MANIFEST_FILE = "snowball-tests.json"
@@ -108,10 +109,13 @@ def tar_page(tar_bytes: bytes, prefix: str) -> tuple[str, str] | None:
     return None
 
 
-def is_green(controls: list[dict], tests: list[dict], vectors: list[dict], lic: list[dict]) -> bool:
-    """Green means: controls behaved, at least one test ran, and every test, vector and wheel passed."""
+def is_green(controls: list[dict], tests: list[dict], vectors: list[dict], lic: list[dict],
+             module_less: list[dict] | None = None) -> bool:
+    """Green means: controls behaved, at least one test ran, every test, vector and wheel passed, and no test
+    stayed green without its micro-feature's module (nor did docker fail under one)."""
     return (all(c["ok"] for c in controls) and bool(tests) and all(t["ok"] for t in tests)
-            and all(v["ok"] for v in vectors) and all(x["allowed"] for x in lic))
+            and all(v["ok"] for v in vectors) and all(x["allowed"] for x in lic)
+            and not any(m["stayed_green"] or m["runner_fault"] for m in module_less or []))
 
 
 def remaining_budget(policy: config.Policy, prev: dict[str, Any]) -> int:
@@ -273,6 +277,9 @@ def cmd_pull(args: argparse.Namespace) -> int:
     boot = config.load_bootstrap(root)
     policy = config.load_policy(root)
     summary_cfg = config.load_summary(root)
+    # The seed's stage table is loaded here, outside the content guard below: a broken table stops the run
+    # (`29e` "Aşama ve parti tabloları") instead of turning into the Founder's `pull_error` rejection.
+    table = stages.load(0)
     prev = read_json(Path(args.state))
     repo = Path(args.work) / "brain.git"
     remote = args.remote or f"https://github.com/{boot.brain_repo}.git"
@@ -285,7 +292,7 @@ def cmd_pull(args: argparse.Namespace) -> int:
         return 0
     waived = config.load_waivers(root)
     try:
-        return _pull_classify(boot, policy, summary_cfg, prev, repo, base, head, meta, out, waived)
+        return _pull_classify(boot, policy, summary_cfg, table, prev, repo, base, head, meta, out, waived)
     except (ValueError, TypeError, KeyError, IndexError, AttributeError, RecursionError) as exc:
         # Content of the commit broke a step that should have named it. Rejecting it is the only safe
         # answer that does not wedge the referee: without a signed result the same head comes back every
@@ -303,7 +310,7 @@ def _pull_meta(head: str, base: str, prev: dict[str, Any]) -> dict[str, Any]:
             "kind": "none", "changed": [], "pre_reasons": [], "evaluate": True,
             "run_tests": False, "run_rival": False, "manifest": None, "exit_request": None,
             "referee_tree_sha256": None, "spec_dir_hashes": {}, "state_repro": [], "reuse_rival": False,
-            "waived": []}
+            "waived": [], "module_less": []}
 
 
 def _well_formed_exit_request(req: Any) -> bool:
@@ -313,9 +320,19 @@ def _well_formed_exit_request(req: Any) -> bool:
             and isinstance(req["spec_sha256"], str) and bool(config.HEX64_RE.match(req["spec_sha256"])))
 
 
+def _base_done(repo: Path, base: str) -> set[int]:
+    """The micro-features the last accepted commit had finished; none when it had no readable manifest (then every
+    finished one is new, and module-less red runs for all of them)."""
+    raw = gitio.file_at(repo, base, MANIFEST_FILE)
+    try:
+        return set(parse_manifest(raw.decode("utf-8")).done_mf) if raw is not None else set()
+    except (ManifestError, UnicodeDecodeError):
+        return set()
+
+
 def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: config.Summary,
-                   prev: dict[str, Any], repo: Path, base: str, head: str, meta: dict[str, Any],
-                   out: Path, waived: list[str]) -> int:
+                   table: stages.StageTable, prev: dict[str, Any], repo: Path, base: str, head: str,
+                   meta: dict[str, Any], out: Path, waived: list[str]) -> int:
     pre: list[str] = []
     base_ok = gitio.has_commit(repo, base)
     if not base_ok:
@@ -367,7 +384,7 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
         else:
             try:
                 manifest = parse_manifest(raw.decode("utf-8"))
-                pre += check_stage0(manifest)
+                pre += check_stage0(manifest, table)
                 for lock in manifest.lockfiles:
                     content = tar_file(tar_bytes, lock)
                     if content is None:
@@ -379,6 +396,10 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
         meta["manifest"] = None if manifest is None else {
             "tests": [{"id": t.id, "cmd": t.cmd, "stage": t.stage} for t in manifest.tests],
             "done_mf": list(manifest.done_mf), "lockfiles": list(manifest.lockfiles)}
+        if manifest is not None and base_ok:
+            # Module-less red (`asama-0/14`): for the micro-features this push finishes, and at the exit for all.
+            before = set() if kind == "exit" else _base_done(repo, base)
+            meta["module_less"] = [k for k in manifest.done_mf if k not in before]
 
     if kind == "exit":
         try:
@@ -471,15 +492,19 @@ def cmd_run_tests(args: argparse.Namespace) -> int:
     root, pulled, out = Path(args.root), Path(args.pulled), Path(args.out)
     boot = config.load_bootstrap(root)
     policy = config.load_policy(root)
+    table = stages.load(0)
     meta = read_json(pulled / "meta.json")
+    tar_bytes = (pulled / "brain.tar").read_bytes()
     src = Path(args.work) / "src"
-    extract((pulled / "brain.tar").read_bytes(), src, boot.limits.max_tree_bytes)
+    extract(tar_bytes, src, boot.limits.max_tree_bytes)
     manifest = meta["manifest"]
+    done = tuple(manifest["done_mf"])
     lic = licenses.check_dir(Path(args.deps), policy.license_allowlist, policy.license_exceptions)
     runner = _runner(boot, src, Path(args.deps), root / "vectors", manifest["lockfiles"])
     controls = run_controls(runner)
     tests: list[dict[str, Any]] = []
     vectors: list[dict[str, Any]] = []
+    module_less: list[dict[str, Any]] = []
     if all(c["ok"] for c in controls):
         for t in (x for x in manifest["tests"] if x["stage"] == 0):
             res = runner.run(t["cmd"], timeout_s=boot.limits.test_timeout_s)
@@ -489,9 +514,16 @@ def cmd_run_tests(args: argparse.Namespace) -> int:
                           "stdout_sha256": hashlib.sha256(res.stdout).hexdigest(),
                           "stderr_sha256": hashlib.sha256(res.stderr).hexdigest(),
                           "ok": res.ok, "output_tail": tail})
-        vectors = run_vectors(runner, root / "vectors", tuple(manifest["done_mf"]))
-    green = is_green(controls, tests, vectors, lic)
+        vectors = run_vectors(runner, root / "vectors", done, table=table)
+        if is_green(controls, tests, vectors, lic):  # a red push is rejected anyway: spare the containers
+            module_less = run_module_less(
+                lambda tree: _runner(boot, tree, Path(args.deps), root / "vectors", manifest["lockfiles"]),
+                tar_bytes, Path(args.work) / "module-less", table, meta.get("module_less") or [],
+                manifest["tests"], boot.limits.test_timeout_s, boot.limits.max_tree_bytes)
+    green = is_green(controls, tests, vectors, lic, module_less)
     write_json(out / "run.json", {"controls": controls, "tests": tests, "vectors": vectors, "licenses": lic,
+                                  "module_less": module_less,
+                                  "vector_groups_missing": missing_groups(root / "vectors", done, table),
                                   "green": green})
     output(green=green)
     return 0
@@ -614,6 +646,10 @@ def cmd_decide(args: argparse.Namespace) -> int:
     rejected = [w for w in result["warnings"] if w.startswith("request_rejected")]
     if rejected:
         print(f"::warning title=Request rejected by the API::{', '.join(rejected)}")
+    groups = [w.split(":", 1)[1] for w in result["warnings"] if w.startswith("vector_group_missing:")]
+    if groups:
+        print(f"::warning title=Seed vector groups missing::{', '.join(groups)}: a finished micro-feature owns them "
+              "but the seed has no vectors yet; the exit waits for them (a seed epoch adds them, not the Founder)")
     if result["state"].get("outage_stop"):
         print(f"::error title=Stopped for the operator::{result['state']['outage_stop']} on {result['head']}: the "
               "referee will not retry it by itself")

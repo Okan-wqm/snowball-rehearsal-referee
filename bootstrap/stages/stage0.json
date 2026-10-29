@@ -1,0 +1,25 @@
+{
+  "stage": 0,
+  "mfs": [
+    {"mf": 1, "tests": [13], "groups": ["chain"], "module": "ledger/chain.py", "calls": []},
+    {"mf": 2, "tests": [38], "groups": ["secrets"], "module": "gate/secrets.py", "calls": []},
+    {"mf": 3, "tests": [20, 21], "groups": ["contained"], "module": "runner/contained.py", "calls": []},
+    {"mf": 4, "tests": [19, 47], "groups": ["profile"], "module": "profile/derive.py", "calls": []},
+    {"mf": 5, "tests": [34], "groups": ["npmlock"], "module": "runner/deps_npm.py", "calls": [4]},
+    {"mf": 6, "tests": [48], "groups": ["recipe"], "module": "profile/unit_verify.py", "calls": [3, 5]},
+    {"mf": 7, "tests": [23], "groups": ["diffguard"], "module": "gate/diffguard.py", "calls": [4]},
+    {"mf": 8, "tests": [35], "groups": ["k0map"], "module": "gate/check.py", "calls": [2]},
+    {"mf": 9, "tests": [49], "groups": ["refs"], "module": "target/write.py", "calls": []},
+    {"mf": 10, "tests": [39], "groups": ["chain", "append"], "module": "ledger/append.py", "calls": [2, 9]},
+    {"mf": 11, "tests": [40], "groups": ["root"], "module": "ledger/anchor.py", "calls": [10]},
+    {"mf": 12, "tests": [36], "groups": ["flaky"], "module": "gate/sentinel.py", "calls": [3]},
+    {"mf": 13, "tests": [25], "groups": ["cause"], "module": "gate/revert.py", "calls": [9, 12]},
+    {"mf": 14, "tests": [50], "groups": ["revert_drill"], "module": "harness/revert_drill.py", "calls": [10, 13]},
+    {"mf": 15, "tests": [37], "groups": ["prompt"], "module": "dispatcher/llm_call.py", "calls": [2, 10]},
+    {"mf": 16, "tests": [42], "groups": ["status"], "module": "status/block.py", "calls": [10]},
+    {"mf": 17, "tests": [46], "groups": [], "module": ".github/workflows/loop.yml",
+     "calls": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]},
+    {"mf": 18, "tests": [45, 14], "groups": ["genesis"], "module": "activate.py",
+     "calls": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]}
+  ]
+}

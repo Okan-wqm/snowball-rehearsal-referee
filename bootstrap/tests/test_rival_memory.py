@@ -24,7 +24,8 @@ from snowball_bootstrap.container import RunResult
 from snowball_bootstrap.decide import decide
 
 import test_flow
-from helpers import PINNED_CLI, FakeRunner, commit, good_init, install_fake_claude, ok_result, posix_only, submit
+from helpers import (EVERY_GROUP, PINNED_CLI, STATS, FakeRunner, commit, good_init, install_fake_claude, ok_result,
+                     posix_only, submit)
 
 A, B, C = "a" * 40, "b" * 40, "c" * 40
 NOW = "2026-10-29T12:00:00Z"
@@ -685,7 +686,7 @@ class E13SpendNeverLost(unittest.TestCase):
 
 class E20OneAttemptPerArtifact(unittest.TestCase):
     def exit_meta(self, state):
-        return meta2("exit", state, manifest={"tests": [], "done_mf": list(range(1, 31)), "lockfiles": []},
+        return meta2("exit", state, manifest={"tests": [], "done_mf": list(range(1, 19)), "lockfiles": []},
                      referee_tree_sha256="f" * 64, exit_request={"stage": 0, "sha": A, "spec_sha256": "e" * 64},
                      run_rival=False)
 
@@ -1082,7 +1083,7 @@ class E141DockerFailingDuringVectors(unittest.TestCase):
     def vectors(self):
         from snowball_bootstrap.vectors import run_vectors
         vec_dir = Path(test_flow.__file__).resolve().parents[1] / "vectors"
-        return run_vectors(Returns(125, b"", b"docker: Error response from daemon"), vec_dir, (1, 9))
+        return run_vectors(Returns(125, b"", b"docker: Error response from daemon"), vec_dir, STATS, table=EVERY_GROUP)
 
     def test_a_vector_run_that_docker_failed_says_so(self):
         results = self.vectors()

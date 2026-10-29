@@ -15,21 +15,22 @@ import zipfile
 from pathlib import Path
 from unittest import mock
 
-from snowball_bootstrap import cli, gitio
+from snowball_bootstrap import cli, gitio, stages
 from snowball_bootstrap.container import DockerRunner
 from snowball_bootstrap.decide import decide
 from snowball_bootstrap.importer import ImportErrorStop, run_import
-from snowball_bootstrap.manifest import STAGE0_MF_TESTS
 from snowball_bootstrap.treehash import TreeError, tree_hash
 
-from helpers import commit, install_fake_claude, make_repo, ok_result, posix_only, sh, submit
+from helpers import commit, install_fake_claude, make_repo, module_less_red, ok_result, posix_only, sh, submit
 
 SEED_FILES = {"spec/tohum/00-cekirdek.md": "# core\n", "spec/asama-0/00-ozet.md": "# stage 0\n"}
+STAGE0 = stages.load(0)
+ALL_MFS = range(1, STAGE0.count + 1)
 
 
 def all_tests_manifest(done):
     tests = [{"id": f"T{n}", "cmd": f"python -m unittest t{n}", "stage": 0}
-             for mf in done for n in STAGE0_MF_TESTS[mf]]
+             for mf in done for n in STAGE0.feature(mf).tests]
     return json.dumps({"tests": tests, "done_mf": list(done), "lockfiles": []})
 
 
@@ -90,7 +91,8 @@ class Flow(unittest.TestCase):
     def green_run(self, meta):
         tests = [{"id": t["id"], "cmd_sha256": "c", "ok": True, "output_tail": ""}
                  for t in meta["manifest"]["tests"]]
-        return {"controls": [{"id": "exit_one", "ok": True}], "tests": tests, "vectors": [], "green": True}
+        return {"controls": [{"id": "exit_one", "ok": True}], "tests": tests, "vectors": [],
+                "module_less": module_less_red(meta), "green": True}
 
     def test_the_rivals_own_failures_are_evaluated_not_retried(self):
         """Unlike an outage, these end the commit's evaluation (what they count toward is the owner's call)."""
@@ -130,6 +132,54 @@ class Flow(unittest.TestCase):
     def freeze_stage0(self):
         commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0, frozen" + chr(10)}, "spec")
         self.assertEqual(self.finish(self.pull(), rival=self.rival_ok(), jobs={"cagir": "success"})["verdict"], "frozen")
+
+    def test_module_less_red_is_asked_for_what_a_push_finishes_and_for_everything_at_the_exit(self):
+        """`asama-0/14`: a push that adds MF k to done_mf has k's tests run again without k's module; the exit has
+        every micro-feature's (`asama-0/10` #modulsuz). What the last accepted commit had finished is not asked again."""
+        self.freeze_stage0()
+        commit(self.brain, {"referee/ledger/chain.py": "x = 1\n", "snowball-tests.json": all_tests_manifest([1])}, "mf1")
+        meta = self.pull()
+        self.assertEqual((meta["kind"], meta["module_less"]), ("code", [1]))  # the frozen spec had no manifest
+        jobs = {"getir": "success", "kos": "success", "cagir": "success", "yeniden": "skipped"}
+        self.assertEqual(self.finish(meta, run=self.green_run(meta), rival=self.rival_ok(), jobs=jobs)["verdict"],
+                         "accepted")
+        commit(self.brain, {"referee/ledger/chain.py": "x = 2\n"}, "mf1 again, nothing new finished")
+        self.assertEqual(self.pull()["module_less"], [])
+        commit(self.brain, {"snowball-tests.json": all_tests_manifest([1, 2, 3])}, "mf2 and mf3 at once")
+        self.assertEqual(self.pull()["module_less"], [2, 3])
+        frozen = self.state["frozen_specs"]["spec/asama-0"]
+        accepted = self.state["last_accepted_sha"]
+        sh(self.brain, "git", "reset", "-q", "--hard", accepted)
+        commit(self.brain, {"exit-request.json": json.dumps({"stage": 0, "sha": accepted, "spec_sha256": frozen})},
+               "exit request")
+        self.state["last_evaluated_sha"] = None
+        meta = self.pull()
+        self.assertEqual((meta["kind"], meta["module_less"]), ("exit", [1]))
+        # A last accepted commit whose manifest cannot be read finished nothing: everything is asked for.
+        commit(self.brain, {"exit-request.json": None, "snowball-tests.json": "{"}, "broken manifest")
+        self.state["last_accepted_sha"] = sh(self.brain, "git", "rev-parse", "HEAD")
+        commit(self.brain, {"snowball-tests.json": all_tests_manifest([1, 2])}, "mf1 and mf2")
+        self.assertEqual(self.pull()["module_less"], [1, 2])
+
+    def test_a_broken_stage_table_stops_the_run_and_is_never_the_founders_rejection(self):
+        """`29e`: a table whose order (`calls`) or shape is wrong is not loaded; the seed is the operator's to fix."""
+        self.freeze_stage0()
+        commit(self.brain, {"referee/ledger/chain.py": "x = 1\n", "snowball-tests.json": all_tests_manifest([1])}, "mf1")
+        table = json.loads((stages.STAGES_DIR / "stage0.json").read_text(encoding="utf-8"))
+        table["mfs"][1]["calls"] = [3]  # MF2 calling MF3
+        broken = Path(self.tmp.name) / "stages"
+        broken.mkdir()
+        (broken / "stage0.json").write_text(json.dumps(table), encoding="utf-8")
+        state_path = Path(self.tmp.name) / "state_broken.json"
+        state_path.write_text(json.dumps(self.state))
+        err = io.StringIO()
+        with mock.patch.object(stages, "STAGES_DIR", broken), contextlib.redirect_stderr(err):
+            rc = cli.main(["pull", "--root", str(self.referee), "--state", str(state_path), "--work",
+                           str(Path(self.tmp.name) / "work"), "--out", str(Path(self.tmp.name) / "pulled_broken"),
+                           "--remote", str(self.brain)])
+        self.assertEqual(rc, 2)
+        self.assertIn("MF2 calls MF3", err.getvalue())
+        self.assertFalse((Path(self.tmp.name) / "pulled_broken" / "meta.json").exists())  # nothing signed against it
 
     def test_names_that_forge_lines_or_reach_git_metadata_are_one_rejection(self):
         """E03, E04, X7: a newline or tab, a .git component in any case, a colon or a backslash in a name.
@@ -413,7 +463,7 @@ class Flow(unittest.TestCase):
         self.finish(meta, rival=self.rival_ok(), jobs={"cagir": "success"})
         files = {"referee/ledger/chain.py": "x = 1\n", "referee/.github/workflows/ref.yml": "on: push\n",
                  "tests/fixtures/toy-repo/app.py": "import os\n",
-                 "snowball-tests.json": all_tests_manifest(range(1, 31))}
+                 "snowball-tests.json": all_tests_manifest(ALL_MFS)}
         commit(self.brain, files, "all of stage 0")
         meta = self.pull()
         jobs = {"getir": "success", "kos": "success", "cagir": "success", "yeniden": "skipped"}
@@ -498,7 +548,7 @@ class Flow(unittest.TestCase):
         commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0 v4\n"}, "spec")
         self.finish(self.pull(), rival=self.rival_ok(), jobs={"cagir": "success"})
         red_jobs = {"getir": "success", "kos": "success", "cagir": "skipped"}
-        same = f"test_failed:T{STAGE0_MF_TESTS[1][0]}"
+        same = f"test_failed:T{STAGE0.feature(1).tests[0]}"
 
         def red_push(n, licenses=None):
             commit(self.brain, {"referee/ledger/chain.py": f"x = {n}\n",

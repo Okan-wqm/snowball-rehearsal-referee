@@ -1,7 +1,9 @@
-"""Apply the seed vectors (`tohum/29a`) to the founder's code through the fixed interface.
+"""Apply the seed vectors (`tohum/29a`, `29d`) to the founder's code through the fixed interface.
 
-A vector group applies once the micro-feature that owns it is declared done. Every vector is
-checked twice: the right input must give the expected answer, and a changed input must not.
+A vector group applies once a micro-feature of the stage table that owns it is declared done; a group the
+table does not name has no owner in this stage and does not run (`cp_lower`, `mcnemar`, `match` are P1's,
+`drill` the Stage 2 batch's). Every vector is checked twice: the right input must give the expected answer,
+and a changed input must not.
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
+from . import stages
 from .container import Runner
 
 CWD = "referee"
@@ -132,11 +135,27 @@ def _drill(run: VectorRun, spec: dict[str, Any]) -> None:
 GROUPS = (("chain", _chain), ("cp_lower", _cp), ("mcnemar", _mcnemar), ("match", _match), ("drill", _drill))
 
 
-def run_vectors(runner: Runner, vectors_dir: Path, done_mf: tuple[int, ...], timeout_s: int = 120) -> list[dict]:
-    spec = json.loads((vectors_dir / "vectors.json").read_text(encoding="utf-8"))
+def _seed(vectors_dir: Path) -> dict[str, Any]:
+    return json.loads((vectors_dir / "vectors.json").read_text(encoding="utf-8"))
+
+
+def missing_groups(vectors_dir: Path, done_mf: tuple[int, ...], table: stages.StageTable) -> list[str]:
+    """Groups a finished micro-feature owns that the seed has no vectors (or no runner) for yet.
+
+    Their expected values come with the seed, computed twice independently (`29a`); the referee never makes them
+    up. `decide` warns on a code push and refuses the exit while any is missing.
+    """
+    spec = _seed(vectors_dir)
+    runnable = {name for name, _fn in GROUPS}
+    return [g for g in table.groups_of(done_mf) if g not in spec or g not in runnable]
+
+
+def run_vectors(runner: Runner, vectors_dir: Path, done_mf: tuple[int, ...], timeout_s: int = 120, *,
+                table: stages.StageTable | None = None) -> list[dict]:
+    owned = set((table or stages.load(0)).groups_of(done_mf))
+    spec = _seed(vectors_dir)
     run = VectorRun(runner, timeout_s)
     for name, fn in GROUPS:
-        group = spec[name]
-        if group["mf"] in done_mf:
-            fn(run, group)
+        if name in owned and name in spec:
+            fn(run, spec[name])
     return run.results

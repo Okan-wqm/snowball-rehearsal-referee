@@ -2,7 +2,7 @@
   "schema": "snowball-seed-vectors/1",
   "source": "spec/tohum/29a-tohum-vektorleri.md (seed 2.2)",
   "chain": {
-    "mf": 1,
+    "owner": "asama-0",
     "rows": [
       {
         "row": {
@@ -42,7 +42,7 @@
     "v3_broken_row": "r2"
   },
   "cp_lower": {
-    "mf": 9,
+    "owner": "P1",
     "alpha": "0.10",
     "cases": [
       [
@@ -88,7 +88,7 @@
     ]
   },
   "mcnemar": {
-    "mf": 9,
+    "owner": "P1",
     "cases": [
       [
         0,
@@ -118,7 +118,7 @@
     ]
   },
   "match": {
-    "mf": 9,
+    "owner": "P1",
     "cases": [
       {
         "findings": "match/findings_hit.json",
@@ -138,7 +138,7 @@
     ]
   },
   "drill": {
-    "mf": 18,
+    "owner": "asama-2",
     "source": "seed/drill: python -m snowball_drill vectors (seed 7)",
     "cases": [
       {

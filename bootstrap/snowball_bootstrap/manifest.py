@@ -1,7 +1,8 @@
-"""The founder's test manifest (`snowball-tests.json`, `tohum/26b`) and its lock files.
+"""The founder's test manifest (`snowball-tests.json`, `tohum/26c`) and its lock files.
 
 The bootstrap runs only the commands listed here, and refuses a manifest that leaves a finished
-micro-feature without its self-test (`asama-0/14`) or that lists no test at all.
+micro-feature without its self-test or that lists no test at all. Which tests a micro-feature needs comes
+from the seed's stage table (`stages/stage0.json`, the machine copy of `asama-0/14`).
 """
 
 from __future__ import annotations
@@ -11,14 +12,8 @@ import re
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
-# Stage 0 micro-feature -> self-test numbers, copied from asama-0/14 (seed 2.2).
-STAGE0_MF_TESTS: dict[int, tuple[int, ...]] = {
-    1: (13,), 2: (30,), 3: (26,), 4: (31,), 5: (19,), 6: (8,), 7: (2, 4), 8: (27,),
-    9: (1, 6, 7, 12, 14, 28), 10: (32,), 11: (9, 11), 12: (33,), 13: (20, 21), 14: (34,),
-    15: (23,), 16: (35,), 17: (36,), 18: (25,), 19: (24,), 20: (37,), 21: (38,), 22: (22,),
-    23: (39,), 24: (40,), 25: (41,), 26: (42,), 27: (43,), 28: (29,), 29: (44,), 30: (45,),
-}
-STAGE0_MF_COUNT = len(STAGE0_MF_TESTS)
+from . import stages
+
 TEST_ID_RE = re.compile(r"^T([1-9][0-9]{0,2})\Z")
 MAX_CMD = 2000
 MAX_TESTS = 200
@@ -110,19 +105,24 @@ def parse_manifest(text: str) -> Manifest:
     return Manifest(tuple(tests), tuple(done), locks)
 
 
-def check_stage0(manifest: Manifest) -> list[str]:
-    """Reasons the manifest cannot be accepted for Stage 0; empty when it can."""
+def check_stage0(manifest: Manifest, table: stages.StageTable | None = None) -> list[str]:
+    """Reasons the manifest cannot be accepted for Stage 0; empty when it can.
+
+    `done_mf` is a prefix 1..k of the stage table (`26c`); each finished micro-feature's tests (`asama-0/09`)
+    are in the manifest at stage 0.
+    """
+    table = table or stages.load(0)
     reasons: list[str] = []
     stage0 = manifest.stage_tests(0)
     if not stage0:
         reasons.append("zero_tests")
     done = list(manifest.done_mf)
-    if done != list(range(1, len(done) + 1)) or len(done) > STAGE0_MF_COUNT:
+    if done != list(range(1, len(done) + 1)) or len(done) > table.count:
         reasons.append("done_mf_not_in_order")
         return reasons
     present = {int(TEST_ID_RE.match(t.id).group(1)) for t in stage0}  # type: ignore[union-attr]
     for mf in done:
-        for number in STAGE0_MF_TESTS[mf]:
+        for number in table.feature(mf).tests:
             if number not in present:
                 reasons.append(f"missing_test:MF{mf}:T{number}")
     return reasons

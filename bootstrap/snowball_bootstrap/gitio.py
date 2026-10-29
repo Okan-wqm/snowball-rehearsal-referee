@@ -104,6 +104,14 @@ def _entries(repo: Path, head: str) -> list[tuple[str, str, str]]:
     return entries
 
 
+def file_at(repo: Path, commit: str, path: str) -> bytes | None:
+    """A regular file's content at ``commit``, read from its blob; None when no regular file has that path."""
+    for mode, sha, name in _entries(repo, commit):
+        if name == path and mode in ("100644", "100755"):
+            return git(repo, "cat-file", "blob", sha)
+    return None
+
+
 def special_entries(repo: Path, head: str) -> list[str]:
     """Paths that are not regular files (symlinks, submodules)."""
     return sorted(f"{SPECIAL_MODES[m]}:{shown(p)}" for m, _s, p in _entries(repo, head) if m in SPECIAL_MODES)

@@ -15,7 +15,8 @@ push stays stubbed) through the
 ``per_run_cap_usd_micros`` below, a list-price estimate) and its reproducers run in the container.
 
 Exit 0 means: the red controls behaved, the brain's tests ran offline in the pinned image, every
-seed vector of the micro-features it declares done passed and the push was accepted. Exit 3 means the rival could not run (an outage of the CLI or its login, not a verdict).
+seed vector of the micro-features it declares done passed, its tests failed on the tree without
+micro-feature 1's module (module-less red, `asama-0/14`) and the push was accepted. Exit 3 means the rival could not run (an outage of the CLI or its login, not a verdict).
 """
 
 from __future__ import annotations
@@ -120,7 +121,8 @@ def main() -> int:
     commit(brain, brain_files(), "stage 0: micro-feature 1, the hash-chained ledger")
     meta, pulled = pull(2)
     assert meta["kind"] == "code" and meta["run_tests"], meta
-    print("2/4 code push classified; manifest accepted (done_mf", meta["manifest"]["done_mf"], ")")
+    print("2/4 code push classified; manifest accepted (done_mf", meta["manifest"]["done_mf"], ", module-less red for",
+          meta["module_less"], ")")
 
     deps = work / "deps"
     rc = cli.main(["fetch-deps", "--pulled", str(pulled), "--work", str(work / "dl"), "--out", str(deps)])
@@ -133,10 +135,11 @@ def main() -> int:
                    "--work", str(work / "src"), "--out", str(run_dir)])
     run = json.loads((run_dir / "run.json").read_text())
     bad = ([c for c in run["controls"] if not c["ok"]] + [t for t in run["tests"] if not t["ok"]]
-           + [v for v in run["vectors"] if not v["ok"]] + [x for x in run["licenses"] if not x["allowed"]])
+           + [v for v in run["vectors"] if not v["ok"]] + [x for x in run["licenses"] if not x["allowed"]]
+           + [m for m in run["module_less"] if m["stayed_green"] or m["runner_fault"]])
     print(f"4/4 run-tests in docker ({time.monotonic() - started:.0f} s): controls {len(run['controls'])}, "
           f"tests {len(run['tests'])}, vectors {len(run['vectors'])}, wheels {len(run['licenses'])}, "
-          f"green={run['green']}")
+          f"module-less red {[(m['test_id'], m['exit']) for m in run['module_less']]}, green={run['green']}")
     for item in bad:
         print("   NOT OK:", json.dumps(item)[:300])
     rival, repro, jobs = rival_ok, [], {"getir": "success", "kos": "success", "cagir": "success",

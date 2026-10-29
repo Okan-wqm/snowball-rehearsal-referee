@@ -16,12 +16,31 @@ from typing import Any
 import os
 import unittest
 
+from snowball_bootstrap import stages
 from snowball_bootstrap.canon import row_hash
 from snowball_bootstrap.container import RunResult
 from snowball_bootstrap.rival import TOOL_NAMES
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "drill"))
 from snowball_drill import judge as drill_judge  # noqa: E402  (reference judge, `tohum/29c`)
+
+# A stage table that owns every group the vector runner knows. The real Stage 0 table owns only `chain` among
+# them (`cp_lower`, `mcnemar`, `match` are P1's, `drill` the Stage 2 batch's, `29a`), and the runner's checks of
+# the others must stay measured for the batches that will own them. STATS and DRILL finish those groups.
+EVERY_GROUP = stages.parse_table(json.dumps({"stage": 0, "mfs": [
+    {"mf": 1, "tests": [13], "groups": ["chain"], "module": "ledger/chain.py", "calls": []},
+    {"mf": 2, "tests": [28], "groups": ["cp_lower", "mcnemar", "match"], "module": "harness/stats.py", "calls": []},
+    {"mf": 3, "tests": [990], "groups": ["drill"], "module": "harness/drill.py", "calls": []}]}), 0)
+STATS, DRILL = (1, 2), (3,)
+
+
+def module_less_red(meta: dict) -> list[dict]:
+    """What run-tests reports for an honest push: every test of each micro-feature `pull` named fails without its
+    module (module-less red, `asama-0/14`)."""
+    table = stages.load(0)
+    return [{"mf": k, "test_id": f"T{n}", "module": table.feature(k).module_path, "module_present": True,
+             "exit": 1, "timed_out": False, "stayed_green": False, "runner_fault": False}
+            for k in meta.get("module_less") or [] for n in table.feature(k).tests]
 
 # ---------------------------------------------------------------- reference founder implementation
 

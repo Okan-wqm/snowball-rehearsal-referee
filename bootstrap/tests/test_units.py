@@ -8,15 +8,15 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from snowball_bootstrap import canon, licenses, secretscan
+from snowball_bootstrap import canon, licenses, secretscan, stages
 from snowball_bootstrap.classify import classify, spec_stage_dirs
 from snowball_bootstrap.config import ConfigError, load_bootstrap
 from snowball_bootstrap.controls import run_controls
 from snowball_bootstrap.manifest import ManifestError, check_stage0, parse_lockfile, parse_manifest
 from snowball_bootstrap.treehash import TreeError, extract
-from snowball_bootstrap.vectors import run_vectors
+from snowball_bootstrap.vectors import missing_groups, run_vectors
 
-from helpers import FakeRunner
+from helpers import DRILL, EVERY_GROUP, STATS, FakeRunner
 
 BOOTSTRAP = Path(__file__).resolve().parents[1]
 VECTORS = BOOTSTRAP / "vectors"
@@ -83,18 +83,36 @@ class ManifestTest(unittest.TestCase):
     def manifest(self, tests, done, locks=()):
         return json.dumps({"tests": tests, "done_mf": list(done), "lockfiles": list(locks)})
 
+    def all_tests(self, done):
+        table = stages.load(0)
+        return [{"id": f"T{n}", "cmd": f"python -m unittest t{n}", "stage": 0} for k in done
+                for n in table.feature(k).tests]
+
     def test_valid_and_complete(self):
         m = parse_manifest(self.manifest([{"id": "T13", "cmd": "python -m unittest", "stage": 0},
-                                          {"id": "T30", "cmd": "python -m unittest t30", "stage": 0}], [1, 2]))
+                                          {"id": "T38", "cmd": "python -m unittest t38", "stage": 0}], [1, 2]))
         self.assertEqual(check_stage0(m), [])
 
     def test_missing_test_and_zero_tests_and_order(self):
         m = parse_manifest(self.manifest([{"id": "T13", "cmd": "x", "stage": 0}], [1, 2]))
-        self.assertEqual(check_stage0(m), ["missing_test:MF2:T30"])
+        self.assertEqual(check_stage0(m), ["missing_test:MF2:T38"])
         m = parse_manifest(self.manifest([], []))
         self.assertEqual(check_stage0(m), ["zero_tests"])
         m = parse_manifest(self.manifest([{"id": "T13", "cmd": "x", "stage": 0}], [2]))
         self.assertEqual(check_stage0(m), ["done_mf_not_in_order"])
+
+    def test_the_stage_table_says_what_each_micro_feature_needs(self):
+        """The 18 micro-features of `asama-0/14`, read from `stages/stage0.json`, not from a copy in the code."""
+        self.assertEqual(check_stage0(parse_manifest(self.manifest(self.all_tests(range(1, 19)), range(1, 19)))), [])
+        two_tests = [t for t in self.all_tests(range(1, 4)) if t["id"] != "T21"]  # MF3 is T20 and T21
+        self.assertEqual(check_stage0(parse_manifest(self.manifest(two_tests, [1, 2, 3]))), ["missing_test:MF3:T21"])
+        last = [t for t in self.all_tests(range(1, 19)) if t["id"] != "T14"]  # MF18 is T45 and T14
+        self.assertEqual(check_stage0(parse_manifest(self.manifest(last, range(1, 19)))), ["missing_test:MF18:T14"])
+        too_many = parse_manifest(self.manifest(self.all_tests(range(1, 19)), range(1, 20)))
+        self.assertEqual(check_stage0(too_many), ["done_mf_not_in_order"])  # there is no MF19
+        old = parse_manifest(self.manifest([{"id": "T13", "cmd": "x", "stage": 0}, {"id": "T30", "cmd": "x", "stage": 0}],
+                                           [1, 2]))
+        self.assertEqual(check_stage0(old), ["missing_test:MF2:T38"])  # the 30-MF table's MF2 test is not enough
 
     def test_malformed(self):
         for bad in ['{"tests": []}', self.manifest([{"id": "13", "cmd": "x", "stage": 0}], []),
@@ -115,32 +133,53 @@ class ManifestTest(unittest.TestCase):
 
 class VectorsTest(unittest.TestCase):
     def test_correct_implementation_passes_every_vector(self):
-        results = run_vectors(FakeRunner(VECTORS), VECTORS, (1, 9))
+        results = run_vectors(FakeRunner(VECTORS), VECTORS, STATS, table=EVERY_GROUP)
         self.assertTrue(results)
         self.assertEqual([r for r in results if not r["ok"]], [])
 
     def test_groups_wait_for_their_micro_feature(self):
-        self.assertEqual(run_vectors(FakeRunner(VECTORS), VECTORS, (2,)), [])
+        self.assertEqual(run_vectors(FakeRunner(VECTORS), VECTORS, (2,), table=EVERY_GROUP)[0]["id"],
+                         "cp_lower.60/60")
+        self.assertEqual(run_vectors(FakeRunner(VECTORS), VECTORS, (2,)), [])  # Stage 0's MF2 is `secrets`
         ids = {r["id"].split(".")[0] for r in run_vectors(FakeRunner(VECTORS), VECTORS, (1,))}
         self.assertEqual(ids, {"chain"})
+
+    def test_a_group_no_stage0_micro_feature_owns_never_runs_in_stage0(self):
+        """`29d`: `cp_lower`, `mcnemar`, `match` (P1) and `drill` (Stage 2 batch) have no owner in the Stage 0
+        table; with every micro-feature done only `chain` runs (MF1 and MF10 both own it, it runs once)."""
+        ids = [r["id"] for r in run_vectors(FakeRunner(VECTORS), VECTORS, tuple(range(1, 19)))]
+        self.assertEqual({i.split(".")[0] for i in ids}, {"chain"})
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual(stages.load(0).groups_of((10,)), ("chain", "append"))
+
+    def test_a_group_the_seed_has_no_vectors_for_is_named_not_invented(self):
+        """The sixteen Stage 0 groups after `chain` come with the seed (`29d`); until they do the referee says which
+        a finished micro-feature owns, and runs nothing in their place."""
+        self.assertEqual(missing_groups(VECTORS, (1,), stages.load(0)), [])
+        self.assertEqual(missing_groups(VECTORS, (1, 2), stages.load(0)), ["secrets"])
+        self.assertEqual(missing_groups(VECTORS, tuple(range(1, 11)), stages.load(0)),
+                         ["secrets", "contained", "profile", "npmlock", "recipe", "diffguard", "k0map", "refs",
+                          "append"])
+        self.assertEqual(len(missing_groups(VECTORS, tuple(range(1, 19)), stages.load(0))), 16)
+        self.assertEqual(missing_groups(VECTORS, STATS + DRILL, EVERY_GROUP), [])
 
     def test_wrong_implementations_fail(self):
         for wrong, prefix in [("chain_ignores_input", "chain.V1.hash_changed_input"),
                               ("verify_always_valid", "chain.V3"), ("cp_wilson", "cp_lower.60/60"),
                               ("score_counts_twice", "match.3")]:
-            failed = {r["id"] for r in run_vectors(FakeRunner(VECTORS, wrong={wrong}), VECTORS, (1, 9))
-                      if not r["ok"]}
+            failed = {r["id"] for r in run_vectors(FakeRunner(VECTORS, wrong={wrong}), VECTORS, STATS,
+                                                   table=EVERY_GROUP) if not r["ok"]}
             self.assertIn(prefix, failed, wrong)
 
     def test_drill_vectors_need_a_judge_that_fails_non_learners(self):
-        honest = run_vectors(FakeRunner(VECTORS), VECTORS, (18,))
+        honest = run_vectors(FakeRunner(VECTORS), VECTORS, DRILL, table=EVERY_GROUP)
         self.assertEqual(len(honest), 19)
         self.assertEqual([r for r in honest if not r["ok"]], [])
-        lenient = {r["id"] for r in run_vectors(FakeRunner(VECTORS, wrong={"drill_lenient"}), VECTORS, (18,))
-                   if not r["ok"]}
+        lenient = {r["id"] for r in run_vectors(FakeRunner(VECTORS, wrong={"drill_lenient"}), VECTORS, DRILL,
+                                                table=EVERY_GROUP) if not r["ok"]}
         self.assertEqual(lenient, {r["id"] for r in honest} - {"drill.learner"})
         blind = {r["id"] for r in run_vectors(FakeRunner(VECTORS, wrong={"drill_ignores_commitment"}), VECTORS,
-                                             (18,)) if not r["ok"]}
+                                             DRILL, table=EVERY_GROUP) if not r["ok"]}
         self.assertEqual(blind, {"drill.tampered_key"})
 
 

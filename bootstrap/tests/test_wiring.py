@@ -5,18 +5,26 @@ every claim in it against the code and the spec, so that a renamed flag, a delet
 nobody documented or a stale instruction fails a test instead of the first real run.
 """
 
+import json
 import re
 import shlex
 import unittest
 from pathlib import Path
 
-from snowball_bootstrap import cli, rival
+from snowball_bootstrap import cli, rival, stages, vectors
 
 BOOT = Path(__file__).resolve().parents[1]
 ROOT = BOOT.parents[1]
 WORKFLOW = (BOOT / "workflow" / "bootstrap.yml").read_text(encoding="utf-8")
 SETUP_DAY = (ROOT / "spec" / "tohum" / "25-kurulum-gunu.md").read_text(encoding="utf-8")
 BS = chr(92)
+
+
+def spec_page(folder, prefix):
+    found = sorted((ROOT / "spec" / folder).glob(f"{prefix}-*.md"))
+    if len(found) != 1:
+        raise AssertionError(f"expected one spec/{folder}/{prefix}-*.md, found {len(found)}")
+    return found[0].read_text(encoding="utf-8")
 
 
 def run_blocks(text):
@@ -131,6 +139,117 @@ class WorkflowWiringTest(unittest.TestCase):
         job = WORKFLOW[WORKFLOW.index("  cagir:"):]
         minutes = int(re.search(r"timeout-minutes: ([0-9]+)", job).group(1))
         self.assertGreater(minutes * 60, rival.CLI_TIMEOUT_S + 300, "install and bookkeeping need room too")
+
+
+MF_COLUMNS = ["MF", "Mekanizma", "Test", "Vektör grubu", "Modül (`referee/` altında)", "Adım", "Kum"]
+
+
+def micro_feature_rows(page):
+    """The `asama-0/14` table, row by row: {mf: {column: cell}}."""
+    header, rows = None, {}
+    for line in page.splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if cells[0] == "MF":
+            header = cells
+        elif header and cells[0].isdigit():
+            if len(cells) != len(header):
+                raise AssertionError(f"row {cells[0]} of asama-0/14 has {len(cells)} cells, not {len(header)}")
+            rows[int(cells[0])] = dict(zip(header, cells))
+    return header, rows
+
+
+def page_groups(cell):
+    """The vector groups a cell names: the backticked names it starts with (`chain`, `append`). A cell that starts
+    otherwise (MF17: "tohumun `wiring` denetimi (vektör değil ...)") names none."""
+    lead = re.match(r"(?:`[a-z0-9_]+`(?:, )?)+", cell)
+    return re.findall(r"`([a-z0-9_]+)`", lead.group(0)) if lead else []
+
+
+def page_calls(page, count):
+    """The `calls` line (callee → callers; a chain `12 → 13 → 14`; "17 ve 18 hepsini çağırır": each calls every
+    micro-feature before it), as {caller: callees}. A clause in any other form fails the test."""
+    found = re.search(r"^`calls` \(çağrılan → çağıranlar\): (.*?)\n\n", page, re.S | re.M)
+    if not found:
+        raise AssertionError("asama-0/14 has no `calls` line")
+    callees = {k: set() for k in range(1, count + 1)}
+    for clause in " ".join(found.group(1).split()).rstrip(".").split("; "):
+        every = re.fullmatch(r"(\d+(?: ve \d+)*) hepsini çağırır", clause)
+        if every:
+            for caller in map(int, every.group(1).split(" ve ")):
+                callees[caller] |= set(range(1, caller))
+            continue
+        if not re.fullmatch(r"\d+(?:, \d+)*(?: → \d+(?:, \d+)*)+", clause):
+            raise AssertionError(f"asama-0/14: cannot read the calls clause {clause!r}")
+        segments = [[int(n) for n in part.split(", ")] for part in clause.split(" → ")]
+        for called, callers in zip(segments, segments[1:]):
+            for caller in callers:
+                callees[caller] |= set(called)
+    return callees
+
+
+class StageTableMatchesTheSpecTest(unittest.TestCase):
+    """`asama-0/14` "Makine kopyası": `stages/stage0.json` is the page's table and `calls` line, and every test it
+    names is a §0.9 row whose "Ne zaman" is that micro-feature. When one changes, the others change in the same seed
+    epoch; this test is what makes that so."""
+
+    PAGE = spec_page("asama-0", "14")
+    TESTS_PAGE = spec_page("asama-0", "09")
+    TABLE = stages.load(0)
+
+    def test_every_row_is_the_pages_row(self):
+        header, rows = micro_feature_rows(self.PAGE)
+        self.assertEqual(header, MF_COLUMNS)
+        self.assertEqual(sorted(rows), list(range(1, self.TABLE.count + 1)))
+        for feature in self.TABLE.mfs:
+            row = rows[feature.mf]
+            with self.subTest(mf=feature.mf):
+                self.assertEqual(list(feature.tests), [int(n) for n in row["Test"].split(", ")])
+                self.assertEqual(list(feature.groups), page_groups(row["Vektör grubu"]))
+                self.assertEqual(f"`{feature.module}`", row["Modül (`referee/` altında)"])
+
+    def test_calls_are_the_pages_calls_line(self):
+        calls = page_calls(self.PAGE, self.TABLE.count)
+        self.assertEqual({f.mf: set(f.calls) for f in self.TABLE.mfs}, calls)
+
+    def test_every_test_is_a_section_09_row_of_its_micro_feature(self):
+        when = {}
+        for line in self.TESTS_PAGE.splitlines():
+            row = re.match(r"^\| (\d+) \| .* \| ([^|]+) \|$", line)
+            if row:
+                when[int(row.group(1))] = row.group(2).strip()
+        self.assertGreater(len(when), 40)
+        stage0 = {(n, int(w[2:])) for n, w in when.items() if re.fullmatch(r"MF\d+", w)}
+        self.assertEqual({(n, f.mf) for f in self.TABLE.mfs for n in f.tests}, stage0)
+        counts = re.search(r"(\d+) MF'ye (\d+) test", self.TESTS_PAGE)
+        self.assertEqual((int(counts.group(1)), int(counts.group(2))),
+                         (self.TABLE.count, sum(len(f.tests) for f in self.TABLE.mfs)))
+
+    def test_the_counts_the_exit_pages_name_are_the_tables(self):
+        self.assertEqual(int(re.search(r"Çıkışta (\d+)'", self.PAGE).group(1)), self.TABLE.count)
+        exit_page = spec_page("asama-0", "10")
+        self.assertEqual(int(re.search(r"`stage0\.json`'daki (\d+) MF", exit_page).group(1)), self.TABLE.count)
+        self.assertEqual(int(re.search(r"#modulsuz \| (\d+) MF", exit_page).group(1)), self.TABLE.count)
+
+    def test_the_vector_groups_are_29ds_and_each_seed_group_has_its_owner(self):
+        """`29d` names each group's micro-features; `vectors.json` says which stage or batch owns each group it has
+        (`29a`): Stage 0's are exactly those the table names."""
+        listed = {}
+        for line in spec_page("tohum", "29d").splitlines():
+            row = re.match(r"^\| `([a-z0-9_]+)` \| (\d+(?:, \d+)*) \|", line)
+            if row:
+                listed[row.group(1)] = {int(n) for n in row.group(2).split(", ")}
+        named = {}
+        for feature in self.TABLE.mfs:
+            for group in feature.groups:
+                named.setdefault(group, set()).add(feature.mf)
+        self.assertEqual(listed, named)
+        seed = json.loads((BOOT / "vectors" / "vectors.json").read_text(encoding="utf-8"))
+        groups = {k: v for k, v in seed.items() if isinstance(v, dict)}
+        self.assertEqual(set(groups), {name for name, _fn in vectors.GROUPS})
+        for name, group in groups.items():
+            self.assertEqual(group["owner"] == "asama-0", name in named, name)
 
 
 class NothingStaleTest(unittest.TestCase):

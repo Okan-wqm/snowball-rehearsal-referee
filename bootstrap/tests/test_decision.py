@@ -20,7 +20,7 @@ from snowball_bootstrap.reproduce import reproducer_key
 
 import test_flow
 import test_state
-from helpers import FakeRunner, commit, install_fake_claude, ok_result, posix_only, sh, submit
+from helpers import DRILL, EVERY_GROUP, STATS, FakeRunner, commit, install_fake_claude, ok_result, posix_only, sh, submit
 
 A, B, C = "a" * 40, "b" * 40, "c" * 40
 
@@ -304,7 +304,7 @@ class KindsAndExit(unittest.TestCase):
         self.assertEqual(res["state"]["last_accepted_sha"], A)
         self.assertEqual((res["state"]["reject_streaks"], res["state"]["repeat_events"]), (streaks, 1))
 
-    def exit_meta(self, state, done=range(1, 31), tree="f" * 64):
+    def exit_meta(self, state, done=range(1, 19), tree="f" * 64):
         manifest = {"tests": [], "done_mf": list(done), "lockfiles": []}
         return meta_("exit", state, manifest=manifest, referee_tree_sha256=tree,
                      exit_request={"stage": 0, "sha": A, "spec_sha256": "e" * 64})
@@ -313,7 +313,7 @@ class KindsAndExit(unittest.TestCase):
         ready = state0(rival_artifacts=survived(A, "1" * 40, "2" * 40))
         good = run_decide(self.exit_meta(ready), green_run(), None, None, {"getir": "success", "kos": "success"})
         self.assertEqual((good["verdict"], good["exit"]["transferable"]), ("accepted", True))
-        cases = ((dict(done=range(1, 30)), ready, "not_all_micro_features_done"),
+        cases = ((dict(done=range(1, 18)), ready, "not_all_micro_features_done"),
                  (dict(), dict(ready, rival_artifacts=survived("1" * 40, "2" * 40)), "no_rival_attempt_on_exit_sha"),
                  (dict(tree=None), ready, "referee_tree_hash"))
         for kw, state, missing in cases:
@@ -322,10 +322,84 @@ class KindsAndExit(unittest.TestCase):
             self.assertEqual(res["exit"]["missing"], [missing])
             self.assertFalse(res["exit"]["transferable"], missing)  # D37
 
+    def test_the_exit_needs_all_eighteen_micro_features_of_the_stage_table(self):
+        """`asama-0/10` #testler: the 18 of `stage0.json`, not the 30 of the old table."""
+        ready = state0(rival_artifacts=survived(A, "1" * 40, "2" * 40))
+        jobs = {"getir": "success", "kos": "success"}
+        for done, missing in ((range(1, 19), []), (range(1, 18), ["not_all_micro_features_done"]),
+                              (range(1, 31), ["not_all_micro_features_done"])):
+            res = run_decide(self.exit_meta(ready, done=done), green_run(), None, None, jobs)
+            self.assertEqual(res["exit"]["missing"], missing, done)
+
+    def test_the_exit_waits_for_every_vector_group_the_seed_still_lacks(self):
+        """`asama-0/10` #testler: every group passes. A group the seed has no vectors for cannot, so the exit is
+        refused until a seed epoch brings it; on a code push the same gap is a warning (below)."""
+        ready = state0(rival_artifacts=survived(A, "1" * 40, "2" * 40))
+        run = dict(green_run(), vector_groups_missing=["secrets", "genesis"])
+        res = run_decide(self.exit_meta(ready), run, None, None, {"getir": "success", "kos": "success"})
+        self.assertEqual(res["verdict"], "rejected")
+        self.assertEqual(res["exit"]["missing"], ["vector_group_missing:secrets", "vector_group_missing:genesis"])
+        self.assertFalse(res["exit"]["transferable"])
+
     def test_the_exit_block_carries_the_founders_repeat_count(self):  # D36
         res = run_decide(self.exit_meta(state0(rival_artifacts=survived(A, "1" * 40, "2" * 40), repeat_events=4)),
                          green_run(), None, None, {"getir": "success", "kos": "success"})
         self.assertEqual(res["exit"]["repeat_events"], 4)
+
+
+def module_less(mf, test_id, stayed_green=False, exit_code=None, present=True):
+    code = exit_code if exit_code is not None else (0 if stayed_green else 1)
+    return {"mf": mf, "test_id": test_id, "module": "referee/x.py", "module_present": present, "exit": code,
+            "timed_out": False, "stayed_green": stayed_green, "runner_fault": code == 125}
+
+
+class ModuleLessRed(unittest.TestCase):
+    """`asama-0/14`: a push that finishes MF k has k's tests run without k's module; a test that stays green there
+    rejects the push as `module_less_green:MFk` (`tohum/04` 1)."""
+
+    def code(self, run, module_less_mfs=(3,)):
+        meta = meta_("code", state0(), module_less=list(module_less_mfs))
+        return run_decide(meta, run, not_refuted(), [], CODE_JOBS)
+
+    def test_a_test_that_stays_green_without_its_module_rejects_the_push(self):
+        run = dict(green_run(), module_less=[module_less(3, "T20"), module_less(3, "T21", stayed_green=True)],
+                   green=False)  # as run-tests says it, so the rival is not called on it
+        res = self.code(run)
+        self.assertEqual(res["verdict"], "rejected")
+        self.assertEqual([(r["kind"], r["ref"]) for r in res["reasons"]], [("module_less_green", "MF3")])
+        self.assertIn("T21 stayed green without referee/x.py", res["reasons"][0]["detail"])
+        self.assertEqual(res["state"]["reject_streaks"], {"module_less_green:MF3": 1})  # the Founder's to fix
+
+    def test_tests_that_all_fail_without_the_module_pass(self):
+        run = dict(green_run(), module_less=[module_less(3, "T20"), module_less(3, "T21")])
+        self.assertEqual(self.code(run)["verdict"], "accepted")
+
+    def test_a_missing_module_path_is_said_in_the_detail(self):
+        run = dict(green_run(), module_less=[module_less(3, "T20", stayed_green=True, present=False)], green=False)
+        self.assertIn("the path was not in the tree", self.code(run)["reasons"][0]["detail"])
+
+    def test_docker_failing_under_module_less_red_is_an_outage(self):
+        run = dict(green_run(), module_less=[module_less(3, "T20", exit_code=125), module_less(3, "T21")], green=False)
+        res = self.code(run)
+        self.assertEqual([(r["kind"], r["ref"]) for r in res["reasons"]], [("infra", "kos:docker")])
+        self.assertIsNone(res["state"]["last_evaluated_sha"])
+
+    def test_a_green_run_without_the_module_less_results_pull_asked_for_is_an_outage(self):
+        """E05's rule for module-less red: a check that never ran is not a check that passed."""
+        res = self.code(dict(green_run(), module_less=[module_less(2, "T38")]), module_less_mfs=(2, 3))
+        self.assertEqual([(r["kind"], r["ref"]) for r in res["reasons"]], [("infra", "kos:module_less_incomplete")])
+        self.assertIsNone(res["state"]["last_evaluated_sha"])
+        red = dict(green_run(), tests=[dict(green_run()["tests"][0], ok=False)], green=False)
+        res = self.code(red, module_less_mfs=(2, 3))  # a red run skips it on purpose: the push is rejected anyway
+        self.assertEqual([r["kind"] for r in res["reasons"]], ["test_failed"])
+
+    def test_a_vector_group_the_seed_lacks_warns_on_a_code_push_and_never_counts_against_the_founder(self):
+        """The group's vectors are the seed's to bring (`29a`, `29d`), never the Founder's: the push is judged on
+        what exists and the operator is told; the exit waits for the group (`KindsAndExit`)."""
+        res = self.code(dict(green_run(), vector_groups_missing=["secrets"]), module_less_mfs=())
+        self.assertEqual(res["verdict"], "accepted")
+        self.assertEqual(res["warnings"], ["vector_group_missing:secrets"])
+        self.assertEqual(res["state"]["reject_streaks"], {})
 
 
 class StateRules(unittest.TestCase):
@@ -381,7 +455,7 @@ class SmallGates(unittest.TestCase):
                     return RunResult(-9, b"", b"killed by the host", 1, timed_out=True)
                 return super().run(cmd, **kw)
 
-        results = run_vectors(KilledOnce(vectors), vectors, (1, 9))
+        results = run_vectors(KilledOnce(vectors), vectors, STATS, table=EVERY_GROUP)
         self.assertTrue(results)
         self.assertEqual([r["id"] for r in results if not r["ok"]], [])
 
@@ -389,7 +463,7 @@ class SmallGates(unittest.TestCase):
             def run(self, cmd, **kw):
                 return RunResult(-9, b"", b"out of memory", 1, timed_out=True)
 
-        failed = [r for r in run_vectors(AlwaysKilled(vectors), vectors, (1, 9)) if not r["ok"]]
+        failed = [r for r in run_vectors(AlwaysKilled(vectors), vectors, STATS, table=EVERY_GROUP) if not r["ok"]]
         self.assertTrue(failed)
         self.assertIn("no answer: exit -9, timed out", failed[0]["detail"])  # the reason is on the record
 
@@ -408,7 +482,7 @@ class SmallGates(unittest.TestCase):
         self.assertNotIn("localhost", commands["network_blocked"])
         self.assertIn("/src/", commands["source_read_only"])
 
-    def failed_vectors(self, tamper, done=(1, 9), timed_out=False):
+    def failed_vectors(self, tamper, done=STATS, timed_out=False):
         from snowball_bootstrap.vectors import run_vectors
         vectors = Path(test_state.__file__).resolve().parents[1] / "vectors"
 
@@ -416,7 +490,7 @@ class SmallGates(unittest.TestCase):
             def run(self, cmd, **kw):
                 res = super().run(cmd, **kw)
                 return RunResult(res.exit_code, tamper(cmd, res.stdout), res.stderr, 1, timed_out=timed_out)
-        results = run_vectors(Wrong(vectors), vectors, done)
+        results = run_vectors(Wrong(vectors), vectors, done, table=EVERY_GROUP)
         self.assertTrue(results)
         return {r["id"] for r in results if not r["ok"]}
 
@@ -427,7 +501,7 @@ class SmallGates(unittest.TestCase):
             doc = json.loads(out)
             doc["verdicts"] = {q: ("FAIL" if v == "PASS" else "PASS") for q, v in doc["verdicts"].items()}
             return (json.dumps(doc) + chr(10)).encode()
-        failed = self.failed_vectors(flip, done=(18,))
+        failed = self.failed_vectors(flip, done=DRILL)
         self.assertTrue(failed and all(f.startswith("drill.") for f in failed))
 
     def test_the_output_of_a_command_that_timed_out_is_never_an_answer(self):  # V09b
@@ -440,7 +514,7 @@ class SmallGates(unittest.TestCase):
             def run(self, cmd, **kw):
                 res = super().run(cmd, **kw)
                 return RunResult(res.exit_code, res.stdout, res.stderr, 1, timed_out=True)
-        self.assertEqual([r for r in run_vectors(Slow(vectors), vectors, (1, 9)) if r["ok"]], [])
+        self.assertEqual([r for r in run_vectors(Slow(vectors), vectors, STATS, table=EVERY_GROUP) if r["ok"]], [])
 
     def test_vector_checks_reject_wrong_answers(self):  # V01 V02 V04
         def wrong(cmd, out):
@@ -657,14 +731,15 @@ class PullGates(unittest.TestCase):
         self.assertEqual(meta["kind"], "rejected")
         self.assertIn("base_unreachable", meta["pre_reasons"])
 
-    def stage_pulled(self, meta):
+    def stage_pulled(self, meta, files=("referee/a.py",)):
         vectors = Path(test_state.__file__).resolve().parents[1] / "vectors"
         if not (self.referee / "vectors").exists():
             import shutil
             shutil.copytree(vectors, self.referee / "vectors")
         src = Path(self.tmp.name) / "tree"
-        (src / "referee").mkdir(parents=True, exist_ok=True)
-        (src / "referee" / "a.py").write_text("x = 1" + chr(10))
+        for rel in files:
+            (src / rel).parent.mkdir(parents=True, exist_ok=True)
+            (src / rel).write_text("x = 1" + chr(10))
         pulled = Path(self.tmp.name) / "pulled_x"
         pulled.mkdir(exist_ok=True)
         cli.pack_dir(src, pulled / "brain.tar")
@@ -692,6 +767,71 @@ class PullGates(unittest.TestCase):
         run = json.loads((Path(self.tmp.name) / "run" / "run.json").read_text())
         self.assertEqual((run["tests"], run["vectors"], run["green"]), ([], [], False))
         self.assertNotIn("python -m unittest t13", calls)
+
+    def run_tests_with(self, meta, lazy=False, docker_fails=False):
+        """run-tests with containers that run the Founder's T13 for real enough: it imports its module, so it is
+        green with `referee/ledger/chain.py` in the mounted tree and red without (``lazy``: green either way)."""
+        files = ("referee/ledger/chain.py", "referee/ledger/__init__.py", "referee/other.py")
+        pulled, vectors = self.stage_pulled(meta, files=files)
+        deps = Path(self.tmp.name) / "deps"
+        deps.mkdir(exist_ok=True)
+        trees = []
+
+        class TreeRunner(FakeRunner):
+            def run(self, cmd, **kw):
+                if cmd != "python -m unittest t13":
+                    return super().run(cmd, **kw)
+                if docker_fails and self.src != trees[0]:
+                    return RunResult(125, b"", b"docker: Error response from daemon", 1)
+                imports = (self.src / "referee" / "ledger" / "chain.py").exists()
+                return RunResult(0 if imports or lazy else 1, b"", b"", 1)
+
+        def make(boot, src, *a, **k):
+            trees.append(Path(src))
+            runner = TreeRunner(vectors)
+            runner.src = Path(src)
+            return runner
+        real = cli._runner
+        cli._runner = make
+        self.addCleanup(setattr, cli, "_runner", real)
+        out = Path(self.tmp.name) / f"run{len(trees)}{lazy}{docker_fails}"
+        rc = cli.main(["run-tests", "--root", str(self.referee), "--pulled", str(pulled), "--deps", str(deps),
+                       "--work", str(Path(self.tmp.name) / f"work{lazy}{docker_fails}"), "--out", str(out)])
+        self.assertEqual(rc, 0)
+        return json.loads((out / "run.json").read_text()), trees
+
+    def test_run_tests_runs_a_finished_micro_features_tests_again_without_its_module(self):  # `asama-0/14`
+        manifest = {"tests": [{"id": "T13", "cmd": "python -m unittest t13", "stage": 0}], "done_mf": [1],
+                    "lockfiles": []}
+        run, trees = self.run_tests_with({"manifest": manifest, "module_less": [1]})
+        self.assertEqual([(m["mf"], m["test_id"], m["module"], m["module_present"], m["stayed_green"])
+                          for m in run["module_less"]], [(1, "T13", "referee/ledger/chain.py", True, False)])
+        self.assertEqual((run["green"], run["vector_groups_missing"]), (True, []))
+        self.assertEqual(len(trees), 2)  # the pushed tree, then MF1's own module-less copy
+        self.assertTrue((trees[0] / "referee" / "ledger" / "chain.py").exists())
+        self.assertFalse((trees[1] / "referee" / "ledger" / "chain.py").exists())
+        self.assertTrue((trees[1] / "referee" / "other.py").exists())  # only the module is gone
+        result = run_decide(meta_("code", state0(), module_less=[1]), run, not_refuted(), [], CODE_JOBS)
+        self.assertEqual(result["verdict"], "accepted", result["reasons"])
+
+        lazy, _ = self.run_tests_with({"manifest": manifest, "module_less": [1]}, lazy=True)
+        self.assertEqual(([m["stayed_green"] for m in lazy["module_less"]], lazy["green"]), ([True], False))
+        result = run_decide(meta_("code", state0(), module_less=[1]), lazy, None, [], CODE_JOBS)
+        self.assertEqual([(r["kind"], r["ref"]) for r in result["reasons"]], [("module_less_green", "MF1")])
+
+        faulted, _ = self.run_tests_with({"manifest": manifest, "module_less": [1]}, docker_fails=True)
+        self.assertEqual(([m["runner_fault"] for m in faulted["module_less"]], faulted["green"]), ([True], False))
+
+        nothing_new, trees = self.run_tests_with({"manifest": manifest, "module_less": []})
+        self.assertEqual((nothing_new["module_less"], len(trees)), ([], 1))
+
+    def test_run_tests_names_the_vector_groups_the_seed_still_lacks(self):  # `29d`
+        manifest = {"tests": [{"id": "T13", "cmd": "python -m unittest t13", "stage": 0},
+                              {"id": "T38", "cmd": "python -m unittest t38", "stage": 0}], "done_mf": [1, 2],
+                    "lockfiles": []}
+        run, _ = self.run_tests_with({"manifest": manifest, "module_less": []})
+        self.assertEqual(run["vector_groups_missing"], ["secrets"])
+        self.assertEqual({v["id"].split(".")[0] for v in run["vectors"]}, {"chain"})
 
     def test_reproducers_run_with_the_reproducer_timeout(self):  # L32
         pulled, vectors = self.stage_pulled({"manifest": None})

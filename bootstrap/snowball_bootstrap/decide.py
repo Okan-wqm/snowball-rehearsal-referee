@@ -13,8 +13,7 @@ import datetime
 import hashlib
 from typing import Any
 
-from . import secretscan
-from .manifest import STAGE0_MF_COUNT
+from . import secretscan, stages
 from .reproduce import reproducer_key
 from .state import MAX_OPEN_CLAIMS, MAX_OPEN_REFUTATIONS
 
@@ -146,15 +145,31 @@ def _keep_claim(claims: list[dict[str, Any]], attempt: dict[str, Any], result: d
                    "first_head": head, "rewritten": False})
 
 
+def _module_less_green(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """`module_less_green:MFk` for each micro-feature with a test that stayed green without its module
+    (`asama-0/14`; `tohum/04` 1: a test that stays green when the change is taken away is not a test)."""
+    green: dict[int, list[dict[str, Any]]] = {}
+    for m in results:
+        if m["stayed_green"]:
+            green.setdefault(m["mf"], []).append(m)
+    return [_reason("module_less_green", ref=f"MF{mf}",
+                    detail=f"{', '.join(m['test_id'] for m in found)} stayed green without {found[0]['module']}"
+                           + ("" if found[0]["module_present"] else " (the path was not in the tree)"))
+            for mf, found in sorted(green.items())]
+
+
 def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, Any] | None,
            repro: list[dict[str, Any]] | None, job_results: dict[str, str],
            rival_min_attempts: int, repeat_reject_limit: int, *,
-           state_repro: list[dict[str, Any]] | None = None, now: str | None = None) -> dict[str, Any]:
+           state_repro: list[dict[str, Any]] | None = None, now: str | None = None,
+           table: stages.StageTable | None = None) -> dict[str, Any]:
     """Return the signed result (including the next state).
 
     ``repro`` holds the results of this rival's reproducers, ``state_repro`` those of the reproducers the state
-    keeps (proven defects and open claims) that `pull` asked for in ``meta["state_repro"]``.
+    keeps (proven defects and open claims) that `pull` asked for in ``meta["state_repro"]``. ``table`` is the
+    Stage 0 table (`stages/stage0.json` when not given): the exit needs every one of its micro-features.
     """
+    table = table or stages.load(0)
     state = copy.deepcopy(meta["state"])
     now = now or utc_now()
     head, base, kind = meta["head"], meta["base"], meta["kind"]
@@ -185,10 +200,15 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
     tests = (run or {}).get("tests", [])
     vectors = (run or {}).get("vectors", [])
     controls = (run or {}).get("controls", [])
+    module_less = (run or {}).get("module_less", [])
+    # A group a finished micro-feature owns and the seed has no vectors for is the seed's gap, not the Founder's:
+    # a code push is told (the vectors run from the push after a seed epoch adds them), the exit waits (`29d`).
+    groups_missing = list((run or {}).get("vector_groups_missing", [])) if meta.get("run_tests") else []
     if meta.get("run_tests") and run is not None:
         broken = [c["id"] for c in controls if not c["ok"]]
         if not broken and (any(t.get("exit") == DOCKER_ERROR for t in tests)
-                           or any(v.get("runner_fault") for v in vectors)):  # E141: docker failed under a vector
+                           or any(v.get("runner_fault") for v in vectors)  # E141: docker failed under a vector
+                           or any(m.get("runner_fault") for m in module_less)):
             broken = ["docker"]
         if broken:  # the sandbox itself failed: nothing it printed is evidence about the push
             reasons.append(_reason("infra", ref="kos:" + ",".join(broken)))
@@ -202,12 +222,23 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
             for v in vectors:
                 if not v["ok"]:
                     reasons.append(_reason("vector_failed", ref=v["id"], detail=v.get("detail", "")))
+            licensed = True
             for lic in (run or {}).get("licenses", []):
                 if not lic["allowed"]:
+                    licensed = False
                     reasons.append(_reason("license_not_allowed",
                                            ref=f"{lic['name']}=={lic['version']}:{lic['expression']}"))
             if not tests:
                 reasons.append(_reason("zero_tests"))
+            reasons += _module_less_green(module_less)
+            clean = bool(tests) and licensed and all(t["ok"] for t in tests) and all(v["ok"] for v in vectors)
+            unrun = set(meta.get("module_less") or []) - {m["mf"] for m in module_less}
+            if clean and unrun:  # a green run must carry module-less red for every micro-feature pull named (E05)
+                reasons.append(_reason("infra", ref="kos:module_less_incomplete"))
+                evaluate = False
+                outage = True
+        if kind != "exit":
+            warnings += [f"vector_group_missing:{g}" for g in groups_missing]
 
     # Whatever a rival run spent is booked as soon as its record is here, whether or not this run can judge it
     # (E13, K7: with run.json missing the rival is not "expected", and its spend used to vanish). A reused
@@ -306,8 +337,9 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
         exit_block["pinned_sha"] = (meta.get("exit_request") or {}).get("sha")  # None when malformed (E41)
         missing = exit_block["missing"]
         manifest = meta.get("manifest") or {}
-        if list(manifest.get("done_mf", [])) != list(range(1, STAGE0_MF_COUNT + 1)):
+        if list(manifest.get("done_mf", [])) != list(range(1, table.count + 1)):
             missing.append("not_all_micro_features_done")
+        missing += [f"vector_group_missing:{g}" for g in groups_missing]  # `asama-0/10` #testler: every group passes
         survived = {a["sha"] for a in state["rival_artifacts"] if a["outcome"] == "survived"}  # E20
         others = survived - {base}
         if base not in survived:
