@@ -435,6 +435,8 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
         "tests": [dict(t, output_tail=_redacted(t.get("output_tail"))) if "output_tail" in t else t for t in tests],
         "vectors": [dict(v, detail=_redacted(v.get("detail"))) if "detail" in v else v for v in vectors],
         "controls": controls,
+        # Module-less red, signed with the verdict: each finished MF's tests went red without its module (E169).
+        "module_less": module_less,
         "rival": rival,
         "rival_reused": reuse,  # the rival result of an earlier run of this head; its cost was booked then
         "reproducers": repro or [],

@@ -273,6 +273,8 @@ MUTANTS = [
     ("reason_owner_not_the_referees_rule", "seed/founder/launch.py",
      '    if counts_against_founder(item):\n        return "founder"\n', "",
      "pilot: the report blames the rival or the referee for the Founder's rejections"),
+    ("module_less_evidence_unsigned", f"{PKG}/decide.py", '        "module_less": module_less,\n', "",
+     "E169: the proof that the tests need the module stays out of the signed result"),
     ("boundary_cases_block", f"{PKG}/rival.py",
      "  is not a refutation: send it without a reproducer, as an open claim, so the trade-off is recorded.",
      "  is a refutation like any other.", "E167: a two-sided mechanism is refuted at its boundary without end"),

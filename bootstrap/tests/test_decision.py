@@ -374,7 +374,10 @@ class ModuleLessRed(unittest.TestCase):
 
     def test_tests_that_all_fail_without_the_module_pass(self):
         run = dict(green_run(), module_less=[module_less(3, "T20"), module_less(3, "T21")])
-        self.assertEqual(self.code(run)["verdict"], "accepted")
+        res = self.code(run)
+        self.assertEqual(res["verdict"], "accepted")
+        # The evidence is signed with the verdict, not left in an intermediate artefact (E169, pilot cycle 10).
+        self.assertEqual(res["module_less"], run["module_less"])
 
     def test_a_missing_module_path_is_said_in_the_detail(self):
         run = dict(green_run(), module_less=[module_less(3, "T20", stayed_green=True, present=False)], green=False)
