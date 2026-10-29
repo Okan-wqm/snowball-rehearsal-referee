@@ -310,6 +310,59 @@ class E10LedgerHidden(unittest.TestCase):
         self.assertIn("founder-ledger.jsonl", meta["changed"])  # classification still sees every change
 
 
+class E153ReportsHidden(unittest.TestCase):
+    """The Founder's root reports/ are not the rival's to see (`asama-0/03`): the rival judges the work, not
+    the Founder's account of it. Found in the pilot's first cycle, where the rival read them."""
+
+    def test_the_tools_cannot_read_list_or_search_root_reports_but_see_a_nested_reports_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "reports").mkdir()
+            (root / "reports" / "seed-001.json").write_text('{"note": "REPORT-FOR-THE-RIVAL"}\n')
+            (root / "referee" / "reports").mkdir(parents=True)
+            (root / "referee" / "reports" / "fmt.py").write_text("NESTED = 1\n")
+            box = rival.ToolBox(root)
+            with self.assertRaises(ValueError):
+                box.read_file("reports/seed-001.json")
+            self.assertIsNone(box.line_count("reports/seed-001.json"))
+            self.assertEqual(box.grep("REPORT-FOR"), "(no matches)")
+            self.assertEqual(box.glob("**/*.json"), "(no matches)")
+            self.assertIn("NESTED = 1", box.read_file("referee/reports/fmt.py"))  # only the root one is hidden
+        self.assertTrue(rival.hidden("reports/a.json"))
+        self.assertFalse(rival.hidden("referee/reports/a.py"))
+
+    def test_the_request_and_the_diff_leave_root_reports_out(self):
+        flow = test_flow.Flow("test_full_stage0_path")
+        flow.setUp()
+        self.addCleanup(flow.tearDown)
+        seats = flow.referee / "seats"
+        seats.mkdir()
+        source = Path(test_flow.__file__).resolve().parents[3] / "spec" / "tohum" / cli.SEATS_FILE
+        (seats / cli.SEATS_FILE).write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+        commit(flow.brain, {"referee/a.py": "x = 1\n", "reports/r1.json": '{"note": "REPORT-FOR-THE-RIVAL"}\n'},
+               "code and a report")
+        meta = flow.pull()
+        pulled = Path(flow.tmp.name) / f"pulled{flow.n}"
+        diff = (pulled / "diff.patch").read_text(encoding="utf-8")
+        self.assertIn("referee/a.py", diff)
+        self.assertNotIn("REPORT-FOR-THE-RIVAL", diff)
+        bin_dir = Path(flow.tmp.name) / "bin"
+        bin_dir.mkdir()
+        claude = install_fake_claude(bin_dir)
+        (bin_dir / "scenario.json").write_text(json.dumps({"calls": [submit()], "result": ok_result()}))
+        with mock.patch.dict(os.environ, {"GITHUB_OUTPUT": str(Path(flow.tmp.name) / "gh")}), \
+                contextlib.redirect_stdout(io.StringIO()):
+            rc = cli.main(["rival", "--root", str(flow.referee), "--pulled", str(pulled), "--work",
+                           str(Path(flow.tmp.name) / "work_r"), "--out", str(Path(flow.tmp.name) / "rival"),
+                           "--claude", str(claude)])
+        self.assertEqual(rc, 0)
+        stdin = json.loads((bin_dir / "seen.json").read_text())["stdin"]
+        self.assertIn("referee/a.py", stdin)
+        self.assertNotIn("reports/r1.json", stdin)
+        self.assertNotIn("REPORT-FOR-THE-RIVAL", stdin)
+        self.assertIn("reports/r1.json", meta["changed"])
+
+
 # ---------------------------------------------------------------- E11 what counts against the Founder
 
 

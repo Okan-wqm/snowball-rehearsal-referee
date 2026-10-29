@@ -81,9 +81,12 @@ def changed_paths(repo: Path, base: str, head: str) -> list[str]:
     return sorted(p for p in out.decode("utf-8", "surrogateescape").split("\0") if p)
 
 
-def diff_text(repo: Path, base: str, head: str, exclude: tuple[str, ...] = ()) -> str:
-    """The full diff, without any file whose name is in ``exclude``, in any directory."""
-    pathspec = ["--", *(f":(exclude,glob)**/{name}" for name in exclude)] if exclude else []
+def diff_text(repo: Path, base: str, head: str, exclude: tuple[str, ...] = (),
+              exclude_dirs: tuple[str, ...] = ()) -> str:
+    """The full diff, without any file whose name is in ``exclude`` (in any directory) and without the
+    top-level directories in ``exclude_dirs``."""
+    specs = [f":(exclude,glob)**/{name}" for name in exclude] + [f":(exclude,top){d}/" for d in exclude_dirs]
+    pathspec = ["--", *specs] if specs else []
     out = git(repo, "diff", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", "--binary", base, head,
               *pathspec)
     return out.decode("utf-8", "replace")

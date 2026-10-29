@@ -78,6 +78,7 @@ Protocol for this review (bootstrap referee):
 
 # The Founder's ledger is its own reasoning; the rival judges the artefact, not the Founder's account of it (`29`).
 HIDDEN_NAMES = ("founder-ledger.jsonl",)
+HIDDEN_DIRS = ("reports",)  # the Founder's reports, at the brain root only (`asama-0/03`, E153)
 
 TOOLS: list[dict[str, Any]] = [
     {
@@ -213,7 +214,8 @@ class ToolBox:
 
     def _hidden(self, target: Path) -> bool:
         """A name check only: staying inside the tree is `_resolve`'s job, and stays measured there."""
-        return any(part in HIDDEN_NAMES for part in target.parts[len(self.root.parts):])
+        rel = target.parts[len(self.root.parts):]
+        return any(part in HIDDEN_NAMES for part in rel) or (bool(rel) and rel[0] in HIDDEN_DIRS)
 
     def _resolve(self, rel: str) -> Path:
         if not isinstance(rel, str) or not rel or "\x00" in rel or len(rel) > 1000:
@@ -794,8 +796,9 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def hidden(path: str) -> bool:
-    """A path the rival is not shown (E10)."""
-    return any(part in HIDDEN_NAMES for part in path.split("/"))
+    """A path the rival is not shown (E10, E153)."""
+    parts = path.split("/")
+    return any(part in HIDDEN_NAMES for part in parts) or parts[0] in HIDDEN_DIRS
 
 
 def build_context(kind: str, base: str, head: str, changed: list[str], diff: str, pages: dict[str, str],

@@ -24,7 +24,7 @@ from .decide import OUTAGE_GIVE_UP_DAYS, OUTAGE_RETRY_LIMIT, decide, utc_now
 from .importer import ImportErrorStop, run_import, verify_signature
 from .manifest import ManifestError, check_stage0, parse_lockfile, parse_manifest
 from .reproduce import run_reproducers, run_state_reproducers
-from .rival import (HIDDEN_NAMES, RivalOutcome, build_context, extract_seat_prompt, hidden, resolve_claude,
+from .rival import (HIDDEN_DIRS, HIDDEN_NAMES, RivalOutcome, build_context, extract_seat_prompt, hidden, resolve_claude,
                     run_rival)
 from .treehash import path_problem, TreeError, extract, is_utf8_name, iter_files, shown, tree_hash
 from .vectors import run_vectors
@@ -427,7 +427,7 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     repro = bool(meta["state_repro"]) or (meta["reuse_rival"] and any("reproducer" in a for a in pending["rival"]["attempts"]))
     write_json(out / "meta.json", meta)
     (out / "brain.tar").write_bytes(tar_bytes)
-    (out / "diff.patch").write_text(gitio.diff_text(repo, base, head, exclude=HIDDEN_NAMES) if base_ok else "",
+    (out / "diff.patch").write_text(gitio.diff_text(repo, base, head, exclude=HIDDEN_NAMES, exclude_dirs=HIDDEN_DIRS) if base_ok else "",
                                     encoding="utf-8")
     output(skip=False, kind=kind, head=head, run_tests=meta["run_tests"], run_rival=meta["run_rival"], repro=repro)
     return 0

@@ -324,9 +324,7 @@ class RivalTest(unittest.TestCase):
         runner.wait(timeout=30)
         for pid in pids:
             for _ in range(50):
-                try:
-                    os.kill(pid, 0)
-                except ProcessLookupError:
+                if not process_alive(pid):  # a zombie nobody reaped (no init in the container) is dead (E160)
                     break
                 time.sleep(0.1)
             else:
