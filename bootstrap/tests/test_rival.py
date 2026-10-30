@@ -60,7 +60,7 @@ class RivalTest(unittest.TestCase):
                                        submit("refuted", [{"claim": "c", "evidence_refs": [
                                            {"path": "referee/a.py", "line_start": 1, "line_end": 2}],
                                            "reproducer": {"cmd": "python -c 'import sys; sys.exit(3)'",
-                                                          "expect_exit": 3}}])],
+                                                          "expect_exit": 3, "correct_exit": 0}}])],
                              "result": ok_result()})
         self.assertEqual(out.verdict, "refuted", out.reasons)
         self.assertTrue(out.attempts[0]["refs_valid"])
@@ -174,6 +174,7 @@ class RivalTest(unittest.TestCase):
         broken = json.loads((FIXTURES.parent / "rival" / "empty_expect_stdout.json").read_text())
         fixed = json.loads(json.dumps(broken))
         del fixed["attempts"][1]["reproducer"]["expect_stdout_contains"]
+        fixed["attempts"][1]["reproducer"]["correct_exit"] = 0  # E260: both sides named
         out = self.run_with({"calls": [["submit_verdict", broken], ["submit_verdict", fixed]], "result": ok_result()})
         self.assertEqual((out.verdict, out.reasons), ("refuted", []))
         self.assertEqual(out.as_dict()["reproducer_count"], 1)
@@ -189,6 +190,7 @@ class RivalTest(unittest.TestCase):
         self.assertEqual(out.reasons, ["malformed_verdict:expect_stdout_contains must be 1-500 characters"])
         fixed = json.loads(json.dumps(broken))
         del fixed["attempts"][1]["reproducer"]["expect_stdout_contains"]
+        fixed["attempts"][1]["reproducer"]["correct_exit"] = 0  # E260: both sides named
         out = self.run_with({"calls": [["submit_verdict", broken]] * 3 + [["submit_verdict", fixed]],
                              "result": ok_result()})
         self.assertEqual(out.verdict, "unresolved")
@@ -479,7 +481,7 @@ class RivalTest(unittest.TestCase):
     def test_at_most_five_reproducers_are_accepted_from_the_rival(self):
         """E05: the referee runs five; a sixth must be refused, so the model knows, not silently dropped."""
         attempt = {"claim": "c", "evidence_refs": [{"path": "referee/a.py", "line_start": 1, "line_end": 1}],
-                   "reproducer": {"cmd": "true", "expect_exit": 0}}
+                   "reproducer": {"cmd": "true", "expect_exit": 0, "correct_exit": 1}}
         box = ToolBox(self.root)
         rival.validate_verdict({"verdict": "refuted", "attempts": [attempt] * 5}, box)
         with self.assertRaisesRegex(ValueError, "at most 5"):
@@ -565,10 +567,14 @@ class McpServerResilienceTest(unittest.TestCase):
         cases = {
             "an integer beyond what canonical JSON holds": dict(base, evidence_refs=[dict(refs[0], line_end=10 ** 20)]),
             "a lone surrogate": dict(base, claim="a" + chr(0xD800)),
-            "a NUL in the command": dict(base, reproducer={"cmd": "echo a" + chr(0) + "b", "expect_exit": 0}),
+            "a NUL in the command": dict(base, reproducer={"cmd": "echo a" + chr(0) + "b", "expect_exit": 0,
+                                                           "correct_exit": 1}),
             "a boolean as a line number": dict(base, evidence_refs=[dict(refs[0], line_start=True)]),
             "a path of 80 KB": dict(base, evidence_refs=[dict(refs[0], path="a/" * 40_000)]),
-            "an exit code beyond canonical JSON": dict(base, reproducer={"cmd": "true", "expect_exit": 10 ** 20}),
+            "an exit code beyond canonical JSON": dict(base, reproducer={"cmd": "true", "expect_exit": 10 ** 20,
+                                                                         "correct_exit": 0}),
+            "a correct exit code beyond canonical JSON": dict(base, reproducer={"cmd": "true", "expect_exit": 0,
+                                                                                 "correct_exit": 10 ** 20}),
         }
         for what, attempt in cases.items():
             server = RivalServer(self.server.box, self.server.verdict_path, self.server.stats_path)

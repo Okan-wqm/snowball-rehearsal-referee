@@ -1,0 +1,11 @@
+{
+"GET /app": {"id":424242,"slug":"example-writer"},
+"GET /installation/repositories": {"total_count":2,"repositories":[{"full_name":"example/toy"},{"full_name":"example/copy"}]},
+"GET /repos/example/copy/rules/branches/brain/state": [{"type":"deletion","ruleset_id":201},{"type":"non_fast_forward","ruleset_id":201}],
+"GET /repos/example/copy/rules/branches/brain/integration": [{"type":"deletion","ruleset_id":202},{"type":"non_fast_forward","ruleset_id":202},{"type":"pull_request","parameters":{"required_approving_review_count":0},"ruleset_id":202},{"type":"required_status_checks","parameters":{"strict_required_status_checks_policy":true,"required_status_checks":[{"context":"snowball-gate","integration_id":424242}]},"ruleset_id":202}],
+"GET /repos/example/copy/rules/branches/main": [{"type":"deletion","ruleset_id":203},{"type":"non_fast_forward","ruleset_id":203},{"type":"update","parameters":{"update_allows_fetch_and_merge":false},"ruleset_id":203}],
+"GET /repos/example/copy/rulesets/201": {"id":201,"name":"brain-state","target":"branch","enforcement":"active","current_user_can_bypass":"never"},
+"GET /repos/example/copy/rulesets/202": {"id":202,"name":"brain-integration","target":"branch","enforcement":"active","current_user_can_bypass":"never"},
+"GET /repos/example/copy/rulesets/203": {"id":203,"name":"main","target":"branch","enforcement":"active","current_user_can_bypass":"never"},
+"GET /repos/example/copy/actions/permissions": {"enabled":true,"allowed_actions":"all"}
+}

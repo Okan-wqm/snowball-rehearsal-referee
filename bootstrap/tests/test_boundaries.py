@@ -218,13 +218,18 @@ class ValidatorBoundaryGaps(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_verdict({"verdict": "refuted", "attempts": [self.attempt()["attempts"][0]] * (rival.MAX_ATTEMPTS + 1)},
                              self.box)
-        validate_verdict(self.attempt(reproducer={"cmd": "x" * rival.MAX_CMD_CHARS, "expect_exit": 0}), self.box)
+        validate_verdict(self.attempt(reproducer={"cmd": "x" * rival.MAX_CMD_CHARS, "expect_exit": 0, "correct_exit": 1}),
+                         self.box)
         with self.assertRaises(ValueError):
-            validate_verdict(self.attempt(reproducer={"cmd": "x" * (rival.MAX_CMD_CHARS + 1), "expect_exit": 0}), self.box)
-        validate_verdict(self.attempt(reproducer={"cmd": "x", "expect_stdout_contains": "y" * rival.MAX_EXPECT_CHARS}), self.box)
-        with self.assertRaises(ValueError):
-            validate_verdict(self.attempt(reproducer={"cmd": "x", "expect_stdout_contains": "y" * (rival.MAX_EXPECT_CHARS + 1)}),
+            validate_verdict(self.attempt(reproducer={"cmd": "x" * (rival.MAX_CMD_CHARS + 1), "expect_exit": 0,
+                                                      "correct_exit": 1}), self.box)
+        for side in ("expect_stdout_contains", "correct_stdout_contains"):  # each side's text has the same limit
+            other = "correct_stdout_contains" if side.startswith("expect") else "expect_stdout_contains"
+            validate_verdict(self.attempt(reproducer={"cmd": "x", side: "y" * rival.MAX_EXPECT_CHARS, other: "z"}),
                              self.box)
+            with self.assertRaises(ValueError):
+                validate_verdict(self.attempt(reproducer={"cmd": "x", side: "y" * (rival.MAX_EXPECT_CHARS + 1),
+                                                          other: "z"}), self.box)
         kept = validate_verdict(self.attempt(claim="z" * (rival.MAX_CLAIM_CHARS + 50)), self.box)["attempts"][0]["claim"]
         self.assertEqual(len(kept), rival.MAX_CLAIM_CHARS)
 
@@ -232,8 +237,10 @@ class ValidatorBoundaryGaps(unittest.TestCase):
         """V4: only NUL and a bool line_start were tried"""
         for char in (chr(27), chr(13), chr(0), chr(8)):
             with self.assertRaises(ValueError, msg=repr(char)):
-                validate_verdict(self.attempt(reproducer={"cmd": "echo" + char + "x", "expect_exit": 0}), self.box)
-        validate_verdict(self.attempt(reproducer={"cmd": "a" + chr(10) + chr(9) + "b", "expect_exit": 0}), self.box)
+                validate_verdict(self.attempt(reproducer={"cmd": "echo" + char + "x", "expect_exit": 0, "correct_exit": 1}),
+                                 self.box)
+        validate_verdict(self.attempt(reproducer={"cmd": "a" + chr(10) + chr(9) + "b", "expect_exit": 0, "correct_exit": 1}),
+                         self.box)
         for field in ("line_start", "line_end"):
             with self.assertRaises(ValueError, msg=field):
                 validate_verdict(self.attempt(evidence_refs=[dict(REFS[0], **{field: True})]), self.box)
@@ -248,7 +255,8 @@ class ValidatorBoundaryGaps(unittest.TestCase):
     def test_malformed_attempts_are_refused(self):
         """R48 R50 R51"""
         for bad in (self.attempt(claim="   "), self.attempt(evidence_refs=[]),
-                    self.attempt(reproducer={"cmd": "x", "expect_exit": True})):
+                    self.attempt(reproducer={"cmd": "x", "expect_exit": True, "correct_exit": 1}),
+                    self.attempt(reproducer={"cmd": "x", "expect_exit": 0, "correct_exit": True})):
             with self.assertRaises(ValueError, msg=bad):
                 validate_verdict(bad, self.box)
 
@@ -403,7 +411,7 @@ class CmdRivalGaps(unittest.TestCase):
     def test_a_refutation_with_a_reproducer_switches_the_reproduce_job_on(self):
         """C01: has_repro=true is what makes the workflow run `reproduce`; no shipped test ever sees it."""
         attempt = {"claim": "c", "evidence_refs": [{"path": "spec/asama-0/00-ozet.md", "line_start": 1, "line_end": 1}],
-                   "reproducer": {"cmd": "exit 3", "expect_exit": 3}}
+                   "reproducer": {"cmd": "exit 3", "expect_exit": 3, "correct_exit": 0}}
         rc, rival_json = self.run_cmd({"calls": [submit("refuted", [attempt])], "result": ok_result()})
         self.assertEqual((rc, rival_json["verdict"], rival_json["reproducer_count"]), (0, "refuted", 1))
         self.assertIn("has_repro=true", self.gh.read_text())

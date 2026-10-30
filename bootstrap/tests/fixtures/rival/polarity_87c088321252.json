@@ -1,0 +1,63 @@
+{
+ "attempt": {
+  "claim": "The vector form `scan row FILE` scans each JSON string on its own and never the key with its value, so a row that assigns a long value to a secret-named key is reported clean. Ledger rows are JSON objects, so this is the usual way a credential would appear in one.",
+  "evidence_refs": [
+   {
+    "line_end": 532,
+    "line_start": 500,
+    "path": "referee/gate/secrets.py"
+   }
+  ],
+  "refs_valid": true,
+  "reproducer": {
+   "cmd": "cd referee && python3 -c \"import json;k='pass'+'word';open('/tmp/r.jsonl','w').write(json.dumps({'row_id':'r1',k:'Zx9kLm2pQrs7Tv'})+'\\n')\" && python3 -m gate.secrets scan row /tmp/r.jsonl 2>&1",
+   "expect_exit": null,
+   "expect_stderr_contains": null,
+   "expect_stdout_contains": "\"clean\": false"
+  }
+ },
+ "claim_id": "87c088321252",
+ "defective_head": {
+  "exit": 0,
+  "sha": "86cc8b44b64742886460941891a54a29c9cfb12e",
+  "shown": false,
+  "stderr": "",
+  "stdout": "{\"clean\": true, \"lines\": []}\n"
+ },
+ "fixed_head": {
+  "exit": 1,
+  "reproduced": true,
+  "sha": "f668776f6cdfb5089b24b3aedbde3f7dec60624f",
+  "shown": true,
+  "stderr": "",
+  "stdout": "{\"clean\": false, \"lines\": [1]}\n"
+ },
+ "key": "027465767d2d46dc",
+ "open_claim": {
+  "claim": "The vector form `scan row FILE` scans each JSON string on its own and never the key with its value, so a row that assigns a long value to a secret-named key is reported clean. Ledger rows are JSON objects, so this is the usual way a credential would appear in one.",
+  "evidence_refs": [
+   {
+    "line_end": 532,
+    "line_start": 500,
+    "path": "referee/gate/secrets.py"
+   }
+  ],
+  "first_head": "86cc8b44b64742886460941891a54a29c9cfb12e",
+  "id": "87c088321252",
+  "observed": {
+   "exit": 0,
+   "stderr_tail": "",
+   "stdout_tail": "{\"clean\": true, \"lines\": []}\n",
+   "tautological": null,
+   "timed_out": false
+  },
+  "reproducer": {
+   "cmd": "cd referee && python3 -c \"import json;k='pass'+'word';open('/tmp/r.jsonl','w').write(json.dumps({'row_id':'r1',k:'Zx9kLm2pQrs7Tv'})+'\\n')\" && python3 -m gate.secrets scan row /tmp/r.jsonl 2>&1",
+   "expect_exit": null,
+   "expect_stderr_contains": null,
+   "expect_stdout_contains": "\"clean\": false"
+  },
+  "rewritten": false
+ },
+ "source": "Okan-wqm/snowball-rehearsal-referee, signed results of run 40962413404 (head 86cc8b4, artifact 12937231131) and run 40966312329 (head f668776, artifact 12939345159), copied as signed"
+}

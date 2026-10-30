@@ -494,7 +494,7 @@ class Flow(unittest.TestCase):
                                                         "reproducer": {"cmd": "x"}}], "reasons": [],
                    "cost_usd_micros": 1, "reproducer_count": 1}
         result = self.finish(meta, run=self.green_run(meta), rival=refuted,
-                             repro=[{"attempt_index": 0, "reproduced": True}],
+                             repro=[{"attempt_index": 0, "reproduced": True, "contradicted": False}],
                              jobs={"getir": "success", "kos": "success", "cagir": "success", "yeniden": "success"})
         self.assertEqual(result["reasons"][0]["kind"], "refutation_reproduced")
 

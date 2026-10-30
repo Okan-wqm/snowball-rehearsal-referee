@@ -261,12 +261,12 @@ class StageTableMatchesTheSpecTest(unittest.TestCase):
             self.assertEqual(group["owner"] == "asama-0", name in named, name)
 
 
-VECTOR_PAGES = ("29f", "29g", "29h", "29i", "29j")
+VECTOR_PAGES = ("29f", "29g", "29h", "29i", "29j", "29m", "29n", "29o")
 
 
 class VectorInterfacePagesTest(unittest.TestCase):
-    """`29f`-`29j` are what the Founder reads of the data groups (it never sees `vectors.json`): every group's
-    command and every case's purpose are there, the expected values are not (`29a`: the vectors are a floor)."""
+    """`29f`-`29j` and `29m`-`29o` are what the Founder reads of the data groups (it never sees `vectors.json`): every
+    group's command and every case's purpose are there, the expected values are not (`29a`: the vectors are a floor)."""
 
     SEED = json.loads((BOOT / "vectors" / "vectors.json").read_text(encoding="utf-8"))
     DATA = {n: g for n, g in SEED.items() if isinstance(g, dict) and g.get("runner") == vectors.DATA_RUNNER}
@@ -287,7 +287,8 @@ class VectorInterfacePagesTest(unittest.TestCase):
 
     def test_every_data_group_its_commands_and_every_case_are_on_its_page(self):
         self.assertEqual(set(self.DATA), {"secrets", "contained", "profile", "npmlock", "recipe", "diffguard",
-                                          "k0map", "refs", "append", "root", "flaky", "cause"})
+                                          "k0map", "refs", "append", "root", "flaky", "cause", "revert_drill", "prompt",
+                                          "status", "genesis"})
         for name, group in self.DATA.items():
             page = (ROOT / group["interface"]).read_text(encoding="utf-8")
             self.assertIn(f"`{name}`", page)
@@ -298,21 +299,13 @@ class VectorInterfacePagesTest(unittest.TestCase):
                     self.assertIn(f"`{case['id'].split('.', 1)[1]}`", page)
 
     def test_no_expected_value_is_on_a_page(self):
-        def atoms(value):
-            if isinstance(value, dict):
-                return [a for v in value.values() for a in atoms(v)]
-            if isinstance(value, list):
-                return [a for v in value for a in atoms(v)]
-            return [value]
         pages = "".join(spec_page("tohum", p) for p in VECTOR_PAGES)
         for group in self.DATA.values():
             for case in group["cases"]:
                 expect = case["expect"]
                 self.assertNotIn(json.dumps(expect, separators=(",", ":"), sort_keys=True), pages)
-                for atom in atoms(expect):  # content addresses, reasons bound to a path, hashes (MF8-MF13's answers)
-                    if isinstance(atom, str) and (atom.startswith("sha256:") or (":" in atom and "/" in atom)
-                                                  or re.fullmatch("[0-9a-f]{40}|[0-9a-f]{64}", atom)):
-                        self.assertNotIn(atom, pages, case["id"])
+                for atom in vectors.answer_atoms(expect):  # the rule `/vec` is held to (E244), one source
+                    self.assertNotIn(atom, pages, case["id"])
 
 
 class NothingStaleTest(unittest.TestCase):

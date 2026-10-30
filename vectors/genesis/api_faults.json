@@ -1,0 +1,12 @@
+{
+"GET /app": {"id":424242,"slug":"example-writer"},
+"GET /installation/repositories": {"total_count":3,"repositories":[{"full_name":"example/toy"},{"full_name":"example/copy"},{"full_name":"example/brain"}]},
+"GET /repos/example/toy/git/ref/heads/main": {"ref":"refs/heads/main","object":{"sha":"31e0f354ab5aabfcf13615343b392951165d7467","type":"commit"}},
+"GET /repos/example/toy/rules/branches/brain/state": [{"type":"deletion","ruleset_id":101}],
+"GET /repos/example/toy/rules/branches/brain/integration": [{"type":"deletion","ruleset_id":102},{"type":"non_fast_forward","ruleset_id":102},{"type":"required_status_checks","parameters":{"strict_required_status_checks_policy":true,"required_status_checks":[{"context":"snowball-gate","integration_id":15368}]},"ruleset_id":102}],
+"GET /repos/example/toy/rules/branches/main": [{"type":"deletion","ruleset_id":103},{"type":"non_fast_forward","ruleset_id":103},{"type":"pull_request","parameters":{"required_approving_review_count":0},"ruleset_id":103}],
+"GET /repos/example/toy/rulesets/101": {"id":101,"name":"brain-state","target":"branch","enforcement":"active","current_user_can_bypass":"never"},
+"GET /repos/example/toy/rulesets/102": {"id":102,"name":"brain-integration","target":"branch","enforcement":"active","current_user_can_bypass":"never"},
+"GET /repos/example/toy/rulesets/103": {"id":103,"name":"main","target":"branch","enforcement":"active","current_user_can_bypass":"never"},
+"GET /repos/example/toy/actions/workflows": {"total_count":1,"workflows":[{"id":7,"name":"ci","path":".github/workflows/ci.yml","state":"active"}]}
+}

@@ -121,7 +121,7 @@ class RivalOutcomeJudgement(unittest.TestCase):
     def test_the_reason_names_the_attempt_that_reproduced(self):  # D14
         rival = refuted("first claim", "second claim")
         res = run_decide(meta_("code", state0()), green_run(), rival,
-                         [{"attempt_index": 0, "reproduced": False}, {"attempt_index": 1, "reproduced": True}],
+                         [{"attempt_index": 0, "reproduced": False}, {"attempt_index": 1, "reproduced": True, "contradicted": False}],
                          dict(CODE_JOBS, yeniden="success"))
         key = reproducer_key(rival["attempts"][1]["reproducer"])
         self.assertEqual([(r["kind"], r["ref"], r["detail"]) for r in res["reasons"]],
@@ -203,7 +203,7 @@ class RivalOutcomeJudgement(unittest.TestCase):
 
     def test_a_rejected_spec_request_freezes_nothing(self):  # D25 D41
         res = run_decide(meta_("spec", state0(), spec_dir_hashes={"spec/asama-0": "e" * 64}), None, refuted("c"),
-                         [{"attempt_index": 0, "reproduced": True}], {"cagir": "success", "yeniden": "success"})
+                         [{"attempt_index": 0, "reproduced": True, "contradicted": False}], {"cagir": "success", "yeniden": "success"})
         self.assertEqual((res["verdict"], res["state"]["frozen_specs"]), ("rejected", {}))
         self.assertEqual(res["state"]["last_accepted_sha"], A)
 
@@ -211,7 +211,7 @@ class RivalOutcomeJudgement(unittest.TestCase):
         st_ = state0()
         for n, claim in enumerate(("hash ignores prev_hash", "cp_lower is Wilson", "score counts twice"), start=1):
             res = run_decide(meta_("spec", st_, head=f"{n:040d}"), None, refuted(claim),
-                             [{"attempt_index": 0, "reproduced": True}], {"cagir": "success", "yeniden": "success"})
+                             [{"attempt_index": 0, "reproduced": True, "contradicted": False}], {"cagir": "success", "yeniden": "success"})
             st_ = res["state"]
         self.assertEqual(res["learning"]["not_learning"], [])
         self.assertEqual(res["state"]["repeat_events"], 0)
@@ -664,7 +664,7 @@ class CommandWiring(unittest.TestCase):
     def test_decide_command_hands_artifacts_jobs_and_policy_to_decide(self):  # L29 L30 L31
         defect = "refutation:" + reproducer_key(refuted("c")["attempts"][0]["reproducer"])  # named by its reproducer (E08)
         meta = meta_("code", state0(reject_streaks={defect: 1}))
-        result = self.decide_cmd(meta, green_run(), refuted("c"), {"results": [{"attempt_index": 0, "reproduced": True}]},
+        result = self.decide_cmd(meta, green_run(), refuted("c"), {"results": [{"attempt_index": 0, "reproduced": True, "contradicted": False}]},
                                  ["getir=success", "kos=success", "cagir=success", "yeniden=success"])
         self.assertEqual([r["kind"] for r in result["reasons"]], ["refutation_reproduced"])
         self.assertEqual(result["learning"]["not_learning"], [])  # limit 3, streak 2
@@ -996,7 +996,7 @@ class PullGates(unittest.TestCase):
         os.environ["GITHUB_OUTPUT"] = str(gh_output)
         self.addCleanup(os.environ.pop, "GITHUB_OUTPUT", None)
         attempt = {"claim": "c", "evidence_refs": [{"path": "spec/asama-0/00-ozet.md", "line_start": 1, "line_end": 1}],
-                   "reproducer": {"cmd": "python -m x", "expect_exit": 1}}
+                   "reproducer": {"cmd": "python -m x", "expect_exit": 1, "correct_exit": 0}}
         (bin_dir / "scenario.json").write_text(json.dumps({"calls": [submit("refuted", [attempt])],
                                                            "result": ok_result()}))
         rc = cli.main(["rival", "--root", str(self.referee), "--pulled", str(pulled), "--work",

@@ -1,0 +1,32 @@
+{
+  "limits": {
+    "kos_wall_s": 600
+  },
+  "services": [],
+  "affected_test_cmd": [
+    "node",
+    "--test"
+  ],
+  "test_cmd": [
+    "node",
+    "--test"
+  ],
+  "lint_cmd": [
+    "npx",
+    "eslint",
+    "src"
+  ],
+  "install_scripts_required": [],
+  "lockfiles": [
+    "package-lock.json"
+  ],
+  "env_image": "node@sha256:0505496236ffaa496eef658cb47191b8716ac6992eac354a3af75ee5449cc038",
+  "toolchain": "node@22.11.0",
+  "inputs": [
+    "src",
+    "package.json",
+    "package-lock.json"
+  ],
+  "path": "src",
+  "unit_id": "rate"
+}

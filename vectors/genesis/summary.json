@@ -1,0 +1,49 @@
+{
+ "seed_epochs": [
+  {
+   "commit": "c218e47f0ba2a830e2e70e014e7975967c127d39",
+   "spec_tohum_sha256": "33b91efbbe9fe742d4ab9b986642ae433b0e8de653783feb617ff13045ab6541",
+   "seed_sha256": "a25ca73c7189e2a2ca5acf2088b57e283d4cd45aef7549185c2c3b28a4bef1de",
+   "bootstrap_sha256": "22a2d080dd372958d671f05889f21be818357f63f856f445d5331c9802ca69d3"
+  },
+  {
+   "commit": "c7e45005ac1fc2affc8f397efb807caa5b441cc4",
+   "spec_tohum_sha256": "3e30495392c3ee655df051cd61eedf83010af4d19e1aa326ea094610ceffc3af",
+   "seed_sha256": "7ce5fcd046004c9f93dea6b3c2effd72dce15e0eddb2345fb6f45157bef07343",
+   "bootstrap_sha256": "4eb6a4178c3f9ba8f7aed3c132d149bc4bcfb60a75c1c0c433b7f8db8d126bf2"
+  }
+ ],
+ "targets": [
+  {
+   "id": "toy",
+   "repo": "example/toy",
+   "kind": "toy",
+   "base_sha": "dfe25f73b1a656485dca4b6281a52fbe7d2a7404",
+   "identifiers": [
+    "toy"
+   ],
+   "excluded_paths": [
+    "docs/"
+   ],
+   "unit_candidates": [
+    "src"
+   ]
+  },
+  {
+   "id": "copy",
+   "repo": "example/copy",
+   "kind": "copy",
+   "base_sha": "144de53f2ef6fbe655400a040fae3d95f7ad926b",
+   "identifiers": [
+    "acme"
+   ],
+   "excluded_paths": [
+    "vendor/"
+   ],
+   "unit_candidates": [
+    "packages/rate"
+   ]
+  }
+ ],
+ "honesty_commitment": "f5280aa9dd49380ec3f5722fb41371291e9d06b819d01424f56078d72e7c480e"
+}

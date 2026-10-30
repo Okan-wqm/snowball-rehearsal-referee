@@ -15,7 +15,8 @@ for the operator at once (an isolation fault, E12).
 ``rival_artifacts`` lists every head the rival judged with its outcome (E20); ``pending_rival`` keeps a
 valid rival result whose reproducers could not run, so the retry reuses it (one attempt per artifact).
 ``open_refutations`` are proven defects, re-run on every later code head until an accepted head no longer
-shows them (E08); ``open_claims`` are refutations that were not reproduced (E07).
+shows them (E08); ``open_claims`` are refutations no reproducer proved on the head they were made for, with what
+their reproducers showed on later heads, never a proof there (E07, E260).
 ``rejected_exit_request`` is the sha256 of the last rejected exit request's bytes: the same file left in place is
 ignored in later code pushes (`asama-0/10`, `26c`, E97).
 
@@ -28,6 +29,7 @@ import re
 from typing import Any
 
 from .config import ConfigError, Summary
+from .rival import REPRODUCER_FIELDS
 
 SCHEMA = "snowball-bootstrap-state/3"
 SCHEMA_V2 = "snowball-bootstrap-state/2"
@@ -109,8 +111,9 @@ def _count(value: Any) -> bool:
 
 
 def _reproducer(rep: Any) -> bool:
+    """A reproducer kept before E260 has no `correct_*`: it loads and is read with its symptom alone."""
     return (isinstance(rep, dict) and _text(rep.get("cmd"), 1000) and bool(rep["cmd"])
-            and set(rep) <= {"cmd", "expect_exit", "expect_stdout_contains", "expect_stderr_contains"})
+            and set(rep) <= set(REPRODUCER_FIELDS))
 
 
 def _refs(refs: Any) -> bool:

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import shlex
 import shutil
 import time
@@ -25,6 +26,8 @@ from .container import Runner
 
 CWD = "referee"
 SEED_FILE = "vectors.json"  # every case's command and expected answer; the fixtures sit beside it
+CASES_FILE = "cases.json"  # what the Founder's capsule reads of the data cases: their inputs, no answer (E244)
+_HASH = re.compile("[0-9a-f]{40}|[0-9a-f]{64}")
 # `docker run` exits with this when docker itself failed. Since E01 the container turns a command's own 125 into 1,
 # so 125 here never comes from the Founder's code: such a vector is the sandbox failing, not a wrong answer (E141).
 DOCKER_ERROR = 125
@@ -43,6 +46,75 @@ def fixtures(vectors_dir: Path, dest: Path) -> Path:
     shutil.copytree(vectors_dir, dest)
     (dest / SEED_FILE).unlink()
     return dest
+
+
+def founder_inputs(vectors_dir: Path, dest: Path) -> Path:
+    """What the Founder's capsule mounts at `/vec` (E244, Founder report f97): the files `fixtures` gives the referee's
+    containers, so each case's command runs there verbatim, and `cases.json`, every data case's inputs with no expected
+    value: inputs yes, answers never. A seed with a fixture that carries an answer its case must compute is refused
+    before anything is written, since the Founder would read the answer there. The referee's containers keep
+    `fixtures`."""
+    spec = _seed(vectors_dir)
+    lookups = _lookups(vectors_dir, spec)
+    if lookups:
+        raise ValueError("a fixture carries an answer its case must compute: " + "; ".join(lookups))
+    if (vectors_dir / CASES_FILE).exists():
+        raise ValueError(f"the seed has a fixture named {CASES_FILE}; the inputs would overwrite it")
+    cases = [_inputs(case) for case in _data_cases(spec)]
+    fixtures(vectors_dir, dest)
+    (dest / CASES_FILE).write_text(json.dumps(cases, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return dest
+
+
+def _inputs(case: dict[str, Any]) -> dict[str, Any]:
+    """A data case as the Founder reads it. Named fields only, so nothing of `expect` or `expect_not` comes along; a
+    missing stdin is the empty one the runner sends."""
+    changed = case["changed"]
+    return {"id": case["id"], "purpose": case["purpose"], "cmd": case["cmd"], "stdin": case.get("stdin", ""),
+            "fixture": case["fixture"],
+            "changed": {"description": changed["description"], "cmd": changed["cmd"],
+                        "stdin": changed.get("stdin", ""), "fixture": changed["fixture"]}}
+
+
+def answer_atoms(value: Any) -> list[str]:
+    """The parts of an expected value shaped like an answer only code computes: content addresses, reasons bound to a
+    path, git and sha256 hashes. Short values (a count, a verdict, a bare path) are everywhere and tell nothing."""
+    if isinstance(value, dict):
+        return [a for v in value.values() for a in answer_atoms(v)]
+    if isinstance(value, list):
+        return [a for v in value for a in answer_atoms(v)]
+    shaped = isinstance(value, str) and (value.startswith("sha256:") or (":" in value and "/" in value)
+                                         or _HASH.fullmatch(value) is not None)
+    return [value] if shaped else []
+
+
+def _given(vectors_dir: Path, variant: dict[str, Any]) -> list[bytes]:
+    """What one variant of a case hands its command: the argv, the stdin and its fixtures (a file or a tree)."""
+    given = [variant["cmd"].encode("utf-8"), variant.get("stdin", "").encode("utf-8")]
+    for rel in variant["fixture"]:
+        path = vectors_dir / rel
+        given += [p.read_bytes() for p in ([path] if path.is_file() else sorted(path.rglob("*"))) if p.is_file()]
+    return given
+
+
+def _data_cases(spec: dict[str, Any]) -> list[dict[str, Any]]:
+    return [case for group in spec.values() if isinstance(group, dict) and group.get("runner") == DATA_RUNNER
+            for case in group["cases"]]
+
+
+def _lookups(vectors_dir: Path, spec: dict[str, Any]) -> list[str]:
+    """`case: file` for each fixture file that carries an answer its case must compute, one the case's own inputs do
+    not carry. What an input carries is an echo (the image a recipe names, the tip hash a ledger row holds)."""
+    files = {p: p.read_bytes() for p in sorted(vectors_dir.rglob("*")) if p.is_file() and p != vectors_dir / SEED_FILE}
+    found = set()
+    for case in _data_cases(spec):
+        given = _given(vectors_dir, case) + _given(vectors_dir, case["changed"])
+        for atom in answer_atoms([case["expect"], case["changed"]["expect_not"]]):
+            raw = atom.encode("utf-8")
+            if not any(raw in part for part in given):
+                found |= {f"{case['id']}: {p.relative_to(vectors_dir).as_posix()}" for p, data in files.items()
+                          if raw in data}
+    return sorted(found)
 
 
 def _last_json(stdout: bytes) -> dict[str, Any] | None:
@@ -76,8 +148,16 @@ class VectorRun:
         self.results: list[dict[str, Any]] = []
         self.fault = ""
         self.exit: int | None = None  # the exit code of the last try of the last call
+        # E273: one command on one stdin over the same read-only tree and `/vec` is one input. A case whose input an
+        # earlier case ran (a changed input is often another case's input) reuses that answer: a container less, the
+        # budget kept for inputs not yet asked. Only answers are kept; a call that gave none is asked again.
+        self.answers: dict[tuple[str, bytes], tuple[dict[str, Any] | None, int]] = {}
 
     def call(self, cmd: str, stdin: bytes = b"") -> dict[str, Any] | None:
+        if (cmd, stdin) in self.answers:
+            out, self.exit = self.answers[(cmd, stdin)]
+            self.fault = ""
+            return out
         res = None
         for _ in range(2):  # a container the host killed under load answers nothing: ask again before blaming the judge
             left = self.deadline - _now()
@@ -87,7 +167,8 @@ class VectorRun:
             self.exit = res.exit_code
             if not res.timed_out and res.stdout.strip():
                 self.fault = ""
-                return _last_json(res.stdout)
+                self.answers[(cmd, stdin)] = (_last_json(res.stdout), res.exit_code)
+                return self.answers[(cmd, stdin)][0]
         if res is None:  # the budget was spent before this call: it never ran
             self.exit = None
             self.fault = "not_run:time_budget"
