@@ -1,0 +1,17 @@
+{
+"GET /repos/example/toy/git/ref/heads/brain/integration": {"ref":"refs/heads/brain/integration","object":{"sha":"4a479c25153b63e58db4c254f56ea8a37aad95ce","type":"commit"}},
+"GET /repos/example/toy/git/commits/4a479c25153b63e58db4c254f56ea8a37aad95ce": {"sha":"4a479c25153b63e58db4c254f56ea8a37aad95ce","tree":{"sha":"d10bc7cf3c08fc9350dd0142b1a8ac57dbfc5a36"},"parents":[{"sha":"668050e73553abe02b9165ea405fb421e0c82730"},{"sha":"994bbab6283c71cb8dddbc9db6ac8c4757c9f1a2"}]},
+"GET /repos/example/toy/git/commits/3a139f674f372f3f0cfcc56ea253e49065ff79b9": {"sha":"3a139f674f372f3f0cfcc56ea253e49065ff79b9","tree":{"sha":"639c73fa6704173805caf1608df9546f408088dd"},"parents":[{"sha":"994bbab6283c71cb8dddbc9db6ac8c4757c9f1a2"},{"sha":"668050e73553abe02b9165ea405fb421e0c82730"}]},
+"GET /repos/example/toy/git/commits/668050e73553abe02b9165ea405fb421e0c82730": {"sha":"668050e73553abe02b9165ea405fb421e0c82730","tree":{"sha":"93f7ba6edfbbfd6a0315d53f942935bcebcfbd6a"},"parents":[{"sha":"c42b7b38e8ed4aeb1ac6ab4de05948622f914054"}]},
+"GET /repos/example/toy/git/commits/994bbab6283c71cb8dddbc9db6ac8c4757c9f1a2": {"sha":"994bbab6283c71cb8dddbc9db6ac8c4757c9f1a2","tree":{"sha":"358e770e0a30ca4ba0a214691baa5476155766a7"},"parents":[{"sha":"c42b7b38e8ed4aeb1ac6ab4de05948622f914054"}]},
+"POST /repos/example/toy/git/commits": {"sha":"6bd075d4dc98936e4a06ed57a34c6fa0dc8db62a","tree":{"sha":"93f7ba6edfbbfd6a0315d53f942935bcebcfbd6a"},"parents":[{"sha":"4a479c25153b63e58db4c254f56ea8a37aad95ce"}]},
+"POST /repos/example/toy/git/refs": {"ref":"refs/heads/brain/c/7","object":{"sha":"861d9f470a5f667e62f64a8370d89591332a17bb","type":"commit"}},
+"PATCH /repos/example/toy/git/refs/heads/brain/c/7": {"ref":"refs/heads/brain/c/7","object":{"sha":"a691694a90fe467145d6fcd9b058bc6829dee0dd","type":"commit"}},
+"PATCH /repos/example/toy/git/refs/heads/brain/state": {"ref":"refs/heads/brain/state","object":{"sha":"a77191b2bd707053a5e4512e9366ace260851441","type":"commit"}},
+"PATCH /repos/example/toy/git/refs/heads/main": {"ref":"refs/heads/main","object":{"sha":"a77191b2bd707053a5e4512e9366ace260851441","type":"commit"}},
+"POST /repos/example/toy/pulls": {"number":14,"base":{"ref":"brain/integration"},"head":{"ref":"brain/c/7","sha":"861d9f470a5f667e62f64a8370d89591332a17bb"}},
+"GET /repos/example/toy/pulls/12": {"number":12,"state":"open","base":{"ref":"brain/integration","sha":"4a479c25153b63e58db4c254f56ea8a37aad95ce"},"head":{"ref":"brain/c/7","sha":"861d9f470a5f667e62f64a8370d89591332a17bb"}},
+"GET /repos/example/toy/pulls/13": {"number":13,"state":"open","base":{"ref":"main","sha":"07f4812efb28ec04e8044e4c1cba6751fd202292"},"head":{"ref":"brain/c/8","sha":"4c33cd0c5b8ecbbaa1b99193000fca96e5698835"}},
+"PUT /repos/example/toy/pulls/12/merge": {"sha":"c0a0638e4955ea2f9c841c458e3e2c68e1d1c152","merged":true,"message":"Pull Request successfully merged"},
+"PUT /repos/example/toy/pulls/13/merge": {"sha":"f975824ff8340023b10cf36fe4b91e6b2bcc42f2","merged":true,"message":"Pull Request successfully merged"}
+}

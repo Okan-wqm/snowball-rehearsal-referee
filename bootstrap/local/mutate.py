@@ -268,6 +268,9 @@ MUTANTS = [
     ("unjudged_push_skipped", "seed/founder/launch.py",
      "if before != self.seed and not self.evaluated(prior, before) and not self.stopped():",
      "if False:", "E168: a push the referee never judged is left behind and the Founder works blind"),
+    ("launcher_lends_an_older_verdict", "seed/founder/launch.py",
+     '        if not verdict or verdict.get("head") != head:', "        if False:",
+     "E241: an unfinished referee run reports the previous head's verdict as this head's"),
     ("pilot_metrics_not_recorded", "seed/founder/launch.py", "        self.record_metrics({", "        dict({",
      "pilot: a cycle leaves no measurable line"),
     ("reason_owner_not_the_referees_rule", "seed/founder/launch.py",
@@ -595,7 +598,7 @@ MUTANTS = [
      "E161: a group's later cases never run"),
     ("data_groups_have_no_judge", f"{PKG}/vectors.py",
      'elif isinstance(group, dict) and group.get("runner") == DATA_RUNNER and _delivered(group, tree):', "elif False:",
-     "E161: MF2-MF7's groups stay vector_group_missing and never run"),
+     "E161: MF2-MF13's groups stay vector_group_missing and never run"),
     ("seed_vector_expect_drifts", "seed/bootstrap/vectors/vectors.json",
      chr(10) + " " * 12 + '"limit_key_unknown:cpu_seconds"', chr(10) + " " * 12 + '"limit_key_unknown:cpu_secondz"',
      "E161: an expected value of the seed changes and nothing notices"),
@@ -648,6 +651,43 @@ MUTANTS = [
     ("deep_json_crashes_the_vector_run", f"{PKG}/vectors.py",
      "except (json.JSONDecodeError, RecursionError):  # nested", "except json.JSONDecodeError:  # nested",
      "a 100 000-level answer kills run-tests: the push becomes an outage instead of vector_failed"),
+    # E161, MF8-MF13: their seed vectors, fixtures and interface pages (`29h`, `29i`, `29j`)
+    ("seed_new_expect_drifts", "seed/bootstrap/vectors/vectors.json", chr(10) + " " * 12 + "21,",
+     chr(10) + " " * 12 + "22,", "E161: an expected value of MF8's group changes and nothing notices"),
+    ("seed_new_fixture_drifts", "seed/bootstrap/vectors/refs/api.json", '"base":{"ref":"main"',
+     '"base":{"ref":"brain/x"', "E161: a fixture of MF9's group changes under its expected values"),
+    ("seed_secret_written_plain", "seed/bootstrap/vectors/vectors.json", "gh" + chr(92) * 2 + "u0070_", "ghp_",
+     "append.refuse_secret_row's fake token sits raw in vectors.json, so tools that scan raw text withhold the file"),
+    ("new_vector_page_drops_a_case", "spec/tohum/29j-vektor-arayuzleri-mf8-13-son.md", "`verify_entry_missing`",
+     "`verify_missing`", "E161: an MF8-MF13 case's purpose is missing from the page the Founder reads"),
+    ("new_vector_page_not_indexed", "spec/INDEX.md", "| `tohum/29h-vektor-arayuzleri-mf8-13.md` |",
+     "| `tohum/29h-vektor-arayuzleri.md` |", "E161: the page of MF8's group is not in the index"),
+    ("new_vector_page_shows_a_hash", "spec/tohum/29j-vektor-arayuzleri-mf8-13-son.md", "baytlarının sha256'sı, `13`)",
+     "baytlarının sha256'sı, `13`; örnek `aa5cd3a2973dac466402f09c45c8cc9f34b9d53d85a8937a34b962ed179c83de`)",
+     "E161: the page the Founder reads gives root.part_tips's expected root, so the vector is no longer a floor"),
+    # E236-E240: the MF8-MF13 review's cases (pure hunks, forged koş files, an unparsable ledger, 3/3, force)
+    ("seed_insertion_hunk_moves", "seed/bootstrap/vectors/k0map/edge.patch", "@@ -5,0 +6 @@", "@@ -4,0 +5 @@",
+     "E236: the pure insertion's fixture moves under k0map.map_insertion_point's expected value and nothing notices"),
+    ("seed_forged_checks_manifest_matches", "seed/bootstrap/vectors/k0map/kos/good.hashes_checks.json",
+     '"checks.json":"76dad9635305789ae2f0f174b8246dfaf1f268a2f11629ad13b055366934accd"',
+     '"checks.json":"01e8bde3dfc41e8d246152c0772cf742f212c8fab1c014dd1fb63ce9cd367331"',
+     "E237: k0map.forged_checks' manifest holds the file's own hash, so no case checks checks.json's hash"),
+    ("seed_unparsable_ledger_called_unusable", "seed/bootstrap/vectors/vectors.json",
+     '"append/garbled.jsonl",' + chr(10) + " " * 10 + '"append/good.jsonl"' + chr(10) + " " * 8 + "],"
+     + chr(10) + " " * 8 + '"expect": {' + chr(10) + " " * 10 + '"commits": 0,' + chr(10) + " " * 10
+     + '"hard_stop": true',
+     '"append/garbled.jsonl",' + chr(10) + " " * 10 + '"append/good.jsonl"' + chr(10) + " " * 8 + "],"
+     + chr(10) + " " * 8 + '"expect": {' + chr(10) + " " * 10 + '"commits": 0,' + chr(10) + " " * 10
+     + '"hard_stop": false',
+     "E238: the seed expects a ledger that is not JSON Lines to be unusable input, not the hard stop 01b asks for"),
+    ("reference_sentinel_decides_after_two_reruns", "seed/bootstrap/local/reference_brain/referee/gate/sentinel.py",
+     "CONSIDERED = 4", "CONSIDERED = 3",
+     "E239: the reference MF12 counts the first red run as one of 3/3, against 29j's choice, and nothing notices"),
+    ("seed_update_expected_forced", "seed/bootstrap/vectors/vectors.json",
+     '"expect": {' + chr(10) + " " * 10 + '"forced": false', '"expect": {' + chr(10) + " " * 10 + '"forced": true',
+     "E240: the seed expects a forced ref update (07: no force push) and nothing notices"),
+    ("new_vector_page_29j_not_indexed", "spec/INDEX.md", "| `tohum/29j-vektor-arayuzleri-mf8-13-son.md` |",
+     "| `tohum/29j-vektor-arayuzleri.md` |", "the page of MF11-MF13's groups is not in the index"),
 ]
 
 

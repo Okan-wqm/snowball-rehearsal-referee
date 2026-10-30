@@ -1,0 +1,28 @@
+diff --git a/src/a.js b/src/a.js
+index 3a1b2c3..4d5e6f7 100644
+--- a/src/a.js
++++ b/src/a.js
+@@ -2,2 +2,4 @@
+ const a = 1;
++const b = 2;
++const c = 3;
+ const d = 4;
+@@ -8,3 +10,2 @@
+ function f() {
+-  return 0;
+ }
+@@ -30,2 +31,3 @@
+ const z = 26;
++const y = 25;
+ module.exports = { f };
+diff --git a/src/b.js b/src/b.js
+index 5a6b7c8..9d0e1f2 100644
+--- a/src/b.js
++++ b/src/b.js
+@@ -1,1 +1,6 @@
+ 'use strict';
++// one
++// two
++// three
++// four
++// five

@@ -180,6 +180,43 @@ class RefereeRetryTest(unittest.TestCase):  # E166: the loop never waits on the 
             pilot.cycle(1, args)
         return calls
 
+    def test_an_unfinished_run_never_lends_an_older_heads_verdict(self):  # E241
+        launch = load_launch()
+        before, after = "a" * 40, "b" * 40
+        report = []
+
+        class Fake(launch.Pilot):
+            heads = [before, after]
+
+            def fetch_result(self):  # the newest signed result is still the previous head's
+                return {"head": before, "verdict": "accepted", "reasons": [], "warnings": [],
+                        "state": {"last_evaluated_sha": before}}
+
+            def dispatch_referee(self, timeout_s):  # STOP arrived while waiting: the run is still going
+                return {"id": "1", "conclusion": "still_running", "url": ""}
+
+            def brain_head(self):
+                return self.heads.pop(0)
+
+            def ledger_rows(self, sha):
+                return []
+
+            def session(self, *a):
+                return {"exit": 0, "minutes": 1}
+
+            def write(self, text):
+                report.append(text)
+
+        pilot = Fake(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+        pilot.idle, pilot.seed = 0, before
+        args = type("Args", (), dict(model="m", max_turns=1, budget_usd=1, session_timeout=1, referee_timeout=1))
+        with mock.patch.object(launch, "say"):
+            pilot.cycle(1, args)
+        row = json.loads(pilot.metrics.read_text(encoding="utf-8").splitlines()[-1])
+        self.assertEqual((row["brain_after"], row["verdict"], row["reasons"]), (after, None, []))
+        self.assertNotIn("Hakemin kararı", "".join(report))
+        self.assertIn("still_running", "".join(report))
+
     def test_a_push_the_referee_never_judged_is_judged_before_the_next_session(self):  # E168
         self.assertEqual(self.catch_up(prior_head="a" * 40), ["referee", "session"])
         self.assertEqual(self.catch_up(prior_head="b" * 40), ["session"])  # already judged: straight to work
@@ -237,6 +274,27 @@ class ImageAndEntrypointTest(unittest.TestCase):
         env_block = self.dockerfile[self.dockerfile.index("ENV "):self.dockerfile.index("USER ")]
         for key, value in rival.PINNED_ENV.items():
             self.assertRegex(env_block, rf"\b{key}={value}\b", f"{key} differs from the referee's rival pin")
+
+    def test_the_founder_is_asked_for_its_own_ideas_and_given_none(self):  # E207, owner 2026-10-29
+        """The owner: the system must come up with ideas such as using what it learned in a later repository in an
+        earlier one, or finding similarities between repositories. Those ideas are kept off the prompt, in the
+        operator's private idea benchmark; the prompt only asks for the Founder's own ideas."""
+        prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
+        self.assertIn("kimsenin sana söylemediği, sistemi daha iyi yapacak kendi fikrini çıkar", prompt)
+        for idea in ("her iki yönde", "başka repolarda", "benzediğini", "kütüphane", "geriye dönük"):
+            self.assertNotIn(idea, prompt)
+
+    def test_disagreements_between_its_agents_are_settled_by_evidence(self):  # E208, owner 2026-10-29
+        prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
+        for phrase in ("Anlaşmazlık kanıtla çözülür", "oyla, otoriteyle, ilk ya da son gelenle karar verilmez",
+                       "kanıtı tutan sonuç alınır", "ikisini ayıran deney tasarlanır"):
+            self.assertIn(phrase, prompt)
+
+    def test_documents_are_hints_and_the_founders_own_docs_are_generated(self):  # E206, owner 2026-10-29
+        prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
+        for phrase in ("Belge ipucudur, gerçek koddur", "her iddiayı kodla, yapılandırmayla ve testle doğrula",
+                       "bayat belge", "doğrulanmış haritandan üretilir", "kod değişince yeniden üretilir"):
+            self.assertIn(phrase, prompt)
 
     def test_the_founder_keeps_one_source_and_chooses_its_own_architecture(self):  # E205, owner 2026-10-29
         prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())

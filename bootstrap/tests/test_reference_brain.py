@@ -5,11 +5,13 @@ its own tests pass, the seed vectors of the micro-features it declares done pass
 runner, and its tests fail when its code is wrong (one mutant here; `local/mutate_brain.py` runs them all).
 A stub here once claimed eighteen micro-features with import-only tests, and the real rival refuted it.
 
-It also carries reference implementations of MF2-MF7 (`gate/`, `runner/`, `profile/`): implementation A, one of the
-two blind implementations every expected value of those groups was checked with (E161). They are the evidence that the
-seed vectors pass on a correct implementation and fail on broken ones; the brain does not declare them done. The other,
-B, is `local/blind_b/referee/` as it was written (from the cases without their expected values): the second
-computation `29a` and `29d` ask for, run here again on every change of the seed.
+It also carries reference implementations of MF2-MF13 (`gate/`, `runner/`, `profile/`, `ledger/append.py`,
+`ledger/anchor.py`, `target/`): implementation A, one of the two blind implementations every expected value of those
+groups was checked with (E161). They are the evidence that the seed vectors pass on a correct implementation and fail
+on broken ones; the brain does not declare them done. MF8-MF13's A calls this brain's MF2 (`gate.secrets`) and keeps its
+own ledger helpers in `ledger/_strict.py`, beside this brain's MF1, which they do not replace. For MF2-MF7 the other, B,
+is `local/blind_b/referee/` as it was written (from the cases without their expected values): the second computation
+`29a` and `29d` ask for, run here again on every change of the seed.
 """
 
 import json
@@ -32,8 +34,10 @@ VECTORS = BOOT / "vectors"
 sys.path.insert(0, str(BOOT / "local"))
 import mutate_brain  # noqa: E402
 
-DATA_MFS = (2, 3, 4, 5, 6, 7)
-DATA_GROUPS = ("secrets", "contained", "profile", "npmlock", "recipe", "diffguard")
+DATA_MFS = tuple(range(2, 14))
+DATA_GROUPS = ("secrets", "contained", "profile", "npmlock", "recipe", "diffguard", "k0map", "refs", "append", "root",
+               "flaky", "cause")
+B_MFS, B_GROUPS = DATA_MFS[:6], DATA_GROUPS[:6]  # B is in the repo for MF2-MF7 only
 
 
 class LocalRunner:
@@ -188,6 +192,167 @@ BREAKS = [
      'if any(covers(e, path) for e in profile["excluded_dirs"]):', "if False:", ["diffguard.excluded_path"]),
     ("first_reason_only", "gate/diffguard.py", 'return {f"{reason}:{path}" for reason in found}',
      'return {f"{reason}:{path}" for reason in sorted(found)[:1]}', ["diffguard.every_reason"]),
+
+    ("shift_counts_every_hunk", "gate/check.py",
+     'ends_before = (h["a"] + h["b"] - 1 < line) if h["b"] > 0 else (h["a"] < line)', "ends_before = True",
+     ["k0map.map_shift"]),
+    ("inside_a_hunk_like_any_line", "gate/check.py", 'if h["b"] > 0 and h["a"] <= line <= h["a"] + h["b"] - 1:',
+     "if False:", ["k0map.map_inside_hunk", "k0map.not_distinguished"]),
+    ("inside_a_hunk_shifted_by_its_net", "gate/check.py", 'return [h["c"], h["c"] + h["d"] - 1] if h["d"] > 0 else []',
+     'return [line + h["d"] - h["b"]] * 2', ["k0map.map_inside_hunk", "k0map.not_distinguished"]),
+    ("inside_a_hunk_its_position_there", "gate/check.py", 'return [h["c"], h["c"] + h["d"] - 1] if h["d"] > 0 else []',
+     'return [line - h["a"] + h["c"]] * 2', ["k0map.map_inside_hunk", "k0map.not_distinguished"]),
+    ("other_paths_hunks_shift", "gate/check.py", "hunks = hunks_of(parse_diff(_diff_text(argv[0])), argv[1])",
+     'hunks = [h for blk in parse_diff(_diff_text(argv[0])) for h in blk["hunks"]]', ["k0map.map_shift"]),
+    ("hash_manifest_unchecked", "gate/check.py",
+     "if data[name] is None or manifest.get(name) != hashlib.sha256(data[name]).hexdigest():", "if data[name] is None:",
+     ["k0map.artefact_hash_mismatch", "k0map.merge.changed_input"]),
+    ("ratchet_per_rule", "gate/check.py", 'return {run["tool"]: len(run["violations"])}',
+     'return {(run["tool"], r): [v["rule_id"] for v in run["violations"]].count(r) '
+     'for r in {v["rule_id"] for v in run["violations"]}}', ["k0map.merge"]),
+    ("distinguished_off_the_mapped_range", "gate/check.py", 'span[0] <= v["line"] <= span[1]', "True",
+     ["k0map.merge"]),
+    ("target_matched_without_its_line", "gate/check.py", ' and v["line"] == finding["line"]), None)', "), None)",
+     ["k0map.target_not_found"]),
+    ("runs_compared_as_json", "gate/check.py", "if runs is not None and len(set(runs[0])) != 1:",
+     "if runs is not None and len({repr(loads(line)) for line in runs[0]}) != 1:", ["k0map.tool_nondeterministic"]),
+    ("fix_range_from_the_finding", "gate/check.py", 'if _out_of_scope(blocks, target["path"], target["fix"]):',
+     'if _out_of_scope(blocks, target["path"], finding["fix_range"]):', ["k0map.scope_violation"]),
+    ("decide_first_reason_only", "gate/check.py", "return sorted(reasons)", "return sorted(reasons)[:1]",
+     ["k0map.ratchet_and_broken_test", "k0map.fail_closed_controls"]),
+    ("ratchet_unchecked", "gate/check.py",
+     "if any(count > before.get(tool, 0) for tool, count in after.items()):", "if False:",
+     ["k0map.ratchet_and_broken_test"]),
+    ("red_control_unchecked", "gate/check.py", 'if checks["red_control"] == "pass":', "if False:",
+     ["k0map.red_control_green"]),
+    ("missing_merge_paused_reads_false", "gate/check.py", 'if request["control"].get("merge_paused") is not False:',
+     'if request["control"].get("merge_paused", False) is not False:', ["k0map.fail_closed_controls"]),
+    ("zero_tests_green", "gate/check.py", 'if not checks["tests"]:', "if False:", ["k0map.fail_closed_controls"]),
+    ("open_sentinel_ignored", "gate/check.py", 'if request["unfinished_sentinels"]:', "if False:",
+     ["k0map.fail_closed_controls"]),
+    # E236: pure insertions (b = 0) and pure deletions (d = 0), and the added line's edges of the fix range
+    ("insertion_ends_at_its_line", "gate/check.py", 'else (h["a"] < line)', 'else (h["a"] <= line)',
+     ["k0map.map_insertion_point", "k0map.insertion_not_distinguished"]),
+    ("insertions_never_shift", "gate/check.py", 'else (h["a"] < line)', "else False", ["k0map.map_after_pure_hunks"]),
+    ("deleted_line_on_the_line_before_the_gap", "gate/check.py",
+     'return [h["c"], h["c"] + h["d"] - 1] if h["d"] > 0 else []',
+     'return [h["c"], h["c"] + h["d"] - 1] if h["d"] > 0 else [h["c"], h["c"]]', ["k0map.map_deleted_line"]),
+    ("deleted_line_an_inverted_range", "gate/check.py", 'return [h["c"], h["c"] + h["d"] - 1] if h["d"] > 0 else []',
+     'return [h["c"], h["c"] + h["d"] - 1]', ["k0map.map_deleted_line"]),
+    ("insertion_based_at_its_line_a", "gate/check.py", 'base = h["a"] if h["b"] > 0 else h["a"] + 1',
+     'base = h["a"]', ["k0map.insertion_past_fix"]),
+    ("added_line_two_past_the_fix", "gate/check.py", 'elif tag == "+" and not start <= base <= end + 1:',
+     'elif tag == "+" and not start <= base <= end + 2:', ["k0map.insertion_past_fix"]),
+    # E237: every koş file's hash, both run files' bytes
+    ("only_the_base_runs_hash_checked", "gate/check.py", "if data[name] is None or manifest.get(name) != hashlib",
+     'if data[name] is None or name == "base.jsonl" and manifest.get(name) != hashlib',
+     ["k0map.forged_candidate_run", "k0map.forged_checks"]),
+    ("candidate_runs_hash_unchecked", "gate/check.py", "if data[name] is None or manifest.get(name) != hashlib",
+     'if data[name] is None or name != "cand.jsonl" and manifest.get(name) != hashlib', ["k0map.forged_candidate_run"]),
+    ("checks_hash_unchecked", "gate/check.py", "if data[name] is None or manifest.get(name) != hashlib",
+     'if data[name] is None or name != "checks.json" and manifest.get(name) != hashlib', ["k0map.forged_checks"]),
+    ("base_runs_never_compared", "gate/check.py", "for runs in (base, cand):", "for runs in (cand,):",
+     ["k0map.base_nondeterministic"]),
+
+    ("second_parent_tree", "target/write.py", 'first = _field(parents[0], "sha")', 'first = _field(parents[-1], "sha")',
+     ["refs.revert_first_parent_tree", "refs.revert_first_parent_tree.changed_input"]),
+    ("merge_commits_own_tree", "target/write.py",
+     'tree = _field(api.call("GET", f"{base}/git/commits/{first}"), "tree", "sha")', 'tree = _field(merge, "tree", "sha")',
+     ["refs.revert_first_parent_tree"]),
+    ("refs_from_the_recorded_response", "target/write.py",
+     'api.call("POST", f"{base}/git/refs", {"ref": ref, "sha": created})' + chr(10) + "        api.refs.append(ref)",
+     'api.refs.append(_field(api.call("POST", f"{base}/git/refs", {"ref": ref, "sha": created}), "ref"))',
+     ["refs.revert_first_parent_tree"]),
+    ("brain_prefix_unchecked", "target/write.py", "if not isinstance(ref, str) or not ref.startswith(BRAIN):",
+     "if not isinstance(ref, str):", ["refs.refuse_main", "refs.refuse_prefix_lookalike", "refs.refuse_merge_into_main",
+                                      "refs.refuse_pr_into_main"]),
+    ("brain_prefix_without_its_slash", "target/write.py", 'BRAIN = "refs/heads/brain/"', 'BRAIN = "refs/heads/brain"',
+     ["refs.refuse_prefix_lookalike"]),
+    ("dotdot_component_allowed", "target/write.py",
+     'return all(part not in ("", ".", "..") for part in ref[len("refs/heads/"):].split("/"))', "return True",
+     ["refs.refuse_dotdot"]),
+    ("merge_base_unchecked", "target/write.py",
+     'if not (ref_allowed("refs/heads/" + head) and ref_allowed("refs/heads/" + base_ref)):',
+     'if not ref_allowed("refs/heads/" + head):', ["refs.refuse_merge_into_main"]),
+    ("pr_base_unchecked", "target/write.py", "if not (ref_allowed(head) and ref_allowed(base_ref)):",
+     "if not ref_allowed(head):", ["refs.refuse_pr_into_main"]),
+    ("update_forces", "target/write.py", '{"sha": sha, "force": False}', '{"sha": sha, "force": True}',
+     ["refs.update_never_forces"]),  # E240
+
+    ("commit_per_row", "ledger/append.py", "writer.commit(body + tail)",
+     "for _row in stored:" + chr(10) + "            writer.commit(body + tail)", ["append.cycle_one_commit"]),
+    ("new_rows_not_chained_to_each_other", "ledger/append.py", 'prev = new["row_hash"]', "pass",
+     ["append.cycle_one_commit"]),
+    ("chained_onto_the_previous_version", "ledger/append.py",
+     'prev = cur_rows[-1]["row_hash"] if cur_rows else chain.ZERO',
+     'prev = chain.loads(chain.split_lines(previous_bytes)[-1])["row_hash"] if previous_bytes else chain.ZERO',
+     ["append.chains_onto_current_tip"]),
+    ("chain_unverified", "ledger/append.py", "broken = chain.first_broken(cur_rows)", "broken = None",
+     ["append.refuse_broken_tip"]),
+    ("append_only_unchecked", "ledger/append.py",
+     "moved = chain.first_not_in_place(chain.split_lines(previous_bytes), chain.split_lines(ledger_bytes))",
+     "moved = None", ["append.refuse_rewritten_history", "append.refuse_reserialized_row"]),
+    # E238: a ledger that is not JSON Lines is a broken chain, and step (1) comes before the request is read
+    ("unparsable_ledger_unusable_input", "ledger/append.py", '_refused(True, f"ledger is not JSON Lines: {exc}")',
+     "raise", ["append.refuse_unparsable_ledger"]),
+    ("request_read_before_the_chain", "ledger/append.py",
+     "cur_rows = _verified(ledger_bytes, previous_bytes)  # (1) first: tamper evidence stops hard whatever is asked"
+     + chr(10) + "    rows = _request(stdin, cur_rows)",
+     "rows = _request(stdin, [])" + chr(10) + "    cur_rows = _verified(ledger_bytes, previous_bytes)",
+     ["append.refuse_broken_chain_first"]),
+    ("append_only_canonical", "ledger/_strict.py", "if index >= len(current) or current[index] != line:",
+     "if index >= len(current) or canonical(loads(current[index])) != canonical(loads(line)):",
+     ["append.refuse_reserialized_row"]),
+    ("new_rows_scanned_raw", "ledger/append.py", "if any(secrets.scan_rows(json.dumps(row)) for row in rows):",
+     'if secrets.scan_text(stdin.decode("utf-8")):', ["append.refuse_secret_row"]),
+    ("proposed_by_trust_kept", "ledger/append.py", 'new["trust"] = "inferred"', "pass",
+     ["append.proposed_by_stored_inferred"]),
+    ("previous_version_ignored", "ledger/chain.py", "problem = _not_append_only(rows, earlier)", "problem = None",
+     ["append.chain_previous_rewrite", "append.chain_previous_truncated"]),
+    ("truncation_allowed", "ledger/chain.py", 'return before["row_id"], "the file lost this row"', "return None",
+     ["append.chain_previous_truncated"]),
+
+    ("first_row_of_each_part", "ledger/anchor.py", "tips[part] = row_hash", "tips.setdefault(part, row_hash)",
+     ["root.part_tips", "root.verify_good"]),
+    ("root_not_canonical", "ledger/anchor.py", "hashlib.sha256(chain.canonical(tips)).hexdigest()",
+     "hashlib.sha256(json.dumps(tips).encode()).hexdigest()", ["root.part_tips", "root.verify_good"]),
+    ("entry_hash_is_the_uuid", "ledger/anchor.py", '"hash": request["root"]', '"hash": signer["uuid"]',
+     ["root.anchor_signs_root"]),
+    ("signs_a_fixed_root", "ledger/anchor.py", '"hash": request["root"]',
+     '"hash": "7381e3007f21fc75b1968fb12c20c35760b5368274d3eeae15275d735ae93a73"',
+     ["root.anchor_signs_root.changed_input"]),
+    ("unsignable_passes", "ledger/anchor.py", 'if not signer["available"]:', "if False:", ["root.unsignable_hard_stop"]),
+    ("ledger_root_unchecked", "ledger/anchor.py", 'if root != last["root"]:', "if False:", ["root.verify_tip_moved"]),
+    ("identity_unpinned", "ledger/anchor.py", 'if entry["identity"] != pin["identity"]:', "if False:",
+     ["root.verify_identity_pin"]),
+    ("entry_hash_unchecked", "ledger/anchor.py", 'if entry["hash"] != last["root"]:', "if False:",
+     ["root.verify_entry_other_root"]),
+    ("missing_entry_passes", "ledger/anchor.py", 'reasons.append("entry_missing")', "pass",
+     ["root.verify_entry_missing"]),
+
+    ("zero_tests_first_run_green", "gate/sentinel.py", 'if first["results"] and not _failed(first):',
+     "if not _failed(first):", ["flaky.green_first_run.changed_input"]),
+    ("red_on_the_first_run", "gate/sentinel.py", "if len(runs) < CONSIDERED:", "if False:",
+     ["flaky.one_red_run_never_reverts"]),
+    ("red_on_any_failure", "gate/sentinel.py", "red = sorted(t for t in ever if all(t in f for f in failed))",
+     "red = sorted(ever)", ["flaky.red_three_reruns.changed_input", "flaky.per_test_rule"]),
+    ("never_red", "gate/sentinel.py", 'verdict = "red" if red or no_results else "flaky"', 'verdict = "flaky"',
+     ["flaky.red_three_reruns", "flaky.per_test_rule"]),
+    ("decided_after_two_reruns", "gate/sentinel.py", "CONSIDERED = 4", "CONSIDERED = 3",
+     ["flaky.two_reruns_rerun"]),  # E239: 3/3 is the first run plus three reruns (29j's choice)
+
+    ("impact_ignored", "gate/revert.py", 'if any(test in impact for test in signals["red_tests"]):', "if False:",
+     ["cause.test_regression"]),
+    ("outside_impact_called_regression", "gate/revert.py", 'return "impact_miss"', 'return "test_regression"',
+     ["cause.impact_miss"]),
+    ("tests_before_build", "gate/revert.py", 'if signals["build_ok"] is False:',
+     'if signals["build_ok"] is False and not signals["red_tests"]:', ["cause.build_break_first"]),
+    ("lint_unchecked", "gate/revert.py", 'if any(t["after"] > t["before"] for t in signals["lint"].values()):',
+     "if False:", ["cause.lint_regression", "cause.lint_per_tool"]),
+    ("lint_summed_over_tools", "gate/revert.py", 'if any(t["after"] > t["before"] for t in signals["lint"].values()):',
+     'if sum(t["after"] for t in signals["lint"].values()) > sum(t["before"] for t in signals["lint"].values()):',
+     ["cause.lint_per_tool"]),
+    ("no_unknown", "gate/revert.py", 'return "unknown"', 'return "impact_miss"', ["cause.unknown"]),
 ]
 
 
@@ -236,29 +401,33 @@ class ReferenceBrainTest(unittest.TestCase):
 
 
 class SeedVectorsOnReferenceImplementationsTest(unittest.TestCase):
-    """MF2-MF7's seed vectors (E161) through the real data runner, on correct and on broken implementations."""
+    """MF2-MF13's seed vectors (E161) through the real data runner, on correct and on broken implementations."""
 
     def test_every_new_group_is_green_on_the_reference_implementations(self):
         seed = seed_vectors()
-        self.assertEqual(stages.load(0).groups_of(DATA_MFS), DATA_GROUPS)
+        # MF10 also owns `chain` (MF1's own judge); the brain's MF1 answers it, so it runs here too.
+        self.assertEqual(stages.load(0).groups_of(DATA_MFS), DATA_GROUPS[:8] + ("chain",) + DATA_GROUPS[8:])
         self.assertEqual(vectors.missing_groups(VECTORS, DATA_MFS, stages.load(0)), [])
         results = vectors.run_vectors(LocalRunner(), VECTORS, DATA_MFS)
         cases = [c["id"] for g in DATA_GROUPS for c in seed[g]["cases"]]
-        self.assertEqual([r["id"] for r in results], [i + s for i in cases for s in ("", ".changed_input")])
-        self.assertEqual(len(results), 92)
-        self.assertEqual([r for r in results if not r["ok"]], [])
+        data = [r for r in results if not r["id"].startswith("chain.")]
+        self.assertEqual([r["id"] for r in data], [i + s for i in cases for s in ("", ".changed_input")])
+        self.assertEqual((len(data), len(results)), (204, 210))  # MF2-MF7 92, MF8-MF13 112; `chain` 6
+        self.assertEqual([(r["id"], r["detail"]) for r in results if not r["ok"]], [])
         self.assertEqual(brain_manifest().done_mf, (1,))  # reference implementations, not declared done
 
     def test_every_new_group_is_green_on_the_second_blind_implementation_too(self):
         """`29a`, `29d`: every expected value is computed twice, independently. B is kept so the second computation can
-        be run again (a changed fixture or case is checked on both), not only claimed (E161)."""
+        be run again (a changed fixture or case is checked on both), not only claimed (E161). MF8-MF13's B is not in
+        the repo (E233): their second computation is the workflow's record, not run here."""
+        self.assertEqual(stages.load(0).groups_of(B_MFS), B_GROUPS)
         modules = sorted(p.relative_to(BLIND_B / "referee").as_posix() for p in (BLIND_B / "referee").rglob("*.py"))
-        for feature in DATA_MFS:
+        for feature in B_MFS:
             self.assertIn(stages.load(0).feature(feature).module, modules)
         for rel in modules:  # its own code, not a copy of A's
             a = BRAIN / "referee" / rel
             self.assertFalse(a.exists() and a.read_bytes() == (BLIND_B / "referee" / rel).read_bytes(), rel)
-        results = vectors.run_vectors(LocalRunner(BLIND_B), VECTORS, DATA_MFS)
+        results = vectors.run_vectors(LocalRunner(BLIND_B), VECTORS, B_MFS)
         self.assertEqual(len(results), 92)
         self.assertEqual([(r["id"], r["detail"]) for r in results if not r["ok"]], [])
 

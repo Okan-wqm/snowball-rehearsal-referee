@@ -2026,5 +2026,1739 @@
         }
       }
     ]
+  },
+  "k0map": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29h-vektor-arayuzleri-mf8-13.md",
+    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); the later cases of E236 and E237 give the same values on A and on the workflow's B, written before them (docs/eksik-kaydi.md E236-E240)",
+    "cases": [
+      {
+        "id": "k0map.map_shift",
+        "purpose": "Base line 20 of src/a.js is in no hunk: it moves by the added minus deleted lines of src/a.js's hunks ending before it; the later hunk and src/b.js's hunk do not count.",
+        "cmd": "python -m gate.check map /vec/k0map/map.patch src/a.js 20",
+        "fixture": [
+          "k0map/map.patch"
+        ],
+        "expect": {
+          "mapped": [
+            21,
+            21
+          ]
+        },
+        "changed": {
+          "description": "One field: base line 9, inside the second hunk's base range: the whole candidate-side range (map_inside_hunk pins it).",
+          "cmd": "python -m gate.check map /vec/k0map/map.patch src/a.js 9",
+          "fixture": [
+            "k0map/map.patch"
+          ],
+          "expect_not": {
+            "mapped": [
+              21,
+              21
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.map_inside_hunk",
+        "purpose": "Base line 9 of src/a.js lies inside the second hunk's base range [8, 10]: it maps to that hunk's whole candidate range [10, 11], not to one line shifted by the hunks' net count nor to its position inside the hunk.",
+        "cmd": "python -m gate.check map /vec/k0map/map.patch src/a.js 9",
+        "fixture": [
+          "k0map/map.patch"
+        ],
+        "expect": {
+          "mapped": [
+            10,
+            11
+          ]
+        },
+        "changed": {
+          "description": "One field: base line 11, the first line after that hunk, maps to one shifted line.",
+          "cmd": "python -m gate.check map /vec/k0map/map.patch src/a.js 11",
+          "fixture": [
+            "k0map/map.patch"
+          ],
+          "expect_not": {
+            "mapped": [
+              10,
+              11
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.map_insertion_point",
+        "purpose": "Hunk @@ -5,0 +6 @@ of src/c.js inserts one line after base line 5 and has no base range (b = 0; git writes an insertion after line a as -a,0): it ends before L only when a < L, so line 5 itself does not move.",
+        "cmd": "python -m gate.check map /vec/k0map/edge.patch src/c.js 5",
+        "fixture": [
+          "k0map/edge.patch"
+        ],
+        "expect": {
+          "mapped": [
+            5,
+            5
+          ]
+        },
+        "changed": {
+          "description": "One field: base line 6, the first after the insertion, moves by its one added line.",
+          "cmd": "python -m gate.check map /vec/k0map/edge.patch src/c.js 6",
+          "fixture": [
+            "k0map/edge.patch"
+          ],
+          "expect_not": {
+            "mapped": [
+              5,
+              5
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.map_deleted_line",
+        "purpose": "Base line 8 lies in the base range [7, 8] of the pure deletion @@ -7,2 +7,0 @@: that hunk's candidate range is empty (d = 0), so the line maps to [], neither to the candidate line before the gap nor to an inverted range.",
+        "cmd": "python -m gate.check map /vec/k0map/edge.patch src/c.js 8",
+        "fixture": [
+          "k0map/edge.patch"
+        ],
+        "expect": {
+          "mapped": []
+        },
+        "changed": {
+          "description": "One field: base line 9, the first after the deleted lines, maps to one shifted line.",
+          "cmd": "python -m gate.check map /vec/k0map/edge.patch src/c.js 9",
+          "fixture": [
+            "k0map/edge.patch"
+          ],
+          "expect_not": {
+            "mapped": []
+          }
+        }
+      },
+      {
+        "id": "k0map.map_after_pure_hunks",
+        "purpose": "Base line 9 of src/c.js follows both hunks: the insertion after line 5 adds one line and the deletion of lines 7-8 removes two, so the line moves by their net count; an insertion counts once its line a is before L.",
+        "cmd": "python -m gate.check map /vec/k0map/edge.patch src/c.js 9",
+        "fixture": [
+          "k0map/edge.patch"
+        ],
+        "expect": {
+          "mapped": [
+            8,
+            8
+          ]
+        },
+        "changed": {
+          "description": "One field: base line 4, before both hunks, does not move.",
+          "cmd": "python -m gate.check map /vec/k0map/edge.patch src/c.js 4",
+          "fixture": [
+            "k0map/edge.patch"
+          ],
+          "expect_not": {
+            "mapped": [
+              8,
+              8
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.merge",
+        "purpose": "Items 3-8 hold: no-var is gone from the mapped range of line 3; the same rule's older violation, shifted 9 -> 10, is off the mapped range; no-var -> prefer-const keeps the tool total at 2 (per tool, not per rule); runs byte-identical; diff inside the fix range; tests pass; red control red; not paused; no open sentinel; hashes match.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/split",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/good",
+          "k0map/kos/good.hashes.json"
+        ],
+        "expect": {
+          "decision": "merge",
+          "reasons": []
+        },
+        "changed": {
+          "description": "One byte: a hex digit of base.jsonl's sha256 in the manifest; a mismatched artefact never merges.",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes_bad.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes_bad.json"
+          ],
+          "expect_not": {
+            "decision": "merge",
+            "reasons": []
+          }
+        }
+      },
+      {
+        "id": "k0map.artefact_hash_mismatch",
+        "purpose": "The manifest's sha256 for base.jsonl differs by one hex digit from the file the referee reads: a ko\u015f file whose hash does not match is not trusted, and nothing else fails (test 35's artefact hash reject, 09:59).",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes_bad.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/split",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/good",
+          "k0map/kos/good.hashes_bad.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "artefact_hash_mismatch"
+          ]
+        },
+        "changed": {
+          "description": "One byte: the manifest's digit is right again (the merge case).",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "artefact_hash_mismatch"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.forged_candidate_run",
+        "purpose": "Code in ko\u015f replaced the candidate-tree runs with a clean one (the split fix's cand.jsonl); the manifest, hashed outside the container, still holds the real run's hash. The forged run is not trusted, so the half fix that left no-var on candidate line 4 does not merge; a check of base.jsonl's hash alone would merge it.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/half /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/half.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/half",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/good",
+          "k0map/kos/half.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "artefact_hash_mismatch"
+          ]
+        },
+        "changed": {
+          "description": "The real run: half's own candidate runs, whose hash the manifest holds (the not_distinguished case).",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/half /vec/k0map/kos/base.jsonl /vec/k0map/kos/half /vec/k0map/kos/half.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/half",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/half",
+            "k0map/kos/half.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "artefact_hash_mismatch"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.forged_checks",
+        "purpose": "Code in ko\u015f rewrote checks.json to all-pass: the manifest holds the hash of the real checks.json, in which test/rate.test.js failed (the ratchet run's). checks.json is a ko\u015f file like the runs; one whose hash does not match is not trusted either.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes_checks.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/split",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/good",
+          "k0map/kos/good.hashes_checks.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "artefact_hash_mismatch"
+          ]
+        },
+        "changed": {
+          "description": "One field: the manifest's checks.json hash is the file's (the merge case).",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "artefact_hash_mismatch"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.not_distinguished",
+        "purpose": "The fix splits line 3 into const, var and a blank line (hunk @@ -2,3 +2,5 @@): no-var at candidate line 4 is inside the hunk's candidate range [2, 6], so the oracle does not distinguish; line 3 itself, line 3 shifted by the hunk's +2 (5) and line 3's position inside the hunk (3) all miss it.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/half /vec/k0map/kos/base.jsonl /vec/k0map/kos/half /vec/k0map/kos/half.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/half",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/half",
+          "k0map/kos/half.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "not_distinguished"
+          ]
+        },
+        "changed": {
+          "description": "One field: both declarations use `let` (the merge case's diff and runs).",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "not_distinguished"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.insertion_not_distinguished",
+        "purpose": "The candidate only inserts a comment after base line 9 (@@ -9,0 +10 @@, b = 0) and fixes nothing: no-var stays on candidate line 9. The b = 0 hunk does not end before line 9, so line 9 maps to [9, 9] and the oracle does not distinguish; read as ending before it, line 9 would map to [10, 10] and the unfixed candidate would merge.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/note /vec/k0map/kos/base.jsonl /vec/k0map/kos/keep /vec/k0map/kos/keep.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/note",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/keep",
+          "k0map/kos/keep.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "not_distinguished"
+          ]
+        },
+        "changed": {
+          "description": "The candidate also turns line 9's var into let, the comment right after it (after's diff and count's runs): no-var is gone from the mapped range [9, 10].",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/after /vec/k0map/kos/base.jsonl /vec/k0map/kos/count /vec/k0map/kos/count.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/after",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/count",
+            "k0map/kos/count.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "not_distinguished"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.target_not_found",
+        "purpose": "The candidate's finding names no-var at line 4, which the referee's own base run does not report (it reports lines 3 and 9): the candidate's claim is not trusted (26a:60), and without a target the range checks are not evaluated.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/ghost /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/ghost",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/good",
+          "k0map/kos/good.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "target_not_found"
+          ]
+        },
+        "changed": {
+          "description": "One field: the finding names line 3, where the base run reports no-var (the merge case's candidate).",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "target_not_found"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.tool_nondeterministic",
+        "purpose": "The second candidate-tree run (line 2 of cand.jsonl) differs by one space byte, same JSON value: not byte-identical in three runs.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/jitter /vec/k0map/kos/jitter.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/split",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/jitter",
+          "k0map/kos/jitter.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "tool_nondeterministic"
+          ]
+        },
+        "changed": {
+          "description": "One byte: the extra space is gone; the three runs are byte-identical.",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "tool_nondeterministic"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.base_nondeterministic",
+        "purpose": "The third base-tree run (line 3 of base_jitter.jsonl) differs by one space byte, same JSON value: the base-tree runs are not byte-identical in three runs either; comparing only the candidate-tree runs would merge it.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base_jitter.jsonl /vec/k0map/kos/good /vec/k0map/kos/base_jitter.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/split",
+          "k0map/kos/base_jitter.jsonl",
+          "k0map/kos/good",
+          "k0map/kos/base_jitter.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "tool_nondeterministic"
+          ]
+        },
+        "changed": {
+          "description": "One byte: the extra space is gone (base.jsonl, the merge case).",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "tool_nondeterministic"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.scope_violation",
+        "purpose": "The diff also rewrites base line 10, outside the tool's fix range [3, 3]; finding.json claims [3, 10], but the range comes from the referee's own base run.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/scope /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/scope",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/good",
+          "k0map/kos/good.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "scope_violation"
+          ]
+        },
+        "changed": {
+          "description": "One field: no second hunk (the merge case's candidate).",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "scope_violation"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.insertion_past_fix",
+        "purpose": "The diff fixes line 9 and inserts a comment after base line 10 (@@ -10,0 +11 @@): a b = 0 hunk's added line sits before base line a+1, here 11, past e+1 = 10 for the fix range [9, 9], so scope_violation. Taken as base line a (10), or allowed up to e+2, it would pass.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/past /vec/k0map/kos/base.jsonl /vec/k0map/kos/count /vec/k0map/kos/count.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/past",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/count",
+          "k0map/kos/count.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "scope_violation"
+          ]
+        },
+        "changed": {
+          "description": "One line moved: the comment sits right after the fixed line, inside its hunk (after's diff), at base position 10 = e+1.",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/after /vec/k0map/kos/base.jsonl /vec/k0map/kos/count /vec/k0map/kos/count.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/after",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/count",
+            "k0map/kos/count.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "scope_violation"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.ratchet_and_broken_test",
+        "purpose": "The fix adds an unused declaration (tool total 2 -> 3) and changes a constant (test/rate.test.js fails): both reasons are written, not only the first.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/ratchet /vec/k0map/kos/base.jsonl /vec/k0map/kos/ratchet /vec/k0map/kos/ratchet.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/ratchet",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/ratchet",
+          "k0map/kos/ratchet.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "ratchet_increase",
+            "tests_red"
+          ]
+        },
+        "changed": {
+          "description": "One field: the plain split fix (the merge case's candidate and runs).",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "ratchet_increase",
+              "tests_red"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.red_control_green",
+        "purpose": "The run's known-bad control came out green: the run is invalid.",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/redgreen /vec/k0map/kos/redgreen.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/split",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/redgreen",
+          "k0map/kos/redgreen.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "red_control_green"
+          ]
+        },
+        "changed": {
+          "description": "One field: the red control's status is fail (the merge case's runs).",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "red_control_green"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.fail_closed_controls",
+        "purpose": "Three reasons at once: control without merge_paused (missing = true, 26c), another merge's sentinel unfinished, and zero tests ran (zero tests is red).",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/notests /vec/k0map/kos/notests.hashes.json",
+        "stdin": "{\"control\":{\"kill_switch\":false},\"unfinished_sentinels\":[\"1e3fc6208b38be460873cdb89388845bfdac3f0f\"]}",
+        "fixture": [
+          "k0map/cand/split",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/notests",
+          "k0map/kos/notests.hashes.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "merge_paused",
+            "sentinel_pending",
+            "zero_tests"
+          ]
+        },
+        "changed": {
+          "description": "One field: the unfinished sentinel list is empty.",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/split /vec/k0map/kos/base.jsonl /vec/k0map/kos/notests /vec/k0map/kos/notests.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/notests",
+            "k0map/kos/notests.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "merge_paused",
+              "sentinel_pending",
+              "zero_tests"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "refs": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29i-vektor-arayuzleri-mf8-13-devam.md",
+    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); E240's later case gives the same values on A and on the workflow's B with one added line reporting `forced` (docs/eksik-kaydi.md E236-E240)",
+    "cases": [
+      {
+        "id": "refs.revert_first_parent_tree",
+        "purpose": "Revert of merge M onto brain/integration: the new commit's tree is the tree of M's first parent (read through the Git Data API), not M's own tree nor the second parent's; its parent is the head of brain/integration; the only ref written is the revert branch under brain/.",
+        "cmd": "python -m target.write replay /vec/refs/api.json",
+        "stdin": "{\"op\":\"revert\",\"repo\":\"example/toy\",\"merge_sha\":\"4a479c25153b63e58db4c254f56ea8a37aad95ce\",\"onto\":\"refs/heads/brain/integration\",\"ref\":\"refs/heads/brain/c/revert-12\"}",
+        "fixture": [
+          "refs/api.json"
+        ],
+        "expect": {
+          "commit": {
+            "parents": [
+              "4a479c25153b63e58db4c254f56ea8a37aad95ce"
+            ],
+            "tree": "93f7ba6edfbbfd6a0315d53f942935bcebcfbd6a"
+          },
+          "ok": true,
+          "refs": [
+            "refs/heads/brain/c/revert-12"
+          ],
+          "writes": [
+            "POST /repos/example/toy/git/commits",
+            "POST /repos/example/toy/git/refs"
+          ]
+        },
+        "changed": {
+          "description": "One field: merge_sha names M2, whose recorded parents are the same two commits in the other order.",
+          "cmd": "python -m target.write replay /vec/refs/api.json",
+          "stdin": "{\"op\":\"revert\",\"repo\":\"example/toy\",\"merge_sha\":\"3a139f674f372f3f0cfcc56ea253e49065ff79b9\",\"onto\":\"refs/heads/brain/integration\",\"ref\":\"refs/heads/brain/c/revert-12\"}",
+          "fixture": [
+            "refs/api.json"
+          ],
+          "expect_not": {
+            "commit": {
+              "parents": [
+                "4a479c25153b63e58db4c254f56ea8a37aad95ce"
+              ],
+              "tree": "93f7ba6edfbbfd6a0315d53f942935bcebcfbd6a"
+            },
+            "ok": true,
+            "refs": [
+              "refs/heads/brain/c/revert-12"
+            ],
+            "writes": [
+              "POST /repos/example/toy/git/commits",
+              "POST /repos/example/toy/git/refs"
+            ]
+          }
+        }
+      },
+      {
+        "id": "refs.refuse_main",
+        "purpose": "A ref update of refs/heads/main is refused before any write call, although the recorded API would accept it.",
+        "cmd": "python -m target.write replay /vec/refs/api.json",
+        "stdin": "{\"op\":\"update\",\"repo\":\"example/toy\",\"ref\":\"refs/heads/main\",\"sha\":\"a77191b2bd707053a5e4512e9366ace260851441\"}",
+        "fixture": [
+          "refs/api.json"
+        ],
+        "expect": {
+          "ok": false,
+          "refs": [],
+          "writes": []
+        },
+        "changed": {
+          "description": "One field: the ref is refs/heads/brain/state.",
+          "cmd": "python -m target.write replay /vec/refs/api.json",
+          "stdin": "{\"op\":\"update\",\"repo\":\"example/toy\",\"ref\":\"refs/heads/brain/state\",\"sha\":\"a77191b2bd707053a5e4512e9366ace260851441\"}",
+          "fixture": [
+            "refs/api.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "refs": [],
+            "writes": []
+          }
+        }
+      },
+      {
+        "id": "refs.update_never_forces",
+        "purpose": "An update of a brain/ branch is one PATCH whose body never asks for force: a forced update rewrites the branch's history, and brain/c/* branches have no non_fast_forward ruleset (01b); no force push (07).",
+        "cmd": "python -m target.write replay /vec/refs/api.json",
+        "stdin": "{\"op\":\"update\",\"repo\":\"example/toy\",\"ref\":\"refs/heads/brain/c/7\",\"sha\":\"a691694a90fe467145d6fcd9b058bc6829dee0dd\"}",
+        "fixture": [
+          "refs/api.json"
+        ],
+        "expect": {
+          "forced": false,
+          "ok": true,
+          "refs": [
+            "refs/heads/brain/c/7"
+          ],
+          "writes": [
+            "PATCH /repos/example/toy/git/refs/heads/brain/c/7"
+          ]
+        },
+        "changed": {
+          "description": "One field: the ref is refs/heads/brain/state.",
+          "cmd": "python -m target.write replay /vec/refs/api.json",
+          "stdin": "{\"op\":\"update\",\"repo\":\"example/toy\",\"ref\":\"refs/heads/brain/state\",\"sha\":\"a691694a90fe467145d6fcd9b058bc6829dee0dd\"}",
+          "fixture": [
+            "refs/api.json"
+          ],
+          "expect_not": {
+            "forced": false,
+            "ok": true,
+            "refs": [
+              "refs/heads/brain/c/7"
+            ],
+            "writes": [
+              "PATCH /repos/example/toy/git/refs/heads/brain/c/7"
+            ]
+          }
+        }
+      },
+      {
+        "id": "refs.refuse_prefix_lookalike",
+        "purpose": "refs/heads/brain-c/7 starts with the text refs/heads/brain but is not under refs/heads/brain/: refused, no write call.",
+        "cmd": "python -m target.write replay /vec/refs/api.json",
+        "stdin": "{\"op\":\"branch\",\"repo\":\"example/toy\",\"ref\":\"refs/heads/brain-c/7\",\"sha\":\"861d9f470a5f667e62f64a8370d89591332a17bb\"}",
+        "fixture": [
+          "refs/api.json"
+        ],
+        "expect": {
+          "ok": false,
+          "refs": [],
+          "writes": []
+        },
+        "changed": {
+          "description": "One byte: '-' becomes '/' (refs/heads/brain/c/7).",
+          "cmd": "python -m target.write replay /vec/refs/api.json",
+          "stdin": "{\"op\":\"branch\",\"repo\":\"example/toy\",\"ref\":\"refs/heads/brain/c/7\",\"sha\":\"861d9f470a5f667e62f64a8370d89591332a17bb\"}",
+          "fixture": [
+            "refs/api.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "refs": [],
+            "writes": []
+          }
+        }
+      },
+      {
+        "id": "refs.refuse_dotdot",
+        "purpose": "refs/heads/brain/../main has the brain/ prefix as text but a '..' component that leaves it: refused, no write call.",
+        "cmd": "python -m target.write replay /vec/refs/api.json",
+        "stdin": "{\"op\":\"branch\",\"repo\":\"example/toy\",\"ref\":\"refs/heads/brain/../main\",\"sha\":\"861d9f470a5f667e62f64a8370d89591332a17bb\"}",
+        "fixture": [
+          "refs/api.json"
+        ],
+        "expect": {
+          "ok": false,
+          "refs": [],
+          "writes": []
+        },
+        "changed": {
+          "description": "One field: the '..' component is 'c' (refs/heads/brain/c/main).",
+          "cmd": "python -m target.write replay /vec/refs/api.json",
+          "stdin": "{\"op\":\"branch\",\"repo\":\"example/toy\",\"ref\":\"refs/heads/brain/c/main\",\"sha\":\"861d9f470a5f667e62f64a8370d89591332a17bb\"}",
+          "fixture": [
+            "refs/api.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "refs": [],
+            "writes": []
+          }
+        }
+      },
+      {
+        "id": "refs.refuse_merge_into_main",
+        "purpose": "Merging PR 13 would write its base, which the recorded API says is main: refused after reading the PR, with no write call, although the request itself names no ref.",
+        "cmd": "python -m target.write replay /vec/refs/api.json",
+        "stdin": "{\"op\":\"merge\",\"repo\":\"example/toy\",\"pr\":13}",
+        "fixture": [
+          "refs/api.json"
+        ],
+        "expect": {
+          "ok": false,
+          "refs": [],
+          "writes": []
+        },
+        "changed": {
+          "description": "One field: PR 12, whose recorded base is brain/integration; the merge writes that ref.",
+          "cmd": "python -m target.write replay /vec/refs/api.json",
+          "stdin": "{\"op\":\"merge\",\"repo\":\"example/toy\",\"pr\":12}",
+          "fixture": [
+            "refs/api.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "refs": [],
+            "writes": []
+          }
+        }
+      },
+      {
+        "id": "refs.refuse_pr_into_main",
+        "purpose": "A pull request from a brain/ branch into refs/heads/main is refused: its merge would write main.",
+        "cmd": "python -m target.write replay /vec/refs/api.json",
+        "stdin": "{\"op\":\"pr\",\"repo\":\"example/toy\",\"head\":\"refs/heads/brain/c/7\",\"base\":\"refs/heads/main\",\"title\":\"Fix no-var in src/rate.js\"}",
+        "fixture": [
+          "refs/api.json"
+        ],
+        "expect": {
+          "ok": false,
+          "refs": [],
+          "writes": []
+        },
+        "changed": {
+          "description": "One field: the base is refs/heads/brain/integration.",
+          "cmd": "python -m target.write replay /vec/refs/api.json",
+          "stdin": "{\"op\":\"pr\",\"repo\":\"example/toy\",\"head\":\"refs/heads/brain/c/7\",\"base\":\"refs/heads/brain/integration\",\"title\":\"Fix no-var in src/rate.js\"}",
+          "fixture": [
+            "refs/api.json"
+          ],
+          "expect_not": {
+            "ok": false,
+            "refs": [],
+            "writes": []
+          }
+        }
+      }
+    ]
+  },
+  "append": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29i-vektor-arayuzleri-mf8-13-devam.md",
+    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); the later cases of E238 give the same values on A and on the workflow's B, written before them (docs/eksik-kaydi.md E236-E240)",
+    "cases": [
+      {
+        "id": "append.cycle_one_commit",
+        "purpose": "Two rows of two parts (events, cost) in one cycle: the chain is verified first, the rows are chained onto the file's last row in order, and the cycle makes one brain/state commit, not one per row or part.",
+        "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]},{\"row_id\":\"r4\",\"ts\":\"2026-10-28T00:00:03Z\",\"part\":\"cost\",\"kind\":\"run\",\"payload\":{\"usd_micros\":1500},\"derivation\":\"tool\",\"trust\":\"observed\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+        "fixture": [
+          "append/good.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 1,
+          "hard_stop": false,
+          "ok": true,
+          "row_hashes": [
+            "998631f2b895692ac6723078a2a4cb03c29285ab46befc0f206d65c2e2562650",
+            "1e93cd2413c50adb48f0d110ac523822c6ec793c5f6ce5b532d62a2e9f417f51"
+          ]
+        },
+        "changed": {
+          "description": "One byte: the cost row's usd_micros 1500 becomes 1501.",
+          "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]},{\"row_id\":\"r4\",\"ts\":\"2026-10-28T00:00:03Z\",\"part\":\"cost\",\"kind\":\"run\",\"payload\":{\"usd_micros\":1501},\"derivation\":\"tool\",\"trust\":\"observed\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+          "fixture": [
+            "append/good.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 1,
+            "hard_stop": false,
+            "ok": true,
+            "row_hashes": [
+              "998631f2b895692ac6723078a2a4cb03c29285ab46befc0f206d65c2e2562650",
+              "1e93cd2413c50adb48f0d110ac523822c6ec793c5f6ce5b532d62a2e9f417f51"
+            ]
+          }
+        }
+      },
+      {
+        "id": "append.chains_onto_current_tip",
+        "purpose": "The ledger has grown by one row since the previous verified version (a prefix of it): append-only holds, and the new row is chained onto the current last row, r3, not onto the previous version's last row.",
+        "cmd": "python -m ledger.append cycle /vec/append/three.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[{\"row_id\":\"r4\",\"ts\":\"2026-10-28T00:00:03Z\",\"part\":\"cost\",\"kind\":\"run\",\"payload\":{\"usd_micros\":1500},\"derivation\":\"tool\",\"trust\":\"observed\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+        "fixture": [
+          "append/three.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 1,
+          "hard_stop": false,
+          "ok": true,
+          "row_hashes": [
+            "5cf401e6e5de31dca426efc19cffcfe148c36dea1754c55983d74addc3ffb9c3"
+          ]
+        },
+        "changed": {
+          "description": "One field: the ledger is the previous version itself (no r3), so the new row chains onto r2.",
+          "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r4\",\"ts\":\"2026-10-28T00:00:03Z\",\"part\":\"cost\",\"kind\":\"run\",\"payload\":{\"usd_micros\":1500},\"derivation\":\"tool\",\"trust\":\"observed\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+          "fixture": [
+            "append/good.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 1,
+            "hard_stop": false,
+            "ok": true,
+            "row_hashes": [
+              "5cf401e6e5de31dca426efc19cffcfe148c36dea1754c55983d74addc3ffb9c3"
+            ]
+          }
+        }
+      },
+      {
+        "id": "append.refuse_broken_tip",
+        "purpose": "The ledger extends the previous version byte for byte, but its new last row r3 was edited after hashing (payload decision reject -> merge, row_hash kept): not a valid chain. Nothing is written and the referee stops hard; an append-only check alone would pass it.",
+        "cmd": "python -m ledger.append cycle /vec/append/tampered.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[{\"row_id\":\"r4\",\"ts\":\"2026-10-28T00:00:03Z\",\"part\":\"cost\",\"kind\":\"run\",\"payload\":{\"usd_micros\":1500},\"derivation\":\"tool\",\"trust\":\"observed\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+        "fixture": [
+          "append/tampered.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 0,
+          "hard_stop": true,
+          "ok": false,
+          "row_hashes": []
+        },
+        "changed": {
+          "description": "One field: r3 as it was hashed (decision reject, three.jsonl).",
+          "cmd": "python -m ledger.append cycle /vec/append/three.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r4\",\"ts\":\"2026-10-28T00:00:03Z\",\"part\":\"cost\",\"kind\":\"run\",\"payload\":{\"usd_micros\":1500},\"derivation\":\"tool\",\"trust\":\"observed\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+          "fixture": [
+            "append/three.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 0,
+            "hard_stop": true,
+            "ok": false,
+            "row_hashes": []
+          }
+        }
+      },
+      {
+        "id": "append.refuse_unparsable_ledger",
+        "purpose": "The ledger's last line was cut off mid-write: it is not a JSON object, so the file is not a valid chain (29a). Nothing is written and the referee stops hard: tamper evidence, not unusable input.",
+        "cmd": "python -m ledger.append cycle /vec/append/garbled.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+        "fixture": [
+          "append/garbled.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 0,
+          "hard_stop": true,
+          "ok": false,
+          "row_hashes": []
+        },
+        "changed": {
+          "description": "One field: the ledger is the previous version, without the cut-off line.",
+          "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+          "fixture": [
+            "append/good.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 0,
+            "hard_stop": true,
+            "ok": false,
+            "row_hashes": []
+          }
+        }
+      },
+      {
+        "id": "append.refuse_broken_chain_first",
+        "purpose": "The ledger's last row was edited after hashing (tampered.jsonl) and the request is unusable (a new row already carries prev_hash): step (1) comes before the request is read, so the referee stops hard; reading the request first would answer unusable input and miss the tamper.",
+        "cmd": "python -m ledger.append cycle /vec/append/tampered.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[{\"row_id\":\"r4\",\"ts\":\"2026-10-28T00:00:03Z\",\"part\":\"cost\",\"kind\":\"run\",\"payload\":{\"usd_micros\":1500},\"derivation\":\"tool\",\"trust\":\"observed\",\"snapshot_id\":\"s0\",\"evidence_refs\":[],\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\"}]}",
+        "fixture": [
+          "append/tampered.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 0,
+          "hard_stop": true,
+          "ok": false,
+          "row_hashes": []
+        },
+        "changed": {
+          "description": "One field: the ledger is r3 as hashed (three.jsonl); the chain holds and only the request is unusable.",
+          "cmd": "python -m ledger.append cycle /vec/append/three.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r4\",\"ts\":\"2026-10-28T00:00:03Z\",\"part\":\"cost\",\"kind\":\"run\",\"payload\":{\"usd_micros\":1500},\"derivation\":\"tool\",\"trust\":\"observed\",\"snapshot_id\":\"s0\",\"evidence_refs\":[],\"prev_hash\":\"0000000000000000000000000000000000000000000000000000000000000000\"}]}",
+          "fixture": [
+            "append/three.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 0,
+            "hard_stop": true,
+            "ok": false,
+            "row_hashes": []
+          }
+        }
+      },
+      {
+        "id": "append.refuse_rewritten_history",
+        "purpose": "The ledger's r2 was rewritten (usd_micros 1) and its hash recomputed: a valid chain on its own, but not an extension of the previous version. Nothing is written and the referee stops hard.",
+        "cmd": "python -m ledger.append cycle /vec/append/rewritten.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+        "fixture": [
+          "append/rewritten.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 0,
+          "hard_stop": true,
+          "ok": false,
+          "row_hashes": []
+        },
+        "changed": {
+          "description": "One field: the ledger is the unchanged previous version.",
+          "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+          "fixture": [
+            "append/good.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 0,
+            "hard_stop": true,
+            "ok": false,
+            "row_hashes": []
+          }
+        }
+      },
+      {
+        "id": "append.refuse_reserialized_row",
+        "purpose": "r1 was re-serialized with its keys in another order: same canonical form, same hashes, different bytes. `tohum/01b` wants earlier rows byte-identical before a brain/state commit; refused, hard stop.",
+        "cmd": "python -m ledger.append cycle /vec/append/reserialized.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+        "fixture": [
+          "append/reserialized.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 0,
+          "hard_stop": true,
+          "ok": false,
+          "row_hashes": []
+        },
+        "changed": {
+          "description": "One field: the ledger is the unchanged previous version.",
+          "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+          "fixture": [
+            "append/good.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 0,
+            "hard_stop": true,
+            "ok": false,
+            "row_hashes": []
+          }
+        }
+      },
+      {
+        "id": "append.refuse_secret_row",
+        "purpose": "A new row carries a fake GitHub token in its payload, its p written as the JSON escape \\u0070: secrets.scan reads the decoded row and catches it, the cycle writes nothing; the run is invalid, which is not a chain break.",
+        "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12,\"note\":\"gh\\u0070_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE\"},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+        "fixture": [
+          "append/good.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 0,
+          "hard_stop": false,
+          "ok": false,
+          "row_hashes": []
+        },
+        "changed": {
+          "description": "One byte: the escape \\u0070 (p) becomes \\u0071 (q); the decoded prefix ghq_ is no token format.",
+          "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12,\"note\":\"gh\\u0071_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE\"},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+          "fixture": [
+            "append/good.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 0,
+            "hard_stop": false,
+            "ok": false,
+            "row_hashes": []
+          }
+        }
+      },
+      {
+        "id": "append.proposed_by_stored_inferred",
+        "purpose": "A row whose content came from the brain (proposed_by set) is stored with trust inferred, whatever trust the caller passed; its hash is the hash of the stored row.",
+        "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"candidate\",\"payload\":{\"cid\":\"c1\",\"rule_id\":\"no-var\"},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[],\"proposed_by\":\"brain:candidates/toy/c1\"}]}",
+        "fixture": [
+          "append/good.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 1,
+          "hard_stop": false,
+          "ok": true,
+          "row_hashes": [
+            "f32adc00144f2ccaf2f6779b5c8b9654ee3b0f4aeddccae4bd64fd2fe23523f6"
+          ]
+        },
+        "changed": {
+          "description": "One field: no proposed_by; the row keeps trust verified.",
+          "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"candidate\",\"payload\":{\"cid\":\"c1\",\"rule_id\":\"no-var\"},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+          "fixture": [
+            "append/good.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 1,
+            "hard_stop": false,
+            "ok": true,
+            "row_hashes": [
+              "f32adc00144f2ccaf2f6779b5c8b9654ee3b0f4aeddccae4bd64fd2fe23523f6"
+            ]
+          }
+        }
+      },
+      {
+        "id": "append.chain_previous_rewrite",
+        "purpose": "chain's own interface (`29a`): a file whose r2 was rewritten with recomputed hashes is valid alone but not an extension of its previous version.",
+        "cmd": "python -m ledger.chain verify /vec/append/rewritten.jsonl --previous /vec/append/good.jsonl",
+        "fixture": [
+          "append/rewritten.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "valid": false
+        },
+        "changed": {
+          "description": "One field: the file is the previous version plus one appended row.",
+          "cmd": "python -m ledger.chain verify /vec/append/three.jsonl --previous /vec/append/good.jsonl",
+          "fixture": [
+            "append/three.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "valid": false
+          }
+        }
+      },
+      {
+        "id": "append.chain_previous_truncated",
+        "purpose": "chain's own interface: a file that lost its last row is not an extension of the previous version.",
+        "cmd": "python -m ledger.chain verify /vec/append/one.jsonl --previous /vec/append/good.jsonl",
+        "fixture": [
+          "append/one.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "valid": false
+        },
+        "changed": {
+          "description": "One field: the longer file checked against the shorter one as its previous version.",
+          "cmd": "python -m ledger.chain verify /vec/append/good.jsonl --previous /vec/append/one.jsonl",
+          "fixture": [
+            "append/good.jsonl",
+            "append/one.jsonl"
+          ],
+          "expect_not": {
+            "valid": false
+          }
+        }
+      }
+    ]
+  },
+  "root": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29j-vektor-arayuzleri-mf8-13-son.md",
+    "source": "reconciled cases; every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161)",
+    "cases": [
+      {
+        "id": "root.part_tips",
+        "purpose": "The root is the sha256 of the RFC 8785 form of {part: row_hash of that part's last row}: parts interleave (events, cost, events, drill, cost), so the tips are not the file's last row nor each part's first row.",
+        "cmd": "python -m ledger.anchor root /vec/root/ledger_plus.jsonl",
+        "fixture": [
+          "root/ledger_plus.jsonl"
+        ],
+        "expect": {
+          "root": "aa5cd3a2973dac466402f09c45c8cc9f34b9d53d85a8937a34b962ed179c83de",
+          "tips": {
+            "cost": "cc15b544a23d7161447f6e25fa4e9275a247bfa57caf638a8b43d28f3d1999e0",
+            "drill": "47254fde1689bb26d628d41110bc367b65f096da1e0c496c235f910c658e3dc6",
+            "events": "a52c09894259e4d9925229fb8cd04ca053c01128f33faa47b92115da8775278a"
+          }
+        },
+        "changed": {
+          "description": "One field: the ledger without its last (cost) row, so the cost tip is an earlier row.",
+          "cmd": "python -m ledger.anchor root /vec/root/ledger.jsonl",
+          "fixture": [
+            "root/ledger.jsonl"
+          ],
+          "expect_not": {
+            "root": "aa5cd3a2973dac466402f09c45c8cc9f34b9d53d85a8937a34b962ed179c83de",
+            "tips": {
+              "cost": "cc15b544a23d7161447f6e25fa4e9275a247bfa57caf638a8b43d28f3d1999e0",
+              "drill": "47254fde1689bb26d628d41110bc367b65f096da1e0c496c235f910c658e3dc6",
+              "events": "a52c09894259e4d9925229fb8cd04ca053c01128f33faa47b92115da8775278a"
+            }
+          }
+        }
+      },
+      {
+        "id": "root.anchor_signs_root",
+        "purpose": "The fake signer is available: the anchor sends the root as the payload and returns the log entry the signer made (its uuid, the signed hash, the signing identity).",
+        "cmd": "python -m ledger.anchor anchor /vec/root/signer_up.json",
+        "stdin": "{\"root\":\"7381e3007f21fc75b1968fb12c20c35760b5368274d3eeae15275d735ae93a73\"}",
+        "fixture": [
+          "root/signer_up.json"
+        ],
+        "expect": {
+          "entry": {
+            "hash": "7381e3007f21fc75b1968fb12c20c35760b5368274d3eeae15275d735ae93a73",
+            "identity": "https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main",
+            "uuid": "2ad9786291a48e70ed937c0dba85399779ba8e01e2040e9030b7a330d91dc24e"
+          },
+          "hard_stop": false,
+          "ok": true
+        },
+        "changed": {
+          "description": "One byte: the last hex digit of the root.",
+          "cmd": "python -m ledger.anchor anchor /vec/root/signer_up.json",
+          "stdin": "{\"root\":\"7381e3007f21fc75b1968fb12c20c35760b5368274d3eeae15275d735ae93a70\"}",
+          "fixture": [
+            "root/signer_up.json"
+          ],
+          "expect_not": {
+            "entry": {
+              "hash": "7381e3007f21fc75b1968fb12c20c35760b5368274d3eeae15275d735ae93a73",
+              "identity": "https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main",
+              "uuid": "2ad9786291a48e70ed937c0dba85399779ba8e01e2040e9030b7a330d91dc24e"
+            },
+            "hard_stop": false,
+            "ok": true
+          }
+        }
+      },
+      {
+        "id": "root.unsignable_hard_stop",
+        "purpose": "The fake signer cannot sign: no entry, and the anchor reports a hard stop instead of passing silently.",
+        "cmd": "python -m ledger.anchor anchor /vec/root/signer_down.json",
+        "stdin": "{\"root\":\"7381e3007f21fc75b1968fb12c20c35760b5368274d3eeae15275d735ae93a73\"}",
+        "fixture": [
+          "root/signer_down.json"
+        ],
+        "expect": {
+          "entry": null,
+          "hard_stop": true,
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: the signer is available.",
+          "cmd": "python -m ledger.anchor anchor /vec/root/signer_up.json",
+          "stdin": "{\"root\":\"7381e3007f21fc75b1968fb12c20c35760b5368274d3eeae15275d735ae93a73\"}",
+          "fixture": [
+            "root/signer_up.json"
+          ],
+          "expect_not": {
+            "entry": null,
+            "hard_stop": true,
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "root.verify_good",
+        "purpose": "Next cycle's D1: the ledger's root equals the last root record's root, and the Rekor entry the record names signs that root under the pinned identity.",
+        "cmd": "python -m ledger.anchor verify /vec/root/ledger.jsonl /vec/root/root_ok.jsonl /vec/root/rekor.json",
+        "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\"}",
+        "fixture": [
+          "root/ledger.jsonl",
+          "root/root_ok.jsonl",
+          "root/rekor.json"
+        ],
+        "expect": {
+          "reasons": [],
+          "valid": true
+        },
+        "changed": {
+          "description": "One field: the ledger has one more row than when it was anchored.",
+          "cmd": "python -m ledger.anchor verify /vec/root/ledger_plus.jsonl /vec/root/root_ok.jsonl /vec/root/rekor.json",
+          "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\"}",
+          "fixture": [
+            "root/ledger_plus.jsonl",
+            "root/root_ok.jsonl",
+            "root/rekor.json"
+          ],
+          "expect_not": {
+            "reasons": [],
+            "valid": true
+          }
+        }
+      },
+      {
+        "id": "root.verify_tip_moved",
+        "purpose": "The branch tip moved after anchoring (one more row): its root no longer matches the anchored root.",
+        "cmd": "python -m ledger.anchor verify /vec/root/ledger_plus.jsonl /vec/root/root_ok.jsonl /vec/root/rekor.json",
+        "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\"}",
+        "fixture": [
+          "root/ledger_plus.jsonl",
+          "root/root_ok.jsonl",
+          "root/rekor.json"
+        ],
+        "expect": {
+          "reasons": [
+            "root_mismatch"
+          ],
+          "valid": false
+        },
+        "changed": {
+          "description": "One field: the ledger as anchored.",
+          "cmd": "python -m ledger.anchor verify /vec/root/ledger.jsonl /vec/root/root_ok.jsonl /vec/root/rekor.json",
+          "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\"}",
+          "fixture": [
+            "root/ledger.jsonl",
+            "root/root_ok.jsonl",
+            "root/rekor.json"
+          ],
+          "expect_not": {
+            "reasons": [
+              "root_mismatch"
+            ],
+            "valid": false
+          }
+        }
+      },
+      {
+        "id": "root.verify_identity_pin",
+        "purpose": "The Rekor entry was made by a workflow identity other than the pinned one (bootstrap.yml, not loop.yml).",
+        "cmd": "python -m ledger.anchor verify /vec/root/ledger.jsonl /vec/root/root_ok.jsonl /vec/root/rekor.json",
+        "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/bootstrap.yml@refs/heads/main\"}",
+        "fixture": [
+          "root/ledger.jsonl",
+          "root/root_ok.jsonl",
+          "root/rekor.json"
+        ],
+        "expect": {
+          "reasons": [
+            "identity_mismatch"
+          ],
+          "valid": false
+        },
+        "changed": {
+          "description": "One field: the pin is the identity that signed.",
+          "cmd": "python -m ledger.anchor verify /vec/root/ledger.jsonl /vec/root/root_ok.jsonl /vec/root/rekor.json",
+          "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\"}",
+          "fixture": [
+            "root/ledger.jsonl",
+            "root/root_ok.jsonl",
+            "root/rekor.json"
+          ],
+          "expect_not": {
+            "reasons": [
+              "identity_mismatch"
+            ],
+            "valid": false
+          }
+        }
+      },
+      {
+        "id": "root.verify_entry_other_root",
+        "purpose": "The root record carries the right root but names a Rekor entry that signs another root.",
+        "cmd": "python -m ledger.anchor verify /vec/root/ledger.jsonl /vec/root/root_other.jsonl /vec/root/rekor.json",
+        "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\"}",
+        "fixture": [
+          "root/ledger.jsonl",
+          "root/root_other.jsonl",
+          "root/rekor.json"
+        ],
+        "expect": {
+          "reasons": [
+            "entry_root_mismatch"
+          ],
+          "valid": false
+        },
+        "changed": {
+          "description": "One field: the record names the entry that signs its root.",
+          "cmd": "python -m ledger.anchor verify /vec/root/ledger.jsonl /vec/root/root_ok.jsonl /vec/root/rekor.json",
+          "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\"}",
+          "fixture": [
+            "root/ledger.jsonl",
+            "root/root_ok.jsonl",
+            "root/rekor.json"
+          ],
+          "expect_not": {
+            "reasons": [
+              "entry_root_mismatch"
+            ],
+            "valid": false
+          }
+        }
+      },
+      {
+        "id": "root.verify_entry_missing",
+        "purpose": "The root record carries the right root but names a Rekor entry the log does not hold: an unanchored root is invalid, not unchecked.",
+        "cmd": "python -m ledger.anchor verify /vec/root/ledger.jsonl /vec/root/root_gone.jsonl /vec/root/rekor.json",
+        "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\"}",
+        "fixture": [
+          "root/ledger.jsonl",
+          "root/root_gone.jsonl",
+          "root/rekor.json"
+        ],
+        "expect": {
+          "reasons": [
+            "entry_missing"
+          ],
+          "valid": false
+        },
+        "changed": {
+          "description": "One field: the record names an entry the log holds.",
+          "cmd": "python -m ledger.anchor verify /vec/root/ledger.jsonl /vec/root/root_ok.jsonl /vec/root/rekor.json",
+          "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\"}",
+          "fixture": [
+            "root/ledger.jsonl",
+            "root/root_ok.jsonl",
+            "root/rekor.json"
+          ],
+          "expect_not": {
+            "reasons": [
+              "entry_missing"
+            ],
+            "valid": false
+          }
+        }
+      }
+    ]
+  },
+  "flaky": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29j-vektor-arayuzleri-mf8-13-son.md",
+    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); E239's later case gives the same values on A and on the workflow's B, written before it (docs/eksik-kaydi.md E236-E240)",
+    "cases": [
+      {
+        "id": "flaky.green_first_run",
+        "purpose": "The first run after the merge has tests and all pass: green, nothing to revert.",
+        "cmd": "python -m gate.sentinel decide",
+        "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"pass\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]}]}",
+        "fixture": [],
+        "expect": {
+          "flaky": [],
+          "red": [],
+          "revert": false,
+          "verdict": "green"
+        },
+        "changed": {
+          "description": "One field: the run has no test results (zero tests is red, `tohum/04`).",
+          "cmd": "python -m gate.sentinel decide",
+          "stdin": "{\"runs\":[{\"results\":[]}]}",
+          "fixture": [],
+          "expect_not": {
+            "flaky": [],
+            "red": [],
+            "revert": false,
+            "verdict": "green"
+          }
+        }
+      },
+      {
+        "id": "flaky.one_red_run_never_reverts",
+        "purpose": "One red run is not a verdict: the 3/3 rule needs three reruns before a revert, and nothing is named red or flaky yet.",
+        "cmd": "python -m gate.sentinel decide",
+        "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]}]}",
+        "fixture": [],
+        "expect": {
+          "flaky": [],
+          "red": [],
+          "revert": false,
+          "verdict": "rerun"
+        },
+        "changed": {
+          "description": "One field: test/rate.test.js passes in the first run.",
+          "cmd": "python -m gate.sentinel decide",
+          "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"pass\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]}]}",
+          "fixture": [],
+          "expect_not": {
+            "flaky": [],
+            "red": [],
+            "revert": false,
+            "verdict": "rerun"
+          }
+        }
+      },
+      {
+        "id": "flaky.two_reruns_rerun",
+        "purpose": "test/rate.test.js fails in the first run and in two reruns: the third rerun is not in yet, so nothing is decided, named or reverted (29j's choice: 3/3 is the first run plus three reruns).",
+        "cmd": "python -m gate.sentinel decide",
+        "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]}]}",
+        "fixture": [],
+        "expect": {
+          "flaky": [],
+          "red": [],
+          "revert": false,
+          "verdict": "rerun"
+        },
+        "changed": {
+          "description": "One field: the third rerun is in and rate fails again (red_three_reruns).",
+          "cmd": "python -m gate.sentinel decide",
+          "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]}]}",
+          "fixture": [],
+          "expect_not": {
+            "flaky": [],
+            "red": [],
+            "revert": false,
+            "verdict": "rerun"
+          }
+        }
+      },
+      {
+        "id": "flaky.red_three_reruns",
+        "purpose": "test/rate.test.js fails in the first run and in all three reruns: red, the merge is reverted.",
+        "cmd": "python -m gate.sentinel decide",
+        "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]}]}",
+        "fixture": [],
+        "expect": {
+          "flaky": [],
+          "red": [
+            "test/rate.test.js"
+          ],
+          "revert": true,
+          "verdict": "red"
+        },
+        "changed": {
+          "description": "One field: it passes in the second rerun.",
+          "cmd": "python -m gate.sentinel decide",
+          "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"pass\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]}]}",
+          "fixture": [],
+          "expect_not": {
+            "flaky": [],
+            "red": [
+              "test/rate.test.js"
+            ],
+            "revert": true,
+            "verdict": "red"
+          }
+        }
+      },
+      {
+        "id": "flaky.per_test_rule",
+        "purpose": "The 3/3 rule is per test: rate fails in every run (red), scale fails only in the first (flaky); one confirmed red test is enough to revert, and the flaky one is named.",
+        "cmd": "python -m gate.sentinel decide",
+        "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"fail\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]}]}",
+        "fixture": [],
+        "expect": {
+          "flaky": [
+            "test/scale.test.js"
+          ],
+          "red": [
+            "test/rate.test.js"
+          ],
+          "revert": true,
+          "verdict": "red"
+        },
+        "changed": {
+          "description": "One field: rate passes in the first rerun, so no test failed in every run.",
+          "cmd": "python -m gate.sentinel decide",
+          "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"fail\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"pass\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]}]}",
+          "fixture": [],
+          "expect_not": {
+            "flaky": [
+              "test/scale.test.js"
+            ],
+            "red": [
+              "test/rate.test.js"
+            ],
+            "revert": true,
+            "verdict": "red"
+          }
+        }
+      }
+    ]
+  },
+  "cause": {
+    "owner": "asama-0",
+    "runner": "data",
+    "interface": "spec/tohum/29j-vektor-arayuzleri-mf8-13-son.md",
+    "source": "reconciled cases; every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161)",
+    "cases": [
+      {
+        "id": "cause.test_regression",
+        "purpose": "The confirmed red test is inside the declared impact set; build and lint are clean.",
+        "cmd": "python -m gate.revert cause",
+        "stdin": "{\"red_tests\":[\"test/rate.test.js\"],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":2,\"after\":2}}}",
+        "fixture": [],
+        "expect": {
+          "cause": "test_regression"
+        },
+        "changed": {
+          "description": "One field: the impact set no longer lists test/rate.test.js.",
+          "cmd": "python -m gate.revert cause",
+          "stdin": "{\"red_tests\":[\"test/rate.test.js\"],\"impact\":[\"test/count.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":2,\"after\":2}}}",
+          "fixture": [],
+          "expect_not": {
+            "cause": "test_regression"
+          }
+        }
+      },
+      {
+        "id": "cause.impact_miss",
+        "purpose": "The red test lies outside the declared impact set: the impact set missed it.",
+        "cmd": "python -m gate.revert cause",
+        "stdin": "{\"red_tests\":[\"test/util/format.test.js\"],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":2,\"after\":2}}}",
+        "fixture": [],
+        "expect": {
+          "cause": "impact_miss"
+        },
+        "changed": {
+          "description": "One field: the impact set lists the red test too.",
+          "cmd": "python -m gate.revert cause",
+          "stdin": "{\"red_tests\":[\"test/util/format.test.js\"],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\",\"test/util/format.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":2,\"after\":2}}}",
+          "fixture": [],
+          "expect_not": {
+            "cause": "impact_miss"
+          }
+        }
+      },
+      {
+        "id": "cause.build_break_first",
+        "purpose": "The code does not build or load; the red tests follow from it, so the cause is the build, not the tests.",
+        "cmd": "python -m gate.revert cause",
+        "stdin": "{\"red_tests\":[\"test/count.test.js\",\"test/rate.test.js\"],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\"],\"build_ok\":false,\"lint\":{\"eslint\":{\"before\":2,\"after\":2}}}",
+        "fixture": [],
+        "expect": {
+          "cause": "build_break"
+        },
+        "changed": {
+          "description": "One field: the build is fine.",
+          "cmd": "python -m gate.revert cause",
+          "stdin": "{\"red_tests\":[\"test/count.test.js\",\"test/rate.test.js\"],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":2,\"after\":2}}}",
+          "fixture": [],
+          "expect_not": {
+            "cause": "build_break"
+          }
+        }
+      },
+      {
+        "id": "cause.lint_regression",
+        "purpose": "No red test and the build is fine, but the lint tool's total rose from 2 to 3.",
+        "cmd": "python -m gate.revert cause",
+        "stdin": "{\"red_tests\":[],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":2,\"after\":3}}}",
+        "fixture": [],
+        "expect": {
+          "cause": "lint_regression"
+        },
+        "changed": {
+          "description": "One field: the total after the merge is 2 again.",
+          "cmd": "python -m gate.revert cause",
+          "stdin": "{\"red_tests\":[],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":2,\"after\":2}}}",
+          "fixture": [],
+          "expect_not": {
+            "cause": "lint_regression"
+          }
+        }
+      },
+      {
+        "id": "cause.lint_per_tool",
+        "purpose": "The ratchet is per tool (`asama-0/08` 5): eslint fell by one and stylelint rose by one; the sum is unchanged but stylelint regressed.",
+        "cmd": "python -m gate.revert cause",
+        "stdin": "{\"red_tests\":[],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":3,\"after\":2},\"stylelint\":{\"before\":0,\"after\":1}}}",
+        "fixture": [],
+        "expect": {
+          "cause": "lint_regression"
+        },
+        "changed": {
+          "description": "One field: stylelint stays at 0.",
+          "cmd": "python -m gate.revert cause",
+          "stdin": "{\"red_tests\":[],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":3,\"after\":2},\"stylelint\":{\"before\":0,\"after\":0}}}",
+          "fixture": [],
+          "expect_not": {
+            "cause": "lint_regression"
+          }
+        }
+      },
+      {
+        "id": "cause.unknown",
+        "purpose": "Nothing mechanical explains the red: no red test, build fine, no tool's total rose.",
+        "cmd": "python -m gate.revert cause",
+        "stdin": "{\"red_tests\":[],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":2,\"after\":2}}}",
+        "fixture": [],
+        "expect": {
+          "cause": "unknown"
+        },
+        "changed": {
+          "description": "One field: test/rate.test.js is red and inside the impact set.",
+          "cmd": "python -m gate.revert cause",
+          "stdin": "{\"red_tests\":[\"test/rate.test.js\"],\"impact\":[\"test/count.test.js\",\"test/rate.test.js\"],\"build_ok\":true,\"lint\":{\"eslint\":{\"before\":2,\"after\":2}}}",
+          "fixture": [],
+          "expect_not": {
+            "cause": "unknown"
+          }
+        }
+      }
+    ]
   }
 }

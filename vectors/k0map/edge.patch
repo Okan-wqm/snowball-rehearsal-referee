@@ -1,0 +1,9 @@
+diff --git a/src/c.js b/src/c.js
+index d15914e..93543cf 100644
+--- a/src/c.js
++++ b/src/c.js
+@@ -5,0 +6 @@
++const e2 = e * 2;
+@@ -7,2 +7,0 @@
+-const g = 7;
+-const h = 8;

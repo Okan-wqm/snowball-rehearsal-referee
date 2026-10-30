@@ -1,0 +1,6 @@
+diff --git a/src/rate.js b/src/rate.js
+index 3f1c2aa..6018677 100644
+--- a/src/rate.js
++++ b/src/rate.js
+@@ -9,0 +10 @@
++// counts the calls to scale

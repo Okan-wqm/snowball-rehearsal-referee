@@ -1,0 +1,3 @@
+{"tool":"eslint","violations":[{"rule_id":"prefer-const","path":"src/rate.js","line":3,"fix":[3,3]},{"rule_id":"no-var","path":"src/rate.js","line":10,"fix":[10,10]}]}
+{"tool": "eslint","violations":[{"rule_id":"prefer-const","path":"src/rate.js","line":3,"fix":[3,3]},{"rule_id":"no-var","path":"src/rate.js","line":10,"fix":[10,10]}]}
+{"tool":"eslint","violations":[{"rule_id":"prefer-const","path":"src/rate.js","line":3,"fix":[3,3]},{"rule_id":"no-var","path":"src/rate.js","line":10,"fix":[10,10]}]}

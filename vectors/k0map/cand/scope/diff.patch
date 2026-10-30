@@ -1,0 +1,14 @@
+diff --git a/src/rate.js b/src/rate.js
+index 3f1c2aa..e90b6d4 100644
+--- a/src/rate.js
++++ b/src/rate.js
+@@ -2,3 +2,4 @@
+ // rate helpers
+-var rate = 2, base = 10;
++let rate = 2;
++let base = 10;
+ function scale(n) {
+@@ -9,2 +10,2 @@
+ var count = 0;
+-module.exports = { scale, count };
++module.exports = { count, scale };

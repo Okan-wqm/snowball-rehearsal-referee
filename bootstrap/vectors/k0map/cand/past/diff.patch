@@ -1,0 +1,9 @@
+diff --git a/src/rate.js b/src/rate.js
+index 3f1c2aa..4deb84f 100644
+--- a/src/rate.js
++++ b/src/rate.js
+@@ -9 +9 @@
+-var count = 0;
++let count = 0;
+@@ -10,0 +11 @@
++// exported for the tests

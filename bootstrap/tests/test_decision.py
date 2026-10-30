@@ -343,11 +343,11 @@ class KindsAndExit(unittest.TestCase):
         """`asama-0/10` #testler: every group passes. A group the seed has no vectors for cannot, so the exit is
         refused until a seed epoch brings it; on a code push the same gap is a warning (below)."""
         ready = state0(rival_artifacts=survived(A, "1" * 40, "2" * 40))
-        run = dict(green_run(), vector_groups_missing=["k0map", "genesis"])
+        run = dict(green_run(), vector_groups_missing=["revert_drill", "genesis"])
         res = run_decide(self.exit_meta(ready), run, None, None, {"getir": "success", "kos": "success"})
         self.assertEqual(res["verdict"], "rejected")
         self.assertEqual(res["exit"]["missing"],
-                         ["vector_group_missing:k0map", "vector_group_missing:genesis"] + UNCHECKED)
+                         ["vector_group_missing:revert_drill", "vector_group_missing:genesis"] + UNCHECKED)
         self.assertFalse(res["exit"]["transferable"])
 
     def test_no_exit_condition_the_seed_cannot_check_passes_silently(self):
@@ -479,9 +479,9 @@ class ModuleLessRed(unittest.TestCase):
     def test_a_vector_group_the_seed_lacks_warns_on_a_code_push_and_never_counts_against_the_founder(self):
         """The group's vectors are the seed's to bring (`29a`, `29d`), never the Founder's: the push is judged on
         what exists and the operator is told; the exit waits for the group (`KindsAndExit`)."""
-        res = self.code(dict(green_run(), vector_groups_missing=["k0map"]), module_less_mfs=())
+        res = self.code(dict(green_run(), vector_groups_missing=["revert_drill"]), module_less_mfs=())
         self.assertEqual(res["verdict"], "accepted")
-        self.assertEqual(res["warnings"], ["vector_group_missing:k0map"])
+        self.assertEqual(res["warnings"], ["vector_group_missing:revert_drill"])
         self.assertEqual(res["state"]["reject_streaks"], {})
 
 
@@ -921,6 +921,11 @@ class PullGates(unittest.TestCase):
                                      extra=("spec/tohum/29f-vektor-arayuzleri.md",))
         self.assertEqual(run["vector_groups_missing"], ["k0map"])  # MF2's `secrets` came with the seed (E161)
         self.assertEqual({v["id"].split(".")[0] for v in run["vectors"]}, {"chain", "secrets"})
+        run, _ = self.run_tests_with({"manifest": manifest, "module_less": []},
+                                     extra=("spec/tohum/29f-vektor-arayuzleri.md",
+                                            "spec/tohum/29h-vektor-arayuzleri-mf8-13.md"))
+        self.assertEqual(run["vector_groups_missing"], [])  # MF8's `k0map` too, once the seed has its page (`29h`)
+        self.assertEqual({v["id"].split(".")[0] for v in run["vectors"]}, {"chain", "secrets", "k0map"})
 
     def test_the_founders_containers_get_the_fixtures_and_never_the_expected_values(self):
         """`vectors.json` holds every case's `expect`. Mounted at `/vec`, Founder code could open it, find the case its

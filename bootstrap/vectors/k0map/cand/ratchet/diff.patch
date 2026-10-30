@@ -1,0 +1,10 @@
+diff --git a/src/rate.js b/src/rate.js
+index 3f1c2aa..5d2f8a0 100644
+--- a/src/rate.js
++++ b/src/rate.js
+@@ -2,3 +2,4 @@
+ // rate helpers
+-var rate = 2, base = 10;
++let rate = 3;
++let base = 10, spare;
+ function scale(n) {

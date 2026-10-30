@@ -25,7 +25,8 @@ from helpers import DRILL, EVERY_GROUP, STATS, FakeRunner
 BOOTSTRAP = Path(__file__).resolve().parents[1]
 VECTORS = BOOTSTRAP / "vectors"
 # Stage 0's groups the seed has vectors for; every other group the table names is still missing (`29d`, E161).
-STAGE0_SEEDED = ("chain", "secrets", "contained", "profile", "npmlock", "recipe", "diffguard")
+STAGE0_SEEDED = ("chain", "secrets", "contained", "profile", "npmlock", "recipe", "diffguard", "k0map", "refs",
+                 "append", "root", "flaky", "cause")
 DATA_GROUPS = STAGE0_SEEDED[1:]
 POLICY_DEFAULTS = BOOTSTRAP.parents[1] / "spec" / "tohum" / "18a-politika-baslangic-degerleri.md"
 Z = "0" * 64
@@ -161,15 +162,15 @@ class VectorsTest(unittest.TestCase):
         self.assertEqual(stages.load(0).groups_of((10,)), ("chain", "append"))
 
     def test_a_group_the_seed_has_no_vectors_for_is_named_not_invented(self):
-        """The Stage 0 groups after `diffguard` come with a later seed epoch (`29d`); until they do the referee says
-        which a finished micro-feature owns, and runs nothing in their place. MF2-MF7's groups no longer warn."""
+        """The Stage 0 groups after `cause` come with a later seed epoch (`29d`); until they do the referee says
+        which a finished micro-feature owns, and runs nothing in their place. MF2-MF13's groups no longer warn."""
         self.assertEqual(missing_groups(VECTORS, (1,), stages.load(0)), [])
         self.assertEqual(missing_groups(VECTORS, tuple(range(1, 8)), stages.load(0)), [])
-        self.assertEqual(missing_groups(VECTORS, (1, 8), stages.load(0)), ["k0map"])
-        self.assertEqual(missing_groups(VECTORS, tuple(range(1, 11)), stages.load(0)), ["k0map", "refs", "append"])
+        self.assertEqual(missing_groups(VECTORS, (1, 8), stages.load(0)), [])
+        self.assertEqual(missing_groups(VECTORS, tuple(range(1, 14)), stages.load(0)), [])
+        self.assertEqual(missing_groups(VECTORS, (1, 14), stages.load(0)), ["revert_drill"])
         self.assertEqual(missing_groups(VECTORS, tuple(range(1, 19)), stages.load(0)),
-                         ["k0map", "refs", "append", "root", "flaky", "cause", "revert_drill", "prompt", "status",
-                          "genesis"])
+                         ["revert_drill", "prompt", "status", "genesis"])
         self.assertEqual(missing_groups(VECTORS, STATS + DRILL, EVERY_GROUP), [])
 
     def test_wrong_implementations_fail(self):
@@ -352,7 +353,7 @@ class DataRunnerTest(unittest.TestCase):
 
 
 class SeedDataVectorsTest(unittest.TestCase):
-    """MF2-MF7's seed vectors as the data runner reads them (`29d`): the format, the fixtures, nothing dead."""
+    """MF2-MF13's seed vectors as the data runner reads them (`29d`): the format, the fixtures, nothing dead."""
 
     SEED = json.loads((VECTORS / "vectors.json").read_text(encoding="utf-8"))
 
@@ -381,7 +382,7 @@ class SeedDataVectorsTest(unittest.TestCase):
                                                               if p.startswith("/vec/")])
                     ids.append(case["id"])
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 46)
+        self.assertEqual(len(ids), 102)  # MF2-MF7 46, MF8-MF13 56
 
     def test_expected_values_carry_no_floats(self):
         """`tohum/26`: hashed artefacts carry no floats; nor do the vectors' answers (the runner tells 1 from 1.0)."""
@@ -427,6 +428,29 @@ class SeedDataVectorsTest(unittest.TestCase):
                         found += 1
                         self.assertIn("FAKE", match.group(0), path.name)
         self.assertGreaterEqual(found, 8)  # one per matching line of the fixtures as written today
+
+    def test_secret_shaped_text_stays_in_the_secrets_fixtures(self):
+        """A case that needs a fake secret elsewhere writes it escaped: `append.refuse_secret_row` writes the token's `p`
+        as the JSON escape `\\u0070` in its stdin. The command reads it decoded, marked FAKE; `vectors.json` and every
+        other fixture stay clean to the referee's own scanner, so nothing that scans raw text withholds them."""
+        for path in sorted(VECTORS.rglob("*")):
+            if path.is_file() and path.relative_to(VECTORS).parts[0] != "secrets":
+                self.assertEqual(secretscan.scan(path.read_bytes().decode("utf-8", "replace")), [], path.name)
+        formats = (re.compile("gh[pousr]_[A-Za-z0-9]{36}"), re.compile("(?:AKIA|ASIA)[A-Z0-9]{16}"))
+        found = []
+        for name in DATA_GROUPS:
+            for case in self.SEED[name]["cases"]:
+                for variant in (case, case["changed"]):
+                    stdin = variant.get("stdin", "")
+                    try:
+                        decoded = json.dumps(json.loads(stdin), ensure_ascii=False) if stdin else ""
+                    except ValueError:
+                        decoded = stdin
+                    for fmt in formats:
+                        for match in fmt.finditer(decoded):
+                            found.append(case["id"])
+                            self.assertIn("FAKE", match.group(0), case["id"])
+        self.assertEqual(found, ["append.refuse_secret_row"])  # its changed input writes `\\u0071`: no token
 
 
 class ControlsTest(unittest.TestCase):
