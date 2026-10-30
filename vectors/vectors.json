@@ -4119,7 +4119,7 @@
         "id": "prompt.secret_never_sent",
         "purpose": "The built prompt is scanned with MF2's prompt rule: the fake GitHub token, written with the JSON escape \\u0070 in the request and decoded in the typed value, keeps the prompt from being sent and no call cap is set.",
         "cmd": "python -m dispatcher.llm_call plan /vec/prompt/template.json",
-        "stdin": "{\"model\":\"claude-sonnet-5-5\",\"input\":{\"rule_id\":\"no-var\",\"path\":\"src/rate.js\",\"line\":9,\"excerpt\":\"const token = \\\"gh\\u0070_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE\\\";\"},\"budget\":{\"stage_cap_usd_micros\":1000000,\"spent_usd_micros\":750000,\"call_cap_usd_micros\":500000}}",
+        "stdin": "{\"model\":\"claude-sonnet-5-5\",\"input\":{\"rule_id\":\"no-var\",\"path\":\"src/rate.js\",\"line\":9,\"excerpt\":\"const ref = \\\"gh\\u0070_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE\\\";\"},\"budget\":{\"stage_cap_usd_micros\":1000000,\"spent_usd_micros\":750000,\"call_cap_usd_micros\":500000}}",
         "fixture": [
           "prompt/template.json"
         ],
@@ -4133,7 +4133,7 @@
         "changed": {
           "description": "One byte: the escape \\u0070 (p) becomes \\u0071 (q); the decoded prefix ghq_ is no token format.",
           "cmd": "python -m dispatcher.llm_call plan /vec/prompt/template.json",
-          "stdin": "{\"model\":\"claude-sonnet-5-5\",\"input\":{\"rule_id\":\"no-var\",\"path\":\"src/rate.js\",\"line\":9,\"excerpt\":\"const token = \\\"gh\\u0071_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE\\\";\"},\"budget\":{\"stage_cap_usd_micros\":1000000,\"spent_usd_micros\":750000,\"call_cap_usd_micros\":500000}}",
+          "stdin": "{\"model\":\"claude-sonnet-5-5\",\"input\":{\"rule_id\":\"no-var\",\"path\":\"src/rate.js\",\"line\":9,\"excerpt\":\"const ref = \\\"gh\\u0071_FAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE\\\";\"},\"budget\":{\"stage_cap_usd_micros\":1000000,\"spent_usd_micros\":750000,\"call_cap_usd_micros\":500000}}",
           "fixture": [
             "prompt/template.json"
           ],
