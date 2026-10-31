@@ -205,7 +205,7 @@ class VectorsTest(unittest.TestCase):
 
     def test_drill_vectors_need_a_judge_that_fails_non_learners(self):
         honest = run_vectors(FakeRunner(VECTORS), VECTORS, DRILL, table=EVERY_GROUP)
-        self.assertEqual(len(honest), 19)
+        self.assertEqual(len(honest), 26)  # E321: `unequal_effect_arms`; E323: `second_attempt`
         self.assertEqual([r for r in honest if not r["ok"]], [])
         lenient = {r["id"] for r in run_vectors(FakeRunner(VECTORS, wrong={"drill_lenient"}), VECTORS, DRILL,
                                                 table=EVERY_GROUP) if not r["ok"]}

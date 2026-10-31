@@ -55,7 +55,7 @@ değildir; yalnız açık `not_refuted` kabuldür. Rakip kanaryası kaçırma or
 yapılır: aynı başın yeniden denemesi saklı rakip sonucunu kullanır, yalnız yeniden üreticileri koşturur.
 
 **Tohum test-yazıcısı.** Model: avcıdan farklı olan. Ders okumaz, avcının iddiasını ve gerekçesini
-görmez. İlk çağıranı Aşama 4'tür; o zaman kurulur ve ilk koşusundan sonra donar.
+görmez. İlk çağıranı LLM avcıyla açılan `oracle.run`'dır (`04a`); o zaman kurulur ve ilk koşusundan sonra donar.
 
 > Görevin, sana verilen property tanımının ve konumun gerektirdiği doğru davranışı assert eden en
 > küçük testi yazmak. Test doğru davranışı ölçer, derlenir ve verilen satırları çalıştırır.

@@ -151,6 +151,7 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }
@@ -165,6 +166,7 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }
@@ -179,6 +181,7 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }
@@ -190,9 +193,40 @@
         "verdicts": {
           "commitment": "PASS",
           "birth": "FAIL",
+          "use": "UNMEASURABLE",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "label_peeker",
+        "file": "drill/label_peeker.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "FAIL",
           "use": "FAIL",
           "effect": "PASS",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "overbroad_scope",
+        "file": "drill/overbroad_scope.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "FAIL",
+          "use": "UNMEASURABLE",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }
@@ -207,7 +241,8 @@
           "use": "FAIL",
           "effect": "FAIL",
           "wrong_lesson": "UNMEASURABLE",
-          "placebo": "UNMEASURABLE",
+          "right_lesson": "UNMEASURABLE",
+          "placebo": "FAIL",
           "persistence": "FAIL"
         }
       },
@@ -221,6 +256,7 @@
           "use": "FAIL",
           "effect": "PASS",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }
@@ -235,6 +271,7 @@
           "use": "PASS",
           "effect": "FAIL",
           "wrong_lesson": "UNMEASURABLE",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }
@@ -249,6 +286,22 @@
           "use": "PASS",
           "effect": "UNMEASURABLE",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "unequal_effect_arms",
+        "file": "drill/unequal_effect_arms.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "FAIL",
+          "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }
@@ -263,6 +316,7 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "FAIL",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }
@@ -277,6 +331,7 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "FAIL",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }
@@ -291,7 +346,53 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "FAIL",
+          "right_lesson": "PASS",
           "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "llm_prior_discarder",
+        "file": "drill/llm_prior_discarder.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "UNMEASURABLE",
+          "right_lesson": "FAIL",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "cherry_picking_dispatcher",
+        "file": "drill/cherry_picking_dispatcher.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "PASS",
+          "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
+          "placebo": "FAIL",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "unequal_arms",
+        "file": "drill/unequal_arms.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "FAIL",
+          "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
+          "placebo": "FAIL",
           "persistence": "PASS"
         }
       },
@@ -305,6 +406,7 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "FAIL",
           "persistence": "PASS"
         }
@@ -319,6 +421,7 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "FAIL",
           "persistence": "PASS"
         }
@@ -333,6 +436,7 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "FAIL"
         }
@@ -347,6 +451,7 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "FAIL"
         }
@@ -361,6 +466,7 @@
           "use": "FAIL",
           "effect": "FAIL",
           "wrong_lesson": "FAIL",
+          "right_lesson": "FAIL",
           "placebo": "FAIL",
           "persistence": "FAIL"
         }
@@ -375,6 +481,7 @@
           "use": "PASS",
           "effect": "FAIL",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }
@@ -387,8 +494,9 @@
           "commitment": "PASS",
           "birth": "PASS",
           "use": "UNMEASURABLE",
-          "effect": "PASS",
+          "effect": "FAIL",
           "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "FAIL"
         }
@@ -403,6 +511,22 @@
           "use": "PASS",
           "effect": "PASS",
           "wrong_lesson": "FAIL",
+          "right_lesson": "PASS",
+          "placebo": "PASS",
+          "persistence": "PASS"
+        }
+      },
+      {
+        "name": "second_attempt",
+        "file": "drill/second_attempt.json",
+        "drill": "FAIL",
+        "verdicts": {
+          "commitment": "PASS",
+          "birth": "PASS",
+          "use": "PASS",
+          "effect": "FAIL",
+          "wrong_lesson": "PASS",
+          "right_lesson": "PASS",
           "placebo": "PASS",
           "persistence": "PASS"
         }

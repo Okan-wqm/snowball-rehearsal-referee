@@ -615,7 +615,8 @@ class ImageAndEntrypointTest(unittest.TestCase):
                        "Defterin de belgedir", "Eski bir satıra dayanmadan önce onu bugünkü kodla, testle ve hakemin son "
                        "kararıyla doğrula",  # E302, owner 2026-10-30
                        "Hedef, sahibin ürünüdür", "AI kredisi kısıt değildir, zaman değerlidir",
-                       "Yol, yöntem ve sıra senindir"):  # E305, owner 2026-10-30
+                       "Yol, yöntem ve sıra senindir",  # E305, owner 2026-10-30
+                       "Değer hedefte ölçülür", "bugün değmiyorsa değecek hâle getir"):  # E337, owner 2026-10-31
             self.assertIn(phrase, prompt)
 
     def test_the_founder_keeps_one_source_and_chooses_its_own_architecture(self):  # E205, owner 2026-10-29

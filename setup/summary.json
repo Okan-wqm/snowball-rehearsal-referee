@@ -25,11 +25,112 @@
       "commit": "db4b81dcd39ac148c0b058bef998b1198aafb5c0",
       "seed_sha256": null,
       "spec_tohum_sha256": "16b76f99ed50efc8068462a3af66aaafbf274cced17f5da753c4b1fd428c75a9"
+    },
+    {
+      "bootstrap_sha256": "37402a58513750274b8b13eca21da5571f091bc64603fea7a1e7e1edf55a2ad1",
+      "commit": "e04bc1cc447aa28c5f79dac1bb7e7fde0dc33ff7",
+      "seed_sha256": null,
+      "spec_tohum_sha256": "282502f114375f25152230e3432adc14ef11b26858d7c02efd72992b5fd87ec3"
     }
   ],
   "honesty_exception": {
     "stage": 0,
     "carry_to": 1,
     "reason": "Dürüstlük ekimi Kurucu başlamadan yapılmadı (E287); sahip istisnayı 2026-10-31'de onayladı (E294); koşul Aşama 1'in çıkışına taşınır ve orada ölçülür, ikinci istisna yoktur."
-  }
+  },
+  "targets": [
+    {
+      "id": "toy",
+      "repo": "Okan-wqm/snowball-rehearsal-toy",
+      "kind": "toy",
+      "base_sha": null,
+      "identifiers": [],
+      "excluded_paths": [],
+      "unit_candidates": [
+        "textkit"
+      ]
+    },
+    {
+      "id": "copy",
+      "repo": "Okan-wqm/snowball-rehearsal-copy",
+      "kind": "copy",
+      "base_sha": "c6e23d0f8aa5ee9af6bee7f5b801f8aa3cc7850b",
+      "identifiers": [
+        "aquaculture_platform",
+        "aquaculture",
+        "suderra"
+      ],
+      "excluded_paths": [
+        ".codex",
+        "ARIA-MIMARI-SEMALARI.md",
+        "ARIA-VERIMLILIK-DEGERLENDIRMESI.md",
+        ".full-review/",
+        "agent-workspace/",
+        "agents/",
+        "aria-config/",
+        "aria-debts/",
+        "aria-kernel/",
+        "aria-tools/",
+        ".github/manifests/aria-claude-floor.json",
+        ".github/manifests/aria-kernel-surface.json",
+        ".github/manifests/aria-operator-enrolments.jsonl",
+        ".github/manifests/aria-operator-signers",
+        ".github/manifests/aria-signature-namespaces.json",
+        ".github/manifests/aria-state-watchdog.json",
+        ".github/workflows/aria-agent-eval.yml",
+        ".github/workflows/aria-agent-executor.yml",
+        ".github/workflows/aria-auto-cycle.yml",
+        ".github/workflows/aria-daily-report.yml",
+        ".github/workflows/aria-external-watchdog.yml",
+        ".github/workflows/aria-kernel.yml",
+        ".github/workflows/aria-merge-authority.yml",
+        ".github/workflows/aria-merge-runner.yml",
+        ".github/workflows/aria-operational-proof.yml",
+        ".github/workflows/aria-readiness-claim.yml",
+        ".github/workflows/aria-runner-capability-probe.yml",
+        ".github/workflows/aria-state-maintenance.yml",
+        "docs/aria/",
+        "docs/reviews/",
+        "docs/runbooks/aria-ack-key-rotation.md",
+        "docs/runbooks/aria-codex-runtime-observability.md",
+        "docs/runbooks/aria-gateway.md",
+        "docs/runbooks/aria-github-app-setup.md",
+        "docs/runbooks/aria-pr-landing-gate.md",
+        "docs/runbooks/aria-runner-rebuild.md",
+        "docs/runbooks/aria-state-branch-bootstrap.md",
+        "docs/runbooks/aria-v3-1-smoke.md",
+        "infrastructure/aria/",
+        "scripts/aria/",
+        "scripts/ci/aria-import-graph.py",
+        "scripts/ci/aria-suite-changed.mjs",
+        "scripts/ci/aria-suite-run.sh",
+        "scripts/ci/aria_read_trace.py",
+        "tests/invariants/aria-acceptance-lane-contract.spec.ts",
+        "tests/invariants/aria-approval-ref-grammar-owner.spec.ts",
+        "tests/invariants/aria-doc-runtime-ssot.spec.ts",
+        "tests/invariants/aria-external-watchdog-contract.spec.ts",
+        "tests/invariants/aria-kernel-workflow-setup.spec.ts",
+        "tests/invariants/aria-plan-doc-presence.spec.ts",
+        "tests/invariants/aria-service-key-ts-kernel-parity.spec.ts",
+        "tests/invariants/aria-single-publish-path.spec.ts",
+        "tests/invariants/aria-single-restore-path.spec.ts",
+        "tests/invariants/aria-suite-selector.spec.ts",
+        "tests/invariants/aria-workflow-input-injection.spec.ts",
+        "tests/invariants/aria-workflow-sha-pin.spec.ts",
+        "tools/aria-acceptance/",
+        "tools/aria-adapters/",
+        "tools/aria-poc/",
+        "tools/aria/",
+        "tools/gates/aria-authority-hash.spec.ts",
+        "tools/gates/aria-authority-hash.ts",
+        "docs/runbooks/monitoring/aria-t2-boundary.md",
+        "infrastructure/monitoring/grafana/dashboards/aria-kernel-dashboard.json",
+        "infrastructure/monitoring/prometheus/alerts/aria-alerts.yml"
+      ],
+      "unit_candidates": [
+        "apps/alert-engine"
+      ]
+    }
+  ],
+  "honesty_commitment": "c6cf6478007150e51887db91ea62ca965f9675f084ba11c724bcc6e539f4b3a1"
 }
