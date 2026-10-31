@@ -22,7 +22,8 @@ from snowball_bootstrap.decide import decide
 from snowball_bootstrap.importer import ImportErrorStop, run_import
 from snowball_bootstrap.treehash import TreeError, tree_hash
 
-from helpers import commit, install_fake_claude, make_repo, module_less_red, ok_result, posix_only, sh, submit
+from helpers import (LOOP_YML, commit, install_fake_claude, ledger_bytes, ledger_rows, make_repo, module_less_red,
+                     ok_result, posix_only, sh, submit)
 
 SEED_FILES = {"spec/tohum/00-cekirdek.md": "# core\n", "spec/asama-0/00-ozet.md": "# stage 0\n"}
 STAGE0 = stages.load(0)
@@ -500,12 +501,18 @@ class Flow(unittest.TestCase):
 
     @posix_only
     def test_exit_request_and_import(self):
-        # Freeze the spec, then accept a complete stage 0.
+        # The operator has named the targets (`26c`): the generality check has names to look for.
+        summary = self.referee / "setup" / "summary.json"
+        summary.write_text(json.dumps(dict(json.loads(summary.read_text()), targets=[
+            {"id": "copy", "repo": "owner/copy", "kind": "copy", "base_sha": "c" * 40, "identifiers": ["Zorbalix"],
+             "excluded_paths": [], "unit_candidates": []}])))
+        # Freeze the spec, then accept a complete stage 0: the ledger, the loop workflow and the toy subtree with it.
         commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0 v2\n"}, "spec")
         meta = self.pull()
         self.finish(meta, rival=self.rival_ok(), jobs={"cagir": "success"})
-        files = {"referee/ledger/chain.py": "x = 1\n", "referee/.github/workflows/ref.yml": "on: push\n",
-                 "tests/fixtures/toy-repo/app.py": "import os\n",
+        rows = ledger_rows(2)
+        files = {"referee/ledger/chain.py": "x = 1\n", "referee/.github/workflows/loop.yml": LOOP_YML.encode(),
+                 "tests/fixtures/toy-repo/app.py": "import os\n", "founder-ledger.jsonl": ledger_bytes(rows),
                  "snowball-tests.json": all_tests_manifest(ALL_MFS)}
         commit(self.brain, files, "all of stage 0")
         meta = self.pull()
@@ -546,17 +553,22 @@ class Flow(unittest.TestCase):
         self.state["last_evaluated_sha"] = None
         saved = json.loads(json.dumps(self.state))
         meta = self.pull()
+        self.assertEqual({a: c["status"] for a, c in meta["exit_checks"].items()},
+                         {"kurucu-defteri": "ok", "is-akisi": "ok", "agac": "ok", "genellik": "ok"})
         result = self.finish(meta, run=self.green_run(meta), jobs={"getir": "success", "kos": "success"})
         self.assertEqual((result["verdict"], result["exit"]["transferable"]), ("rejected", False))
-        self.assertTrue(all(r["kind"] == "exit_condition" and r["ref"].startswith("not_checked:")
-                            for r in result["reasons"]), result["reasons"])
+        self.assertEqual([(r["kind"], r["ref"]) for r in result["reasons"]],
+                         [("exit_condition", "not_checked:" + a) for a in ("spec", "durustluk")])
         # ... so the import is measured as it will run once those checks exist and pass.
         self.state = saved
-        with mock.patch("snowball_bootstrap.decide.EXIT_NOT_CHECKED", ()):
+        with mock.patch("snowball_bootstrap.decide.EXIT_NOT_CHECKED", {}):
             result = self.finish(meta, run=self.green_run(meta), jobs={"getir": "success", "kos": "success"})
         self.assertEqual(result["verdict"], "accepted", result["reasons"])
         self.assertTrue(result["exit"]["transferable"])
         self.assertEqual(result["exit"]["repeat_events"], 0)
+        tar_bytes = gitio.archive(self.brain, meta["head"])
+        self.assertEqual(result["exit"]["toy_tree_sha256"],
+                         tree_hash(tar_bytes, "tests/fixtures/toy-repo", forbid_operator_names=False))
 
         # Operator import: signature check stubbed, tree hash real.
         work = Path(self.tmp.name)
@@ -577,7 +589,7 @@ class Flow(unittest.TestCase):
                          referee, toy)
         self.assertEqual(log["referee_tree_sha256"], result["exit"]["referee_tree_sha256"])
         self.assertTrue((referee / "ledger" / "chain.py").exists())
-        self.assertTrue((referee / ".github" / "workflows" / "ref.yml").exists())
+        self.assertTrue((referee / ".github" / "workflows" / "loop.yml").exists())
         self.assertFalse((referee / ".github" / "workflows" / "bootstrap.yml").exists())
         self.assertFalse((referee / "bootstrap").exists())
         self.assertEqual((referee / "policy.json").read_text(), "{}")

@@ -32,6 +32,17 @@ def is_founder_record(path: str) -> bool:
     return path == LEDGER_FILE or path.startswith(REPORTS_DIR)
 
 
+# Agent configuration (`29f`, `14`, `24a`): a component `.claude`, `.vscode` or `.devcontainer`, or a last component
+# `CLAUDE.md`, `AGENTS.md`, `.mcp.json` or `.envrc`, in any case and at any depth.
+AGENT_DIRS = frozenset({".claude", ".vscode", ".devcontainer"})
+AGENT_FILES = frozenset({"claude.md", "agents.md", ".mcp.json", ".envrc"})
+
+
+def is_agent_config(path: str) -> bool:
+    parts = [part.casefold() for part in path.split("/") if part]
+    return any(part in AGENT_DIRS for part in parts) or (bool(parts) and parts[-1] in AGENT_FILES)
+
+
 def classify(changed: list[str]) -> tuple[str, list[str]]:
     """Return (kind, reasons). kind is one of none, spec, code, rejected."""
     reasons: set[str] = set()

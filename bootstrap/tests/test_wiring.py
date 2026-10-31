@@ -261,11 +261,23 @@ class StageTableMatchesTheSpecTest(unittest.TestCase):
             self.assertEqual(group["owner"] == "asama-0", name in named, name)
 
 
-VECTOR_PAGES = ("29f", "29g", "29h", "29i", "29j", "29m", "29n", "29o")
+class SpecPagesTest(unittest.TestCase):
+    def test_no_page_is_over_80_lines(self):
+        """`tohum/15` 1: a page over 80 lines is split. Every page under `spec/`, the changelog too, not only the vector
+        pages (E252: the check held only `29f`-`29k`, and `29` reached 84 lines and the changelog 82 unseen);
+        `INDEX.md` is generated (`tohum/15` 5) and exempt."""
+        pages = sorted(p for p in (ROOT / "spec").rglob("*.md") if p != ROOT / "spec" / "INDEX.md")
+        self.assertGreater(len(pages), 100)
+        for page in pages:
+            with self.subTest(page=page.relative_to(ROOT).as_posix()):
+                self.assertLessEqual(len(page.read_text(encoding="utf-8").splitlines()), 80)
+
+
+VECTOR_PAGES = ("29f", "29g", "29h", "29i", "29j", "29k", "29m", "29n", "29o")
 
 
 class VectorInterfacePagesTest(unittest.TestCase):
-    """`29f`-`29j` and `29m`-`29o` are what the Founder reads of the data groups (it never sees `vectors.json`): every
+    """`29f`-`29k` and `29m`-`29o` are what the Founder reads of the data groups (it never sees `vectors.json`): every
     group's command and every case's purpose are there, the expected values are not (`29a`: the vectors are a floor)."""
 
     SEED = json.loads((BOOT / "vectors" / "vectors.json").read_text(encoding="utf-8"))
@@ -278,7 +290,6 @@ class VectorInterfacePagesTest(unittest.TestCase):
             name = next((ROOT / "spec" / "tohum").glob(f"{prefix}-*.md")).name
             lines = page.splitlines()
             with self.subTest(page=name):
-                self.assertLessEqual(len(lines), 80)  # `tohum/15` 1
                 self.assertRegex(lines[2], r"^Tarih: \d{4}-\d\d-\d\d · Sürüm: [\d.]+ · Durum: \w+ · Sahibi: operatör$")
                 self.assertTrue(lines[3].startswith("Okunma: ") and lines[4].startswith("Çapa: "))
                 self.assertIn(f"| `tohum/{name}` | {lines[0].removeprefix('# ')} | {lines[3].removeprefix('Okunma: ')} |",
@@ -308,6 +319,91 @@ class VectorInterfacePagesTest(unittest.TestCase):
                     self.assertNotIn(atom, pages, case["id"])
 
 
+class DocWithChangeTest(unittest.TestCase):
+    """The owner's rule (2026-10-30): a change to the seed's behaviour lands with its document. CI runs
+    `local/doc_with_change.py` over every push to `main`; this pins what it lets through."""
+
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("doc_with_change", BOOT / "local" / "doc_with_change.py")
+        self.mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.mod)
+
+    def test_a_behaviour_change_without_a_document_is_named(self):
+        u = self.mod.undocumented
+        self.assertEqual(u(["seed/bootstrap/snowball_bootstrap/decide.py"]), ["seed/bootstrap/snowball_bootstrap/decide.py"])
+        self.assertEqual(u(["seed/founder/launch.py", "seed/bootstrap/tests/test_founder_capsule.py"]),
+                         ["seed/founder/launch.py"])
+        self.assertEqual(u(["seed/bootstrap/vectors/vectors.json"]), ["seed/bootstrap/vectors/vectors.json"])
+
+    def test_a_documented_or_unguarded_change_passes(self):
+        u = self.mod.undocumented
+        self.assertEqual(u(["seed/bootstrap/snowball_bootstrap/decide.py", "docs/eksik-kaydi.md"]), [])
+        self.assertEqual(u(["seed/founder/launch.py", "seed/founder/README.md"]), [])
+        self.assertEqual(u(["seed/bootstrap/snowball_bootstrap/rival.py", "spec/tohum/29-tohum-koltuklari.md"]), [])
+        self.assertEqual(u(["seed/bootstrap/local/mutate.py", "seed/bootstrap/tests/test_units.py"]), [])
+        self.assertEqual(u(["README.md"]), [])
+        self.assertEqual(u(["", "  "]), [])
+
+    def test_ci_runs_it_on_every_push_to_main(self):
+        ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        self.assertIn("python3 seed/bootstrap/local/doc_with_change.py", ci)
+
+
+class SystemMapTest(unittest.TestCase):
+    """The owner's rule E301: `docs/harita.md`, the map of what connects to what, is drawn from the code by
+    `local/system_map.py` and never by hand. A module, job, dependency or link changed without regenerating the
+    map turns this red."""
+
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("system_map", BOOT / "local" / "system_map.py")
+        self.mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.mod)
+
+    def test_the_committed_map_is_what_the_code_draws(self):
+        drawn = self.mod.render().encode("utf-8")
+        committed = (ROOT / "docs" / "harita.md").read_bytes()
+        if committed != drawn:
+            old, new = committed.decode("utf-8", "replace").split("\n"), drawn.decode("utf-8").split("\n")
+            line = next((i for i, (a, b) in enumerate(zip(old, new)) if a != b), min(len(old), len(new)))
+            self.fail(f"docs/harita.md is stale from line {line + 1}: run `python3 local/system_map.py` "
+                      "from seed/bootstrap and commit the page")
+
+    def test_it_sees_every_module_and_every_job(self):
+        src = self.mod.Sources()
+        self.assertEqual(set(self.mod.module_graph(src)), {p.stem for p in (BOOT / "snowball_bootstrap").glob("*.py")})
+        jobs = self.mod.workflow_jobs(WORKFLOW)
+        listed = re.findall(r"^  ([A-Za-z_][A-Za-z0-9_-]*):[ \t]*$", WORKFLOW.split("\njobs:\n", 1)[1], re.M)
+        self.assertEqual(list(jobs), listed)
+        self.assertEqual(jobs["yaz"].needs, ["cek", "getir", "kos", "cagir", "yeniden"])
+        self.assertEqual(jobs["getir"].needs, ["cek"])
+        ran = {c for job in jobs.values() for c in job.commands}
+        self.assertLessEqual({argv[0] for argv in bootstrap_invocations()}, ran)
+        self.assertIn("fetch-deps", ran)  # run by the venv's python, not `python3`
+        import argparse
+        sub = next(a for a in cli.build_parser()._actions if isinstance(a, argparse._SubParsersAction))
+        self.assertEqual(set(self.mod.cli_commands(self.mod.module_graph(src)["cli"])), set(sub.choices))
+        page = self.mod.render(src)
+        for name in list(jobs) + [p.stem for p in (BOOT / "snowball_bootstrap").glob("*.py")]:
+            self.assertIn(f"`{name}`", page)
+
+    def test_a_new_job_or_dependency_shows_up_by_regeneration(self):
+        extra = "  audit:\n    needs: [yaz]\n    steps:\n      - run: python3 -m snowball_bootstrap control --root snap\n"
+        rel = self.mod.WORKFLOW
+        page = self.mod.render(self.mod.Sources(overrides={rel: WORKFLOW.rstrip("\n") + "\n\n" + extra}))
+        self.assertIn('job_audit["job audit<br/>control"]', page)
+        self.assertIn("job_yaz --> job_audit", page)
+        self.assertIn("| `audit` | `yaz` | `control` |", page)
+
+    def test_a_link_whose_evidence_is_gone_stops_the_drawing(self):
+        launcher = (ROOT / self.mod.LAUNCHER).read_text(encoding="utf-8").replace('"gh", "workflow", "run"', '"gh"')
+        with self.assertRaisesRegex(ValueError, "dispatch: gh workflow run"):
+            self.mod.render(self.mod.Sources(overrides={self.mod.LAUNCHER: launcher}))
+        with self.assertRaisesRegex(ValueError, "not a subcommand"):
+            self.mod.render(self.mod.Sources(overrides={self.mod.WORKFLOW: WORKFLOW.replace(" pack --dir", " packs --dir")}))
+
+
 class NothingStaleTest(unittest.TestCase):
     STALE = ("call.txt", "secrets.ANTHROPIC", "import anthropic", "anthropic==", "/tmp/call", "Anthropic SDK",
              "model SDK", "price_micros_per_mtok", "READER_APP", "BRAIN_TOKEN", "create-github-app-token")
@@ -320,8 +416,8 @@ class NothingStaleTest(unittest.TestCase):
                  and p.suffix in (".py", ".md", ".yml", ".json", ".txt")]
         self.assertGreater(len(files), 50)
         for path in files:
-            if path.name == "package-lock.json" or path.name == "CHANGELOG.md":
-                continue  # the changelog is history
+            if path.name == "package-lock.json" or path.name.startswith("CHANGELOG"):
+                continue  # the changelog (every page of it, `tohum/15` 1) is history
             text = path.read_text(encoding="utf-8", errors="replace")
             for term in self.STALE:
                 if path.name == "config.py" and term == "price_micros_per_mtok":

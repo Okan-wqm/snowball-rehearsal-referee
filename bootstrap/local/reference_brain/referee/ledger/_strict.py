@@ -53,7 +53,7 @@ def loads(data: bytes | str) -> Any:
 
 
 def split_lines(data: bytes) -> list[bytes]:
-    """Lines split on LF; the empty piece after the last LF is not a line (tohum/29f:20-21)."""
+    """Lines split on LF; the empty piece after the last LF is not a line (tohum/29f:21-22)."""
     if not data:
         return []
     lines = data.split(b"\n")

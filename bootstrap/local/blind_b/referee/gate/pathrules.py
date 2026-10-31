@@ -1,6 +1,6 @@
 """Path rules shared by profile.derive, profile.unit_verify and gate.diffguard.
 
-Agent configuration (tohum/14:47-49): a path any of whose components equals, ignoring case, .claude,
+Agent configuration (tohum/14:49-51): a path any of whose components equals, ignoring case, .claude,
 .vscode or .devcontainer, or whose last component equals, ignoring case, CLAUDE.md, AGENTS.md, .mcp.json
 or .envrc. Coverage: an entry e covers path p iff p == e.rstrip('/') or p starts with e.rstrip('/') + '/'
 (case-sensitive, on the path as written).

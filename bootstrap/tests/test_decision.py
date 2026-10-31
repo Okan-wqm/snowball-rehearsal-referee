@@ -21,11 +21,14 @@ from snowball_bootstrap.reproduce import reproducer_key
 
 import test_flow
 import test_state
-from helpers import DRILL, EVERY_GROUP, STATS, FakeRunner, commit, install_fake_claude, ok_result, posix_only, sh, submit
+from helpers import (DRILL, EVERY_GROUP, STATS, FakeRunner, commit, install_fake_claude, ledger_bytes, ledger_rows,
+                     ok_result, posix_only, sh, submit)
 
 A, B, C = "a" * 40, "b" * 40, "c" * 40
-# What every exit is still missing until the seed checks it (E162); the literal list is held in KindsAndExit.
-UNCHECKED = [decide_module.NOT_CHECKED + anchor for anchor in decide_module.EXIT_NOT_CHECKED]
+# What an exit whose meta carries none of pull's checks is missing (E162): each of them unchecked (absence never passes),
+# then what the seed cannot check at all. The literal list is held in KindsAndExit.
+UNCHECKED = [decide_module.NOT_CHECKED + anchor
+             for anchor in dict.fromkeys(decide_module.EXIT_CHECKS + tuple(decide_module.EXIT_NOT_CHECKED))]
 
 
 def state0(**kw):
@@ -362,11 +365,34 @@ class KindsAndExit(unittest.TestCase):
         self.assertEqual(res["state"]["last_accepted_sha"], A)  # the exit SHA is not moved past
 
     def test_every_row_of_the_exit_table_is_checked_or_named_unchecked(self):
-        """E162: a row of the `asama-0/10` table is either checked by this code or listed in EXIT_NOT_CHECKED; a row
-        added to the page without either fails here instead of passing silently. "Checked" is held to the code: each
-        row names the lines of `cli.py` (pull) or `decide.py` that check it, and a line that is gone fails the row
-        (E185: the names alone stayed green with the check deleted)."""
+        """E162: a row of the `asama-0/10` table is checked by this code, listed in EXIT_NOT_CHECKED, or both when only
+        part of it can be checked (#is-akisi); a row added to the page without either fails here instead of passing
+        silently. "Checked" is held to the code: each row names the lines that check it (`cli.py`'s pull, `decide.py`,
+        the check modules), and a line that is gone fails the row (E185: the names alone stayed green with the check
+        deleted). "Unchecked" is held to the register: the reason names a gap row that is still open."""
         checked = {
+            ("kurucu-defteri",): {
+                "cli": ["pre += ledgercheck.check(tar_file(tar_bytes, LEDGER_FILE), ledger_base, whole=False)"],
+                "exitchecks": ['"kurucu-defteri": lambda: founder_ledger(ledger_head, ledger_base),',
+                               "reasons, closures = ledgercheck.judge(head, base, whole=True)"],
+                "ledgercheck": ["if not head.startswith(accepted):", 'return "prev_hash", link, None',
+                                'return "row_hash", link, None', 'return "kind", link, None']},
+            ("is-akisi",): {
+                "cli": ["pre += wiring.check(wiring.files_in(exitchecks.referee_files(tar_bytes)))"],
+                "exitchecks": ['"is-akisi": lambda: outcome(wiring.check(wiring.files_in(referee_files(tar_bytes)))),'],
+                "wiring": ['reasons.append("workflow_top_permissions")', 'reasons.append(f"workflow_github_in_run:{name}:{number}")',
+                           'reasons.append(f"workflow_action_not_pinned:{name}:{number}")',
+                           'reasons.append(f"workflow_persist_credentials:{name}:{number}")',
+                           'reasons.append(f"workflow_job_not_main_only:{name}")',
+                           'reasons.append(f"workflow_secret_in_code_job:{name}")',
+                           'reasons.append(f"workflow_control_step:{name}")',
+                           'reasons.append(f"workflow_control_gate:{name}:{number}")']},
+            ("agac",): {"cli": ['meta["referee_tree_sha256"] = tree_hash(tar_bytes, "referee")'],
+                        "treehash": ["rel.parts[0].casefold() in RESERVED_TOP", "raise CaseCollision("],
+                        "exitchecks": ['reasons = [f"agent_config_in_referee:{path}"', 'reasons.append("toy_tree_missing")'],
+                        "decide": ['exit_block["toy_tree_sha256"] = meta["toy_tree_sha256"]']},
+            ("genellik",): {"exitchecks": ['reasons.append(f"target_name_in_referee:{shown}")'],
+                            "cli": ["tar_bytes, tar_file(tar_bytes, LEDGER_FILE), ledger_base, summary_cfg.targets)"]},
             ("testler", "kirmizi", "lisans"): {"decide": ['missing.append("not_all_micro_features_done")',
                                                           '_reason("test_failed"', '_reason("vector_failed"',
                                                           'missing += [f"vector_group_missing:{g}"',
@@ -383,21 +409,31 @@ class KindsAndExit(unittest.TestCase):
             ("yalniz",): {"cli": ["if judged == [EXIT_FILE]:", 'pre.append("exit_request_not_alone")']},
         }
         sources = {name: (Path(cli.__file__).parent / f"{name}.py").read_text(encoding="utf-8")
-                   for name in ("cli", "decide")}
+                   for name in ("cli", "decide", "exitchecks", "ledgercheck", "wiring", "treehash")}
         for row, where in checked.items():
             for module, lines in where.items():
                 for line in lines:
                     self.assertEqual(sources[module].count(line), 1, f"#{row[0]}: {module}.py no longer has {line!r}")
-        page = (Path(__file__).resolve().parents[3] / "spec" / "asama-0" / "10-cikis-testi.md").read_text(encoding="utf-8")
+        root = Path(__file__).resolve().parents[3]
+        page = (root / "spec" / "asama-0" / "10-cikis-testi.md").read_text(encoding="utf-8")
         cells = [line.split("|")[1] for line in page.splitlines() if line.startswith("| #")]
         rows = [tuple(found) for found in (re.findall(r"#([a-z-]+)", cell) for cell in cells) if found]  # not "| # |"
         self.assertEqual(len(rows), 12)
+        register = (root / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8")
+        status = {m.group(1): m.group(2).strip() for m in re.finditer(r"^\| (E\d+) \|.*\| ([^|]+) \|$", register, re.M)}
         for row in rows:
             unchecked = [a for a in row if a in decide_module.EXIT_NOT_CHECKED]
-            self.assertEqual((row in checked) + len(unchecked), 1, row)
+            self.assertGreaterEqual((row in checked) + len(unchecked), 1, row)
+            for anchor in unchecked:
+                gaps = re.findall(r"\bE\d+\b", decide_module.EXIT_NOT_CHECKED[anchor])
+                self.assertTrue(gaps, anchor)
+                for gap in gaps:
+                    self.assertIn("açık", status.get(gap, ""), f"#{anchor} is unchecked for {gap}, which is not open")
         anchors = {a for row in rows for a in row}
-        self.assertLessEqual(set(decide_module.EXIT_NOT_CHECKED), anchors)
+        self.assertLessEqual(set(decide_module.EXIT_NOT_CHECKED) | set(decide_module.EXIT_CHECKS), anchors)
         self.assertLessEqual(set(checked), set(rows))
+        for anchor in decide_module.EXIT_CHECKS:  # what pull checks names the code that checks it
+            self.assertTrue(any(anchor in row for row in checked), anchor)
 
     def test_a_rejected_exit_request_is_remembered_only_when_it_was_judged(self):
         """E97: the bytes of a rejected request are kept so the same file left in place is ignored later; an outage
@@ -770,22 +806,23 @@ class PullGates(unittest.TestCase):
     def test_the_founders_ledger_rides_along_with_any_push(self):
         """Ledger rows written in the same session never make a spec request mixed or an exit request
         accompanied; a push of ledger rows alone is a no-op, not a judgement."""
+        rows = ledger_rows(3)
         commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0 v2\n",
-                            "founder-ledger.jsonl": '{"kind":"session"}\n'}, "spec and ledger")
+                            "founder-ledger.jsonl": ledger_bytes(rows[:1])}, "spec and ledger")
         meta = self.pull()
         self.assertEqual((meta["kind"], meta["pre_reasons"]), ("spec", []))
         self.finish(meta, rival=self.rival_ok(), jobs={"cagir": "success"})
         self.assertIn("spec/asama-0", self.state["frozen_specs"])
-        commit(self.brain, {"founder-ledger.jsonl": '{"kind":"session"}\n{"kind":"seed_issue"}\n'}, "ledger only")
+        commit(self.brain, {"founder-ledger.jsonl": ledger_bytes(rows[:2])}, "ledger only")
         meta = self.pull()
         self.assertEqual((meta["kind"], meta["run_tests"], meta["run_rival"]), ("none", False, False))
         request = {"stage": 0, "sha": self.state["last_accepted_sha"], "spec_sha256": "0" * 64}
-        commit(self.brain, {"exit-request.json": json.dumps(request),
-                            "founder-ledger.jsonl": '{"kind":"session"}\n{"kind":"seed_issue"}\n{"kind":"exit"}\n'},
+        commit(self.brain, {"exit-request.json": json.dumps(request), "founder-ledger.jsonl": ledger_bytes(rows)},
                "exit and ledger")
         meta = self.pull()
         self.assertEqual(meta["kind"], "exit")
         self.assertNotIn("exit_request_not_alone", meta["pre_reasons"])
+        self.assertEqual(meta["exit_checks"]["kurucu-defteri"]["status"], "ok")  # the rows rode along, checked
 
     def test_an_oversized_tree_is_refused(self):  # L20
         path = self.referee / "bootstrap.json"

@@ -41,7 +41,7 @@ def _block_paths(line: str) -> tuple[str, str]:
 
 def parse_diff(text: str) -> list[dict[str, Any]]:
     """Blocks of a unified git diff: {"a", "b", "hunks": [{"a", "b", "c", "d", "lines": [(tag, text)]}]}.
-    A `diff --git a/A b/B` block changes B (tohum/29g:59-60)."""
+    A `diff --git a/A b/B` block changes B (tohum/29k:42-43)."""
     lines = text.split("\n")
     if lines and lines[-1] == "":
         lines.pop()

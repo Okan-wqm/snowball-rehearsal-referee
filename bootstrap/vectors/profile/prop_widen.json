@@ -1,0 +1,1 @@
+{"languages": ["javascript", "typescript"], "unit_candidates": ["packages/web", "packages/api"], "security_paths": ["packages/api/src/auth/login.ts", "packages/api/src/index.ts", "packages/api/src/session.ts", "packages/web/src/tokenizer.js"], "excluded_paths": [".Claude/settings.json", "packages/api/Claude.md", "packages/web/src/app.js", "vendor/legacy.py"]}

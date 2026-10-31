@@ -1,6 +1,7 @@
 """MF5 deps.fetch (npm): python -m runner.deps_npm fetch <package-lock.json> <mirror_dir>.
 
-stdin: {"registry_egress": [...], "install_scripts_required": ["name@version", ...]}.
+stdin: {"registry_egress": [...], "install_scripts_required": [...]}; a mark is an exact non-root key of this
+lock's packages or name@X.Y.Z (E200); anything else (a bare name) makes the input unusable (exit 2).
 The tarball of resolved https://<host>/<path> is the file <mirror_dir>/<host>/<path> (offline mirror).
 Prints one JSON line {ok, rejected, artefact, licenses}; exit 0 ok, 1 a package rejected, 2 unusable
 input. Tarballs are read in memory; nothing is written.
@@ -12,12 +13,14 @@ import hashlib
 import io
 import json
 import os
+import re
 import sys
 import tarfile
 import zlib
 from typing import Any
 
 INSTALL_HOOKS = ("preinstall", "install", "postinstall")
+NAME_AT_VERSION = re.compile(r"(?:@[^\s/@]+/)?[^\s/@]+@\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?")
 
 
 class Unusable(Exception):
@@ -143,7 +146,7 @@ def check_package(path: str, entry: dict[str, Any], mirror: str, egress: list[st
     has_script = (isinstance(scripts, dict) and any(h in scripts for h in INSTALL_HOOKS)) \
         or has_gyp or entry.get("hasInstallScript") is True
     name, version, license_ = manifest.get("name"), manifest.get("version"), manifest.get("license")
-    if has_script and f"{name}@{version}" not in marked:
+    if has_script and path not in marked and f"{name}@{version}" not in marked:
         return "install_script_unmarked", None
     return None, {"path": path, "name": name if isinstance(name, str) else None,
                   "version": version if isinstance(version, str) else None,
@@ -161,6 +164,9 @@ def fetch(lock: Any, mirror: str, request: Any) -> dict[str, Any]:
         raise Unusable("stdin: a registry_egress entry does not end with '/'")
     if not isinstance(lock, dict) or not isinstance(lock.get("packages"), dict):
         raise Unusable("lock: no 'packages' object")
+    for mark in marked:
+        if not ((mark != "" and mark in lock["packages"]) or NAME_AT_VERSION.fullmatch(mark)):
+            raise Unusable("stdin: an install_scripts_required entry is neither a lock key nor name@version")
     rejected, fetched, licenses = [], [], []
     for path, entry in lock["packages"].items():
         if path == "":

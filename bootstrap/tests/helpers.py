@@ -17,7 +17,7 @@ import os
 import unittest
 
 from snowball_bootstrap import stages
-from snowball_bootstrap.canon import row_hash
+from snowball_bootstrap.canon import canonical, row_hash
 from snowball_bootstrap.container import RunResult
 from snowball_bootstrap.rival import TOOL_NAMES
 
@@ -32,6 +32,137 @@ EVERY_GROUP = stages.parse_table(json.dumps({"stage": 0, "mfs": [
     {"mf": 2, "tests": [28], "groups": ["cp_lower", "mcnemar", "match"], "module": "harness/stats.py", "calls": []},
     {"mf": 3, "tests": [990], "groups": ["drill"], "module": "harness/drill.py", "calls": []}]}), 0)
 STATS, DRILL = (1, 2), (3,)
+
+
+ZERO_HASH = "0" * 64
+
+
+def ledger_rows(count: int, start: int = 1, prev: str = ZERO_HASH, edits: dict[int, dict] | None = None) -> list[dict]:
+    """``count`` Founder ledger rows chained with the seed's canonical code (`tohum/26`), numbered from ``start``;
+    ``edits`` maps a 0-based index to fields set on that row before it is hashed (the chain stays intact)."""
+    rows = []
+    for i in range(count):
+        row = {"row_id": f"f{start + i}", "ts": "2026-10-30T00:00:00Z", "part": "founder", "kind": "decision",
+               "payload": {"summary": f"row {start + i}", "refs": []}, "derivation": "llm_inference",
+               "trust": "inferred", "snapshot_id": "0" * 40, "evidence_refs": [], "prev_hash": prev}
+        row.update((edits or {}).get(i, {}))
+        row["row_hash"] = row_hash(row)
+        prev = row["row_hash"]
+        rows.append(row)
+    return rows
+
+
+def ledger_bytes(rows: list[dict]) -> bytes:
+    """The rows as `founder-ledger.jsonl` holds them: one canonical JSON object per line, each ending with a newline."""
+    return b"".join(canonical(row) + b"\n" for row in rows)
+
+
+# The seed's control step as `tohum/29p` writes it, typed here from the page and not imported from `wiring`, so the
+# check and the page are held to each other: every loop job starts with it, its `LOOP_JOB` the job's name (E282).
+CONTROL_STEP = """\
+      - name: control
+        id: control
+        env:
+          LOOP_JOB: @JOB@
+        run: |
+          set -eu
+          git clone --quiet --depth 1 --branch main --filter=blob:none --sparse "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$RUNNER_TEMP/control"
+          git -C "$RUNNER_TEMP/control" sparse-checkout set bootstrap
+          cd "$RUNNER_TEMP/control/bootstrap"
+          python3 -m snowball_bootstrap control --control ../control.json --job "$LOOP_JOB" --event "$GITHUB_EVENT_NAME" --github-output "$GITHUB_OUTPUT"
+"""
+GO = "steps.control.outputs.go == 'true'"  # every later step's `if:` (`29p`)
+
+# A loop workflow that keeps every rule of test 46 (`asama-0/09`; `tohum/08`, `01a`), written for the seed's own
+# tests and nobody's copy: the five jobs, `permissions: {}` at the top and on the jobs that run code, secrets only in
+# `cagir` and `yaz`, actions pinned by SHA, `persist-credentials: false`, every job on `main` only, every job's first
+# step the seed's control step and every later step waiting for its `go` (`29p`). Each later step's `if:` is its last
+# key, so a test that replaces the lines above it keeps the gate.
+LOOP_YML = """\
+# The loop's five jobs (tohum/08).
+name: loop
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch: {}
+permissions: {}
+jobs:
+  cek:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    steps:
+@CONTROL:cek@
+      - uses: actions/checkout@0123456789abcdef0123456789abcdef01234567
+        with:
+          persist-credentials: false
+        if: @GO@
+      - name: pull
+        run: |
+          set -eu
+          python3 -m loop pull --out "$RUNNER_TEMP/pulled"
+        if: @GO@
+  getir:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions: {}
+    needs:
+      - cek
+    steps:
+@CONTROL:getir@
+      - name: fetch
+        run: python3 -m loop fetch
+        if: @GO@
+  kos:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions: {}
+    needs:
+      - getir
+    steps:
+@CONTROL:kos@
+      - uses: actions/download-artifact@89abcdef0123456789abcdef0123456789abcdef
+        with:
+          name: deps
+        if: @GO@
+      - name: run
+        run: python3 -m loop run
+        if: @GO@
+  cagir:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions: {}
+    needs:
+      - cek
+    steps:
+@CONTROL:cagir@
+      - name: call
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: python3 -m loop call
+        if: @GO@
+  yaz:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+    needs:
+      - kos
+      - cagir
+    steps:
+@CONTROL:yaz@
+      - name: write
+        env:
+          WRITER_KEY: "${{ secrets.WRITER_APP_PRIVATE_KEY }}"
+          HEAD_REF: ${{ github.ref }}
+        run: python3 -m loop write
+        if: @GO@
+""".replace("@GO@", GO)
+for _job in ("cek", "getir", "kos", "cagir", "yaz"):
+    LOOP_YML = LOOP_YML.replace(f"@CONTROL:{_job}@\n", CONTROL_STEP.replace("@JOB@", _job))
 
 
 def module_less_red(meta: dict) -> list[dict]:
@@ -314,14 +445,18 @@ def make_repo(path: Path, files: dict[str, str]) -> str:
     return commit(path, files, "seed")
 
 
-def commit(path: Path, files: dict[str, str | None], message: str) -> str:
+def commit(path: Path, files: dict[str, str | bytes | None], message: str) -> str:
+    """Write the files (text, or bytes kept exactly as given) and commit them; None deletes a file."""
     for rel, content in files.items():
         target = path / rel
         if content is None:
             target.unlink()
             continue
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content)
+        if isinstance(content, bytes):
+            target.write_bytes(content)
+        else:
+            target.write_text(content)
     sh(path, "git", "add", "-A")
     sh(path, "git", "commit", "-q", "-m", message)
     return sh(path, "git", "rev-parse", "HEAD")

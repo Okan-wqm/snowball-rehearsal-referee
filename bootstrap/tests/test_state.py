@@ -66,6 +66,11 @@ class StateTest(unittest.TestCase):
                          "--identity", "id", "--sigstore-python", "/bin/false"])
 
     def test_first_run_starts_from_the_seed_commit(self):
+        # Stage 0 starts only from a summary that names the copy target and the honesty commitment (E293).
+        summary = self.root / "setup" / "summary.json"
+        summary.write_text(json.dumps(dict(json.loads(summary.read_text()), honesty_commitment="c" * 64, targets=[
+            {"id": "copy", "repo": "owner/copy", "kind": "copy", "base_sha": "c" * 40, "identifiers": ["Zorbalix"],
+             "excluded_paths": [], "unit_candidates": []}])))
         self.assertEqual(self.fetch(), 0)
         state = json.loads((self.root / "state" / "state.json").read_text())
         self.assertEqual(state["last_accepted_sha"], "a" * 40)

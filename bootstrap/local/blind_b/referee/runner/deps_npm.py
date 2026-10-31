@@ -1,11 +1,14 @@
 """runner.deps_npm -- deps.fetch for npm (MF5), against an offline registry mirror.
 
     python -m runner.deps_npm fetch <package-lock.json> <mirror_dir>
-    stdin: {"registry_egress": [...], "install_scripts_required": ["name@version", ...]}
+    stdin: {"registry_egress": [...], "install_scripts_required": [...]}
 
 The tarball of resolved https://<host>/<path> is the file <mirror_dir>/<host>/<path>. Tarballs are read in
 memory; nothing is written to disk. Prints one JSON line {ok, rejected, artefact, licenses}: exit 0 ok,
 1 a package rejected, 2 unusable input ({"ok": false, "error": ...}).
+
+Founder report E200: an install_scripts_required element is an exact lock key or name@version; anything else
+(a bare name) is refused as unusable input.
 """
 import base64
 import hashlib
@@ -18,6 +21,7 @@ import tarfile
 
 GIT_PREFIXES = ("git+", "git:", "github:", "git@")
 INSTALL_SCRIPTS = ("preinstall", "install", "postinstall")
+NAME_AT_VERSION = re.compile(r"(?:@[^@/\s]+/)?[^@/\s]+@[^@/\s]+")
 SKIP = object()
 
 
@@ -124,7 +128,7 @@ def _read_tarball(data: bytes) -> dict:
     return {"manifest": manifest, "scripted": scripted}
 
 
-def check_package(entry: dict, mirror: str, egress: list, marks: set):
+def check_package(path: str, entry: dict, mirror: str, egress: list, marks: set):
     """Return (reason or None, info) for one lock entry; info is SKIP for an in-repo workspace link."""
     resolved = entry.get("resolved")
     res = resolved if isinstance(resolved, str) else ""
@@ -153,10 +157,18 @@ def check_package(entry: dict, mirror: str, egress: list, marks: set):
     name, version = man.get("name"), man.get("version")
     if tb["scripted"] or entry.get("hasInstallScript") is True:
         ident = f"{name}@{version}" if isinstance(name, str) and isinstance(version, str) else None
-        if ident is None or ident not in marks:
+        if path not in marks and (ident is None or ident not in marks):
             return "install_script_unmarked", None
     lic = man.get("license")
     return None, {"name": name, "version": version, "license": lic if isinstance(lic, str) else None}
+
+
+def _validate_marks(marks: list, lock_keys) -> set:
+    """E200: each element is an exact lock key (not the root "") or name@version; a bare name is refused."""
+    for m in marks:
+        if not ((m != "" and m in lock_keys) or NAME_AT_VERSION.fullmatch(m)):
+            raise Unusable(f"install_scripts_required element {m!r} is neither a lock key nor name@version")
+    return set(marks)
 
 
 def fetch(lock, mirror: str, request) -> tuple:
@@ -169,6 +181,7 @@ def fetch(lock, mirror: str, request) -> tuple:
     if (not isinstance(egress, list) or not all(isinstance(e, str) and e.endswith("/") for e in egress)
             or not isinstance(marks, list) or not all(isinstance(m, str) for m in marks)):
         raise Unusable("stdin needs registry_egress[] (entries ending in '/') and install_scripts_required[]")
+    marks = _validate_marks(marks, lock["packages"])
     if not os.path.isdir(mirror):
         raise Unusable("mirror dir is unreadable")
     try:
@@ -182,7 +195,7 @@ def fetch(lock, mirror: str, request) -> tuple:
             continue
         if not isinstance(entry, dict):
             raise Unusable(f"lock entry {path!r} is not an object")
-        reason, info = check_package(entry, mirror, egress, set(marks))
+        reason, info = check_package(path, entry, mirror, egress, marks)
         if reason:
             rejected.append(f"{reason}:{path}")
         elif info is not SKIP:

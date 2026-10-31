@@ -19,6 +19,17 @@
       "commit": "3f605a131cc543341634f3a01966cdfd956509ce",
       "seed_sha256": null,
       "spec_tohum_sha256": "06aafcbbf6b2029327e87fa8da3ad7c92128b3352fa535f8f114c519215d3661"
+    },
+    {
+      "bootstrap_sha256": "8f00c11196cada6f0500cf3a70a384dc7b67096c1df2134c36ab73d3eed2f9a6",
+      "commit": "db4b81dcd39ac148c0b058bef998b1198aafb5c0",
+      "seed_sha256": null,
+      "spec_tohum_sha256": "16b76f99ed50efc8068462a3af66aaafbf274cced17f5da753c4b1fd428c75a9"
     }
-  ]
+  ],
+  "honesty_exception": {
+    "stage": 0,
+    "carry_to": 1,
+    "reason": "Dürüstlük ekimi Kurucu başlamadan yapılmadı (E287); sahip istisnayı 2026-10-31'de onayladı (E294); koşul Aşama 1'in çıkışına taşınır ve orada ölçülür, ikinci istisna yoktur."
+  }
 }

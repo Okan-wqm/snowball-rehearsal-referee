@@ -867,7 +867,7 @@
   "profile": {
     "owner": "asama-0",
     "runner": "data",
-    "interface": "spec/tohum/29f-vektor-arayuzleri.md",
+    "interface": "spec/tohum/29k-vektor-arayuzleri-yol-kurallari.md",
     "source": "reconciled cases; every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161)",
     "cases": [
       {
@@ -1130,6 +1130,91 @@
         }
       },
       {
+        "id": "profile.reject_narrowed_security",
+        "purpose": "A proposal that widens both path lists but drops the derived security path packages/web/src/tokenizer.js narrows security_paths and is rejected for that alone: the reason names the list it narrows, and the widening of excluded_paths beside it adds no reason.",
+        "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_widen_drop_security.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json",
+          "profile/prop_widen_drop_security.json"
+        ],
+        "expect": {
+          "accepted": false,
+          "reasons": [
+            "narrows:security_paths"
+          ]
+        },
+        "changed": {
+          "description": "One field: tokenizer.js is back in security_paths (prop_widen.json, which only widens).",
+          "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_widen.json",
+          "fixture": [
+            "profile/tree_t1.tar.gz",
+            "profile/operator.json",
+            "profile/prop_widen.json"
+          ],
+          "expect_not": {
+            "accepted": false,
+            "reasons": [
+              "narrows:security_paths"
+            ]
+          }
+        }
+      },
+      {
+        "id": "profile.accept_widened",
+        "purpose": "A proposal that adds a file to security_paths and to excluded_paths only widens them and is accepted.",
+        "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_widen.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json",
+          "profile/prop_widen.json"
+        ],
+        "expect": {
+          "accepted": true,
+          "reasons": []
+        },
+        "changed": {
+          "description": "One field: the widened proposal also drops packages/web/src/tokenizer.js from security_paths.",
+          "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_widen_drop_security.json",
+          "fixture": [
+            "profile/tree_t1.tar.gz",
+            "profile/operator.json",
+            "profile/prop_widen_drop_security.json"
+          ],
+          "expect_not": {
+            "accepted": true,
+            "reasons": []
+          }
+        }
+      },
+      {
+        "id": "profile.accept_widened_outside_tree",
+        "purpose": "An added path need not be in the tree: a proposal that adds packages/api/src/auth/oauth.ts to security_paths and packages/web/dist/bundle.js to excluded_paths, files tree_t1 does not hold, only widens and is accepted. A reading that takes an added path only when the tree holds it is caught.",
+        "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_widen_outside_tree.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json",
+          "profile/prop_widen_outside_tree.json"
+        ],
+        "expect": {
+          "accepted": true,
+          "reasons": []
+        },
+        "changed": {
+          "description": "One field: excluded_paths also drops the derived vendor/legacy.py.",
+          "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_widen_outside_tree_drop_excluded.json",
+          "fixture": [
+            "profile/tree_t1.tar.gz",
+            "profile/operator.json",
+            "profile/prop_widen_outside_tree_drop_excluded.json"
+          ],
+          "expect_not": {
+            "accepted": true,
+            "reasons": []
+          }
+        }
+      },
+      {
         "id": "profile.reject_different_languages",
         "purpose": "A proposal whose languages differ from the derivation (adds python) is rejected.",
         "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_languages.json",
@@ -1156,6 +1241,68 @@
             "accepted": false,
             "reasons": [
               "differs:languages"
+            ]
+          }
+        }
+      },
+      {
+        "id": "profile.reject_reordered_unit_candidates",
+        "purpose": "unit_candidates is compared as a list: a proposal that names the two derived candidates in another order (packages/api before packages/web) is rejected. A reading that compares the candidates as a set, lets them widen or does not compare them is caught.",
+        "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_units_reordered.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json",
+          "profile/prop_units_reordered.json"
+        ],
+        "expect": {
+          "accepted": false,
+          "reasons": [
+            "differs:unit_candidates"
+          ]
+        },
+        "changed": {
+          "description": "One field: unit_candidates is in the derived order (proposal equals the derivation).",
+          "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_equal.json",
+          "fixture": [
+            "profile/tree_t1.tar.gz",
+            "profile/operator.json",
+            "profile/prop_equal.json"
+          ],
+          "expect_not": {
+            "accepted": false,
+            "reasons": [
+              "differs:unit_candidates"
+            ]
+          }
+        }
+      },
+      {
+        "id": "profile.reject_added_unit_candidate",
+        "purpose": "Only the two path lists may widen: a proposal that appends the operator's excluded candidate vendor to the derived unit_candidates is rejected. A reading that lets unit_candidates widen like the path lists, in order or not, is caught.",
+        "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_units_added.json",
+        "fixture": [
+          "profile/tree_t1.tar.gz",
+          "profile/operator.json",
+          "profile/prop_units_added.json"
+        ],
+        "expect": {
+          "accepted": false,
+          "reasons": [
+            "differs:unit_candidates"
+          ]
+        },
+        "changed": {
+          "description": "One field: unit_candidates holds only the derived candidates (proposal equals the derivation).",
+          "cmd": "python -m profile.derive check /vec/profile/tree_t1.tar.gz /vec/profile/operator.json /vec/profile/prop_equal.json",
+          "fixture": [
+            "profile/tree_t1.tar.gz",
+            "profile/operator.json",
+            "profile/prop_equal.json"
+          ],
+          "expect_not": {
+            "accepted": false,
+            "reasons": [
+              "differs:unit_candidates"
             ]
           }
         }
@@ -1257,6 +1404,213 @@
             ],
             "artefact": null,
             "licenses": null
+          }
+        }
+      },
+      {
+        "id": "npmlock.install_script_marked_by_lock_path",
+        "purpose": "install_scripts_required may name the exact lock key: node_modules/snowball-fixture-b marks package b's postinstall, so the fetch of lock_good.json succeeds. An implementation that matches only name@version is caught.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"node_modules/snowball-fixture-b\"]}",
+        "fixture": [
+          "npmlock/lock_good.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": true,
+          "rejected": [],
+          "artefact": "sha256:c8b74b5a620c70bb24263efc66e4080c844934a1a78fd788c0625b0a8274ac19",
+          "licenses": [
+            {
+              "license": "MIT",
+              "name": "snowball-fixture-a",
+              "path": "node_modules/snowball-fixture-a",
+              "version": "1.0.0"
+            },
+            {
+              "license": "ISC",
+              "name": "snowball-fixture-b",
+              "path": "node_modules/snowball-fixture-b",
+              "version": "2.0.0"
+            }
+          ]
+        },
+        "changed": {
+          "description": "One field: install_scripts_required names node_modules/snowball-fixture-a, another package's lock key, which leaves b unmarked.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"node_modules/snowball-fixture-a\"]}",
+          "fixture": [
+            "npmlock/lock_good.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": true,
+            "rejected": [],
+            "artefact": "sha256:c8b74b5a620c70bb24263efc66e4080c844934a1a78fd788c0625b0a8274ac19",
+            "licenses": [
+              {
+                "license": "MIT",
+                "name": "snowball-fixture-a",
+                "path": "node_modules/snowball-fixture-a",
+                "version": "1.0.0"
+              },
+              {
+                "license": "ISC",
+                "name": "snowball-fixture-b",
+                "path": "node_modules/snowball-fixture-b",
+                "version": "2.0.0"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "npmlock.bare_name_refused",
+        "purpose": "A bare package name (snowball-fixture-a) beside a valid mark is neither a lock key nor name@version, so the request is unusable input and nothing is fetched. A reading in which a bare name marks nothing, or marks every version, fetches and is caught.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"snowball-fixture-a\"]}",
+        "fixture": [
+          "npmlock/lock_good.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: the second element is package b's lock key node_modules/snowball-fixture-b, a valid mark that marks b a second time.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"node_modules/snowball-fixture-b\"]}",
+          "fixture": [
+            "npmlock/lock_good.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "npmlock.bare_name_not_in_lock_refused",
+        "purpose": "A bare name that names no package in the lock (left-pad) beside a valid mark makes the request unusable too: a bare name is refused whether or not the lock holds it. A reading that refuses only the bare name of a locked package is caught.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"left-pad\"]}",
+        "fixture": [
+          "npmlock/lock_good.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: the second element is package b's lock key node_modules/snowball-fixture-b, a valid mark that marks b a second time.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"node_modules/snowball-fixture-b\"]}",
+          "fixture": [
+            "npmlock/lock_good.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "npmlock.scoped_bare_name_refused",
+        "purpose": "A scoped package's bare name (@types/node) holds an @ but is not name@version: beside a valid mark it makes the request unusable. A reading that takes any element with an @ for name@version is caught.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"@types/node\"]}",
+        "fixture": [
+          "npmlock/lock_good.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: the second element is package b's lock key node_modules/snowball-fixture-b, a valid mark that marks b a second time.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"node_modules/snowball-fixture-b\"]}",
+          "fixture": [
+            "npmlock/lock_good.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "npmlock.lock_path_not_in_lock_refused",
+        "purpose": "An element shaped like a lock path that is no key of this lock (node_modules/left-pad) is not a mark: beside a valid mark it makes the request unusable. A reading that takes every node_modules/ path for a mark that marks nothing is caught.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"node_modules/left-pad\"]}",
+        "fixture": [
+          "npmlock/lock_good.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: the second element is package b's lock key node_modules/snowball-fixture-b, a valid mark that marks b a second time.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"node_modules/snowball-fixture-b\"]}",
+          "fixture": [
+            "npmlock/lock_good.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false
+          }
+        }
+      },
+      {
+        "id": "npmlock.name_version_not_in_lock_marks_nothing",
+        "purpose": "A name@version that names no package of this lock (left-pad@1.3.0) is a mark that marks nothing: beside b's mark the request goes through and b is fetched. A reading that refuses a name@version the lock does not hold, as it refuses such a lock path, is caught.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"left-pad@1.3.0\"]}",
+        "fixture": [
+          "npmlock/lock_good.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": true
+        },
+        "changed": {
+          "description": "One field: the second element is the lock path node_modules/left-pad, which this lock does not hold.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"node_modules/left-pad\"]}",
+          "fixture": [
+            "npmlock/lock_good.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": true
+          }
+        }
+      },
+      {
+        "id": "npmlock.root_key_refused",
+        "purpose": "The lock's root key \"\" is a key of packages but no package's path (29g: packages are the entries other than the root): beside a valid mark it makes the request unusable.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"\"]}",
+        "fixture": [
+          "npmlock/lock_good.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false
+        },
+        "changed": {
+          "description": "One field: the second element is package b's lock key node_modules/snowball-fixture-b, a valid mark that marks b a second time.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_good.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\",\"node_modules/snowball-fixture-b\"]}",
+          "fixture": [
+            "npmlock/lock_good.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false
           }
         }
       },
@@ -1739,7 +2093,7 @@
   "diffguard": {
     "owner": "asama-0",
     "runner": "data",
-    "interface": "spec/tohum/29g-vektor-arayuzleri-devam.md",
+    "interface": "spec/tohum/29k-vektor-arayuzleri-yol-kurallari.md",
     "source": "reconciled cases; every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161)",
     "cases": [
       {

@@ -14,6 +14,10 @@ from pathlib import Path, PurePosixPath
 
 # Operator-only names: the import never overwrites them, so the referee code may not carry them.
 OPERATOR_NAMES = frozenset({"policy.json", "control.json", "setup", "seats", "vectors", "bootstrap.json"})
+# What the top of `referee/` may not be called, in any case (`asama-0/10` #agac; E130, E285): the operator's names and
+# the bootstrap referee's own directory, which the import never touches (`asama-0/10a` #aktarim, `01a`). Compared
+# case-folded: on the operator's Windows `referee/Policy.json` is `policy.json` (and so is `ſetup` `setup`).
+RESERVED_TOP = OPERATOR_NAMES | {"bootstrap"}
 
 
 class TreeError(ValueError):
@@ -77,17 +81,35 @@ def iter_files(tar_bytes: bytes):
         raise TreeError(f"not a readable archive: {type(exc).__name__}") from exc
 
 
-def tree_hash(tar_bytes: bytes, prefix: str, forbid_operator_names: bool = True) -> str:
-    """Hash of the regular files under ``prefix`` in a git-archive tarball."""
+class CaseCollision(TreeError):
+    """Two names in the tree are one name where the operator imports it."""
+
+
+def tree_hash(tar_bytes: bytes, prefix: str, forbid_operator_names: bool = True, fold_case: bool | None = None) -> str:
+    """Hash of the regular files under ``prefix`` in a git-archive tarball.
+
+    ``fold_case`` (by default for the referee tree, the one the import writes into the operator's repository) refuses
+    two paths, or two directories on the way to them, whose names are one on a case-insensitive file system: the
+    operator imports on Windows, where `.GITHUB/` and `.github/` are one directory and the second file written lands
+    in the first one's place, so the imported tree would not be the hashed one (E130, E289).
+    """
     pre = PurePosixPath(prefix)
     lines = []
+    seen: dict[str, str] = {}
+    fold = forbid_operator_names if fold_case is None else fold_case
     for path, content, _exec in iter_files(tar_bytes):
         try:
             rel = path.relative_to(pre)
         except ValueError:
             continue
-        if forbid_operator_names and rel.parts and rel.parts[0] in OPERATOR_NAMES:
+        if forbid_operator_names and rel.parts and rel.parts[0].casefold() in RESERVED_TOP:
             raise TreeError(f"{prefix}/{rel.parts[0]} is an operator-only name")
+        for k in range(1, len(rel.parts) + 1) if fold else ():
+            name = "/".join(rel.parts[:k])
+            other = seen.setdefault(name.casefold(), name)
+            if other != name:
+                raise CaseCollision(f"{prefix}/{min(other, name)} and {prefix}/{max(other, name)} are one name on a "
+                                    "case-insensitive file system")
         lines.append(f"{hashlib.sha256(content).hexdigest()}  {rel.as_posix()}\n")
     if not lines:
         raise TreeError(f"no files under {prefix}/")
