@@ -332,9 +332,14 @@ BREAKS = [
      'if data[name] is None or name != "checks.json" and manifest.get(name) != hashlib', ["k0map.forged_checks"]),
     ("base_runs_never_compared", "gate/check.py", "for runs in (base, cand):", "for runs in (cand,):",
      ["k0map.base_nondeterministic"]),
+    # E394 (seed-022): a file whose hash does not match is neither read nor parsed (`29h`)
+    ("mismatched_file_parsed", "gate/check.py",
+     "            data[name] = None  # neither read nor parsed: the reasons that read it are not evaluated (29h)" + chr(10),
+     "", ["k0map.mismatched_file_not_read"]),
 
+    # its changed input (M2 onto a head that is M) is refuse_revert_not_head's input: refused before any tree is read
     ("second_parent_tree", "target/write.py", 'first = _field(parents[0], "sha")', 'first = _field(parents[-1], "sha")',
-     ["refs.revert_first_parent_tree", "refs.revert_first_parent_tree.changed_input"]),
+     ["refs.revert_first_parent_tree"]),
     ("merge_commits_own_tree", "target/write.py",
      'tree = _field(api.call("GET", f"{base}/git/commits/{first}"), "tree", "sha")', 'tree = _field(merge, "tree", "sha")',
      ["refs.revert_first_parent_tree"]),
@@ -357,6 +362,8 @@ BREAKS = [
      "if not ref_allowed(head):", ["refs.refuse_pr_into_main"]),
     ("update_forces", "target/write.py", '{"sha": sha, "force": False}', '{"sha": sha, "force": True}',
      ["refs.update_never_forces"]),  # E240
+    ("revert_not_head_written", "target/write.py", "if head != merge_sha:", "if False:",
+     ["refs.refuse_revert_not_head"]),  # E235 (seed-024): the later merges would be reverted silently
 
     ("commit_per_row", "ledger/append.py", "writer.commit(body + tail)",
      "for _row in stored:" + chr(10) + "            writer.commit(body + tail)", ["append.cycle_one_commit"]),
@@ -386,6 +393,11 @@ BREAKS = [
      'if secrets.scan_text(stdin.decode("utf-8")):', ["append.refuse_secret_row"]),
     ("proposed_by_trust_kept", "ledger/append.py", 'new["trust"] = "inferred"', "pass",
      ["append.proposed_by_stored_inferred"]),
+    # E395 (seed-025): a row_id the ledger has, and empty rows, are unusable requests (`29i`)
+    ("known_row_id_accepted", "ledger/append.py", 'if set(ids) & {r.get("row_id") for r in cur_rows}:', "if False:",
+     ["append.refuse_known_row_id"]),
+    ("empty_rows_accepted", "ledger/append.py", "    if not rows:" + chr(10), "    if False:" + chr(10),
+     ["append.refuse_empty_rows"]),
     ("previous_version_ignored", "ledger/chain.py", "problem = _not_append_only(rows, earlier)", "problem = None",
      ["append.chain_previous_rewrite", "append.chain_previous_truncated"]),
     ("truncation_allowed", "ledger/chain.py", 'return before["row_id"], "the file lost this row"', "return None",
@@ -411,7 +423,7 @@ BREAKS = [
 
     ("zero_tests_first_run_green", "gate/sentinel.py", 'if first["results"] and not _failed(first):',
      "if not _failed(first):", ["flaky.green_first_run.changed_input"]),
-    ("red_on_the_first_run", "gate/sentinel.py", "if len(runs) < CONSIDERED:", "if False:",
+    ("red_on_the_first_run", "gate/sentinel.py", "if len(considered) < CONSIDERED:", "if False:",
      ["flaky.one_red_run_never_reverts"]),
     ("red_on_any_failure", "gate/sentinel.py", "red = sorted(t for t in ever if all(t in f for f in failed))",
      "red = sorted(ever)", ["flaky.red_three_reruns.changed_input", "flaky.per_test_rule"]),
@@ -419,6 +431,11 @@ BREAKS = [
      ["flaky.red_three_reruns", "flaky.per_test_rule"]),
     ("decided_after_two_reruns", "gate/sentinel.py", "CONSIDERED = 4", "CONSIDERED = 3",
      ["flaky.two_reruns_rerun"]),  # E239: 3/3 is the first run plus three reruns (29j's choice)
+    # E396 (seed-029): a run that is not read is not checked for its form, and no run yet is rerun (`29j`)
+    ("unread_run_checked", "gate/sentinel.py", "considered = [_read(run) for run in runs[:CONSIDERED]]",
+     "considered = [_read(run) for run in runs][:CONSIDERED]", ["flaky.unread_run_not_checked"]),
+    ("empty_runs_unusable", "gate/sentinel.py", "if not isinstance(runs, list):",
+     "if not (isinstance(runs, list) and runs):", ["flaky.empty_runs_rerun"]),
 
     ("impact_ignored", "gate/revert.py", 'if any(test in impact for test in signals["red_tests"]):', "if False:",
      ["cause.test_regression"]),
@@ -694,7 +711,7 @@ class SeedVectorsOnReferenceImplementationsTest(unittest.TestCase):
         cases = [c["id"] for g in DATA_GROUPS for c in seed[g]["cases"]]
         data = [r for r in results if not r["id"].startswith("chain.")]
         self.assertEqual([r["id"] for r in data], [i + s for i in cases for s in ("", ".changed_input")])
-        self.assertEqual((len(data), len(results)), (288, 294))  # MF2-MF7 122, MF8-MF13 112, MF14-MF18 54; `chain` 6
+        self.assertEqual((len(data), len(results)), (300, 306))  # MF2-MF7 122, MF8-MF13 124, MF14-MF18 54; `chain` 6
         self.assertEqual([(r["id"], r["detail"]) for r in results if not r["ok"]], [])
         self.assertEqual(brain_manifest().done_mf, (1,))  # reference implementations, not declared done
 

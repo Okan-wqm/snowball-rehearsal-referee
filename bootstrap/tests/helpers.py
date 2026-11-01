@@ -68,6 +68,9 @@ def quiet_pilot(launch):
 
         def memory_alone(self, prior, head):  # a clone of the brain; `CostRowTest` reads a mirror
             return False
+
+        def verdict_on(self, head):  # the referee's artifacts; `PreviousSessionTest` tests the look-up
+            return None
     return Quiet
 
 

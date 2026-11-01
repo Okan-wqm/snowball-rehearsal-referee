@@ -162,10 +162,45 @@ class PreviousSessionTest(unittest.TestCase):  # E360: how the last session ende
         self.launch = load_launch()
         self.work = Path(tempfile.mkdtemp())
         self.pilot = self.launch.Pilot(self.work, "owner/brain", "owner/referee", "target")
+        self.pilot.verdict_on = lambda head: None  # the look-up has its own tests below; no test here reaches GitHub
 
     def note(self, stamp="20261031T210000Z"):
         path = self.work / "logs" / stamp / "previous-session.json"
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+    def test_a_seed_epoch_between_does_not_hide_the_heads_verdict(self):  # E420: the live 20261101T045525Z case
+        head, epoch = "b" * 40, "d" * 40
+        row = {"stamp": "20261101T012022Z", "brain_before": "a" * 40, "brain_after": head, "pushed": True,
+               "session_exit": 0, "minutes": 51.9, "ledger_new": {"decision": 4}, "verdict": None,
+               "session_timeout_s": 10800}
+        self.pilot.metrics.write_text(json.dumps(row) + "\n", encoding="utf-8")
+        noop = {"head": epoch, "kind": "seed_update", "verdict": "noop", "state": {"last_evaluated_sha": epoch}}
+        on_head = {"head": head, "kind": "code", "verdict": "accepted", "state": {"last_evaluated_sha": head}}
+        self.pilot.verdict_on = lambda h: on_head if h == head else None
+        self.pilot.previous_session_note("20261101T045525Z", 10800, noop)
+        self.assertEqual(self.note("20261101T045525Z")["verdict"], "accepted")
+        self.pilot.verdict_on = lambda h: None  # not among the recent results: unknown, never another head's
+        self.pilot.previous_session_note("20261101T045525Z", 10800, noop)
+        self.assertIsNone(self.note("20261101T045525Z")["verdict"])
+
+    def test_the_look_up_finds_the_newest_result_that_evaluated_the_head(self):  # E420
+        pilot = self.launch.Pilot(self.work, "owner/brain", "owner/referee", "target")
+        head = "b" * 40
+        results = [{"head": "d" * 40, "verdict": "noop", "state": {"last_evaluated_sha": "d" * 40}},
+                   {"head": head, "verdict": "accepted", "state": {"last_evaluated_sha": None}},  # did not evaluate it
+                   {"head": head, "verdict": "rejected", "state": {"last_evaluated_sha": head}},
+                   {"head": head, "verdict": "accepted", "state": {"last_evaluated_sha": head}}]
+        pilot.state_artifacts = lambda: [{"id": i} for i in range(len(results))]
+        pilot.artifact_files = lambda art: {"result.json": json.dumps(results[art["id"]]).encode()}
+        self.assertEqual(pilot.verdict_on(head)["verdict"], "rejected")
+        self.assertIsNone(pilot.verdict_on("e" * 40))
+        pilot.state_artifacts = lambda: [{"id": 0}] * self.launch.VERDICT_LOOKBACK + [{"id": 3}]
+        self.assertIsNone(pilot.verdict_on(head))  # bounded: an old head is not searched for without end
+
+        def down():
+            raise self.launch.GitHubUnavailable("down")
+        pilot.state_artifacts = down
+        self.assertIsNone(pilot.verdict_on(head))
 
     def test_a_timed_out_session_is_named_for_the_next_one(self):
         rows = [{"stamp": "20261031T170731Z", "session_exit": 0, "minutes": 18.5, "pushed": True,
@@ -1233,6 +1268,28 @@ class ImageAndEntrypointTest(unittest.TestCase):
             self.assertIn(phrase, prompt)
         self.assertNotIn("project.json", prompt)  # the duty is general; what is missing is the Founder's to find
         self.assertNotIn("Nx", prompt)
+
+    def test_every_kind_the_prompt_asks_for_and_the_launcher_surfaces_is_in_the_closed_sets(self):
+        """The Founder's report seed-006 (E158): the ledger's and the reports' kind sets are closed (`26`, `26c`), and
+        the prompt said "write it as `missing_capability`", a kind no valid row can carry. A missing capability is a
+        `seed_issue` row whose text starts `missing_capability:`; the launcher surfaces only kinds a row can have."""
+        from snowball_bootstrap import ledgercheck
+        prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
+        page = (Path(__file__).resolve().parents[3] / "spec" / "tohum" / "26c-semalar-asama-0.md").read_text(encoding="utf-8")
+        notices = set(re.search(r"kind: ([a-z_|]+)", page.split("**reports/*.json**", 1)[1]).group(1).split("|"))
+        asked = re.findall(r"`([a-z_]+)` (?:olarak yaz|satırı)", prompt)
+        asked += re.findall(r"`[a-z_]+:` diye başlayan bir `([a-z_]+)`", prompt)
+        asked += [k for pair in re.findall(r"`([a-z_]+)` ya da `([a-z_]+)` satırı", prompt) for k in pair]
+        self.assertIn("seed_issue", asked)
+        for kind in asked:
+            self.assertIn(kind, set(ledgercheck.FOUNDER_KINDS) | notices, kind)
+        self.assertNotIn("`missing_capability` olarak yaz", prompt)
+        launch = load_launch()
+        self.assertTrue(launch.REPORT_KINDS)
+        self.assertLessEqual(set(launch.REPORT_KINDS), set(ledgercheck.FOUNDER_KINDS))
+        source = (FOUNDER / "launch.py").read_text(encoding="utf-8")
+        self.assertNotIn('"missing_capability"', source)  # no tuple or comparison names it as a kind
+        self.assertEqual(source.count('row.get("kind") in REPORT_KINDS') + source.count('r.get("kind") in REPORT_KINDS'), 2)
 
     def test_the_founder_owns_the_whole_target_even_a_domain_it_does_not_know(self):  # E364, owner 2026-10-31
         """The owner: in a domain it does not know at all, with no muscles for it, the system must understand it,

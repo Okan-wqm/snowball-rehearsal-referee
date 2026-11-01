@@ -8,7 +8,8 @@ Steps: (1) before the request is read, the ledger is a valid chain and extends t
 byte, else hard stop; a ledger that is not JSON Lines is not a valid chain (tohum/29i, E238); (2) every new row
 is scanned with secrets.scan's row semantics, a match invalidates the run (no hard stop); (3) a row with
 proposed_by is stored with trust inferred; (4) rows chain in stdin order onto the last row; (5) one brain/state
-commit through the writer (a fake that counts commits here).
+commit through the writer (a fake that counts commits here). A request with no rows, or a row_id another new row or
+the ledger already has, is unusable (tohum/29i).
 """
 
 from __future__ import annotations
@@ -67,6 +68,8 @@ def _request(stdin: bytes, cur_rows: list[dict[str, Any]]) -> list[dict[str, Any
             and all(isinstance(row, dict) for row in request["rows"])):
         raise Unusable("stdin is not {rows: [row, ...]}")
     rows: list[dict[str, Any]] = request["rows"]
+    if not rows:
+        raise Unusable("rows is empty: a cycle makes its one commit (29i)")
     ids = []
     for row in rows:
         if "prev_hash" in row or "row_hash" in row:

@@ -6,7 +6,8 @@
 
 <api.json> is a recorded API {"METHOD /path": body} answered in process: a recorded call gets its body, any other
 call gets 404. Outputs come from the requests sent, never from the recorded responses; `forced` says whether a
-PATCH of a ref asked for force: true (no force push, tohum/07:16; E240).
+PATCH of a ref asked for force: true (no force push, tohum/07:16; E240). A revert whose merge is not onto's head is
+refused before any write (tohum/29i, E235).
 """
 
 from __future__ import annotations
@@ -162,6 +163,8 @@ def run(api: FakeAPI, req: dict[str, Any]) -> dict[str, Any] | None:
         tree = _field(api.call("GET", f"{base}/git/commits/{first}"), "tree", "sha")
         head = _field(api.call("GET", f"{base}/git/ref/{onto[len('refs/'):]}"), "object", "sha")
         _need(isinstance(tree, str) and isinstance(head, str), "tree or head sha")
+        if head != merge_sha:  # the first parent's tree would silently revert the later merges too (29i)
+            raise Refused(f"{onto} head {head} is not {merge_sha}")
         commit = {"message": f"Revert {merge_sha}", "tree": tree, "parents": [head]}
         created = _field(api.call("POST", f"{base}/git/commits", commit), "sha")
         _need(isinstance(created, str), "new commit sha")

@@ -1,6 +1,6 @@
-"""The (A) conditions of `asama-0/10` that `pull` checks on the brain archive it already holds (`29b`; the draft `29e`
-"Tohum denetimleri": in `çek`, read from the archive, never run in a container): #kurucu-defteri, #is-akisi, #agac
-and #genellik (E162's follow-up, E280-E285, E288-E292).
+"""The (A) conditions of `asama-0/10` that `pull` checks on the brain archive it already holds (`29b`; the narrowing
+note's draft `29e` "Tohum denetimleri": in `çek`, read from the archive, never run in a container): #kurucu-defteri,
+#is-akisi, #agac and #genellik (E162's follow-up, E280-E285, E288-E292).
 
 Each anchor's result is ``{status: ok | failed | undecided, reasons, why}`` in ``meta["exit_checks"]``; `decide` turns
 it into the exit's conditions, and an absent or undecided result keeps the exit closed as ``not_checked``, never

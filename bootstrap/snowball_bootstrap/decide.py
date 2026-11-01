@@ -91,7 +91,7 @@ EXIT_CHECKS = exitchecks.ANCHORS
 EXIT_NOT_CHECKED = {
     "spec": "E286: of tohum/02's mechanical items, how a section and the key of a threshold are recognised in the "
             "text has no machine definition, and a reader for each file asama-0/13 names needs the files named in a "
-            "form a machine reads (the toy's reader is missing from tohum/27, E156); the check belongs at the freeze, "
+            "form a machine reads; the check belongs at the freeze, "
             "where the Founder can still fix what it finds, as a frozen spec/asama-0 cannot change (E180)",
     "durustluk": "E79, E287: the honesty rehearsal's key and detection predicates have no format, the evaluated SHAs "
                  "they run on are not kept, and a report that disputes a vector has no rule yet (E53; the reports' reader is E93)",

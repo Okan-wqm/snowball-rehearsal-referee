@@ -6,17 +6,18 @@
 the Founder's runs. `pull` checks it on every code push once the micro-feature that owns the workflow is finished, and
 at the exit (`asama-0/14` MF17: "her push'ta ve (A)'da").
 
-**The subset** (E281: no spec page defines it; the aim is that GitHub's parser and this one can never read the same
-bytes differently, so anything that could be read two ways is refused). UTF-8 without a byte order mark, carriage
-return, tab or other control character, and without the characters YAML 1.1 takes for line breaks (U+0085, U+2028,
-U+2029). Block mappings whose keys match ``[A-Za-z_][A-Za-z0-9_-]*`` followed by ``:`` and a space or the end of the
-line, no key twice; block sequences indented under their key; plain scalars on one line, without ``: `` or `` #`` and
-not ending in ``:``; single-quoted scalars (``''`` is a quote) and double-quoted ones (``\\"`` and ``\\\\`` the only
-escapes), each on one line with nothing after the closing quote; ``|`` literal blocks (clip: one final newline);
-``{}`` and ``[]``; whole-line comments outside a literal block. Refused: anchors, aliases, tags, merge keys, document
-markers and directives, folded and chomped blocks, non-empty flow collections, multi-line plain scalars, quoted or
-complex keys, indentation that does not nest, nesting deeper than ``MAX_DEPTH``, files over ``MAX_BYTES``. Every
-scalar is a string; ``persist-credentials: false`` is the string ``false``.
+**The subset** (E281: `tohum/29r` is its page, held to this parser by `test_wiring`; the aim is that GitHub's parser
+and this one can never read the same bytes differently, so anything that could be read two ways is refused). UTF-8
+without a byte order mark, carriage return, tab or other control character, and without the characters YAML 1.1 takes
+for line breaks (U+0085, U+2028, U+2029). Block mappings whose keys match ``[A-Za-z_][A-Za-z0-9_-]*`` followed by
+``:`` and a space or the end of the line, no key twice; block sequences indented under their key; plain scalars on
+one line, without ``: `` or `` #`` and not ending in ``:``; single-quoted scalars (``''`` is a quote) and
+double-quoted ones (``\\"`` and ``\\\\`` the only escapes), each on one line with nothing after the closing quote;
+``|`` literal blocks (clip: one final newline); ``{}`` and ``[]``; whole-line comments outside a literal block.
+Refused: anchors, aliases, tags, merge keys, document markers and directives, folded and chomped blocks, non-empty
+flow collections, multi-line plain scalars, quoted or complex keys, indentation that does not nest, nesting deeper
+than ``MAX_DEPTH``, files over ``MAX_BYTES``. Every scalar is a string; ``persist-credentials: false`` is the string
+``false``.
 
 **The rules** (test 46). The directory holds ``loop.yml`` alone, in any spelling of ``.github/workflows`` (E289).
 Top-level ``permissions`` is ``{}``. No ``pull_request_target``, ``workflow_run`` or ``issue_comment`` trigger, in the

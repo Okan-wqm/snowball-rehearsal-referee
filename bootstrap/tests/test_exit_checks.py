@@ -1,7 +1,7 @@
 """The Stage 0 exit conditions E162 kept closed because the seed had no check for them (`asama-0/10`, (A)).
 
-Four are checked now, on the brain archive `pull` already holds, never by running the Founder's code
-(`29b`; the draft `29e` "Tohum denetimleri"): #kurucu-defteri (E107, E280), #is-akisi (test 46's `wiring` rules,
+Four are checked now, on the brain archive `pull` already holds, never by running the Founder's code (`29b`; the
+narrowing note's draft `29e` "Tohum denetimleri"): #kurucu-defteri (E107, E280), #is-akisi (test 46's `wiring` rules,
 E100, E281-E283; its control sub-rule since E282, `test_exit_decisions`), #agac (E130, E131, E285) and #genellik
 (E284). #spec (E286) and #durustluk (E79, E287) stay unchecked: each keeps the exit closed by name and is never
 counted against the Founder. The trailing comment on a test names the mutants it kills (`local/mutate.py`).

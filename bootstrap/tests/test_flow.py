@@ -206,7 +206,7 @@ class Flow(unittest.TestCase):
         self.assertEqual(self.pull()["kind"], "exit")
 
     def test_a_broken_stage_table_stops_the_run_and_is_never_the_founders_rejection(self):
-        """`29e`: a table whose order (`calls`) or shape is wrong is not loaded; the seed is the operator's to fix."""
+        """`26a`: a table whose order (`calls`) or shape is wrong is not loaded; the seed is the operator's to fix."""
         self.freeze_stage0()
         commit(self.brain, {"referee/ledger/chain.py": "x = 1\n", "snowball-tests.json": all_tests_manifest([1])}, "mf1")
         table = json.loads((stages.STAGES_DIR / "stage0.json").read_text(encoding="utf-8"))

@@ -246,6 +246,7 @@ def decide(cand_dir: str, base_path: str, runs_dir: str, hashes_path: str, stdin
             data[name] = None
         if data[name] is None or manifest.get(name) != hashlib.sha256(data[name]).hexdigest():
             reasons.add("artefact_hash_mismatch")
+            data[name] = None  # neither read nor parsed: the reasons that read it are not evaluated (29h)
 
     base = _runs(data["base.jsonl"], "base.jsonl") if data["base.jsonl"] is not None else None
     cand = _runs(data["cand.jsonl"], "cand.jsonl") if data["cand.jsonl"] is not None else None

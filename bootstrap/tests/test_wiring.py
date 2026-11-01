@@ -27,6 +27,20 @@ def spec_page(folder, prefix):
     return found[0].read_text(encoding="utf-8")
 
 
+def flat(text):
+    """A page's text with its line breaks and runs of spaces read as one space (a sentence may wrap anywhere)."""
+    return " ".join(text.split())
+
+
+def paragraph(page, opening):
+    """The flattened paragraph of ``page`` that starts with ``opening`` (a bold title such as ``**Durum.**``)."""
+    blocks = [flat(b) for b in re.split(r"\n\s*\n", page)]
+    found = [b for b in blocks if b.startswith(opening)]
+    if len(found) != 1:
+        raise AssertionError(f"expected one paragraph starting {opening!r}, found {len(found)}")
+    return found[0]
+
+
 def run_blocks(text):
     """The shell text of every `run:` step, as a list of single commands (continuations joined)."""
     lines = text.splitlines()
@@ -239,6 +253,28 @@ class StageTableMatchesTheSpecTest(unittest.TestCase):
         self.assertEqual(int(re.search(r"`stage0\.json`'daki (\d+) MF", exit_page).group(1)), self.TABLE.count)
         self.assertEqual(int(re.search(r"#modulsuz \| (\d+) MF", exit_page).group(1)), self.TABLE.count)
 
+    def test_29b_asks_the_exit_for_the_tables_micro_features_and_no_lint_or_lock_of_the_referee(self):
+        """The Founder's report seed-002 (E390): `29b` kept the text from before the narrowing, the exit asking
+        `referee/`'s `spec.lint` and `gate.lock` and "30 mikro özellik", and the Founder's script for later exits. The
+        referee asks every row of the table (`decide`: `not_all_micro_features_done`); the spec check and the lock
+        are the seed's code (`asama-0/10`), and every exit's import is this package's (`25a` 1)."""
+        from snowball_bootstrap import decide
+        page = spec_page("tohum", "29b")
+        self.assertEqual([n for n in map(int, re.findall(r"(\d+) mikro özellik", flat(page))) if n != self.TABLE.count],
+                         [])
+        exit_request = paragraph(page, "**Çıkış isteği")
+        self.assertEqual(int(re.search(r"\(Aşama 0'da (\d+)\)", exit_request).group(1)), self.TABLE.count)
+        self.assertIn("`not_all_micro_features_done`", exit_request)
+        self.assertIn('missing.append("not_all_micro_features_done")', Path(decide.__file__).read_text(encoding="utf-8"))
+        for tool in ("spec.lint", "gate.lock"):
+            self.assertNotIn(f"python -m {tool}", page)
+        self.assertEqual(re.findall(r"`(?:spec\.lint|gate\.lock)`[^;]*", exit_request),
+                         ["`spec.lint` ve `gate.lock` (A)'da çağrılmaz, spec denetimi ve kilit tohumun kodudur (`29a`, "
+                          "`asama-0/10`)"])
+        intro = paragraph(page, "Aşama 0'da Kurucu hakemi yazar")
+        self.assertIn("Her çıkıştaki aktarım bu paketin `import` komutudur (`25a` 1).", intro)
+        self.assertNotIn("Kurucu'nun betiği", intro)
+
     def test_the_vector_groups_are_29ds_and_each_seed_group_has_its_owner(self):
         """`29d` names each group's micro-features; `vectors.json` says which stage or batch owns each group it has
         (`29a`): Stage 0's are exactly those the table names."""
@@ -287,6 +323,21 @@ class SpecPagesTest(unittest.TestCase):
                 self.assertEqual([t for t in terms if t in text], [])
         for prefix in ("24", "30c"):
             self.assertIn("`29g`", spec_page("tohum", prefix))
+
+    def test_every_page_has_its_index_row_and_the_referee_pages_are_on_the_task_map(self):
+        """`tohum/15` 5: `INDEX.md` is the pages' headers, row for row. The pages the seed epoch of E390-E399 adds
+        (`29e`, `29r`) are read when a referee component is written (`00b`), like `29b` and `29p`."""
+        index = (ROOT / "spec" / "INDEX.md").read_text(encoding="utf-8")
+        for page in sorted(p for p in (ROOT / "spec").rglob("*.md") if p.name != "INDEX.md"):
+            lines = page.read_text(encoding="utf-8").splitlines()
+            rel = page.relative_to(ROOT / "spec").as_posix()
+            okunma = next(line.removeprefix("Okunma: ") for line in lines[:6] if line.startswith("Okunma: "))
+            with self.subTest(page=rel):
+                self.assertIn(f"| `{rel}` | {lines[0].removeprefix('# ')} | {okunma} |", index)
+        task = next(line for line in spec_page("tohum", "00b").splitlines() if line.startswith("| Hakem bileşeni yazma"))
+        for prefix in ("29b", "29e", "29p", "29r"):
+            spec_page("tohum", prefix)
+            self.assertIn(f"`{prefix}`", task)
 
 
 class BootstrapStatePageTest(unittest.TestCase):
@@ -386,6 +437,234 @@ class BootstrapStatePageTest(unittest.TestCase):
                       "(casefold) tek ad olan iki yol ya da yol üstü iki dizin", "bir operatör adı ya da `bootstrap`",
                       "`referee/` altında hiç dosya yoksa"):
             self.assertIn(words, page)
+
+
+class ReportAnswerPagesTest(unittest.TestCase):
+    """The answers a seed epoch gives the Founder's reports (E390-E399) are interface facts the referee's code holds:
+    each page sentence here is tied to the constant, string or behaviour it states, so neither can drift."""
+
+    def test_27_has_a_reader_row_for_every_brain_path_the_referee_reads(self):
+        """Seed-003 (E156): `asama-0/10` #okuyucu asks a reader in `27` or `27a` for every file; the toy target's
+        content had none. Every path of the brain the seed reads on `pull` or at the exit is in the table's first
+        column, the toy's row names the hash the signed result carries, and the exit's unchecked #spec no longer
+        names the missing reader."""
+        from snowball_bootstrap import classify, decide, exitchecks
+        table = spec_page("tohum", "27").split("## Okuyucular", 1)[1]
+        rows = {line: re.findall(r"`([^`]+)`", line.split(" | ")[0]) for line in table.splitlines() if line.startswith("| `")}
+        named = {name for names in rows.values() for name in names}
+        for path in (exitchecks.TOY_DIR + "/", classify.LEDGER_FILE, classify.REPORTS_DIR, cli.EXIT_FILE,
+                     cli.MANIFEST_FILE, "referee/"):
+            self.assertTrue(any(n == path or n.startswith(path) for n in named), f"27 has no reader row for {path}")
+        toy = next(line for line, names in rows.items() if exitchecks.TOY_DIR + "/" in names)
+        self.assertIn("`toy_tree_sha256`", toy)
+        self.assertIn('exit_block["toy_tree_sha256"]', Path(decide.__file__).read_text(encoding="utf-8"))
+        self.assertNotIn("E156", decide.EXIT_NOT_CHECKED["spec"])
+
+    def test_29e_defines_the_founders_records_by_the_paths_the_classifier_uses(self):
+        """Seed-005 (E391, E148's text): what a push of the Founder's records is, said where `29b` "Çıkıştan sonra"
+        uses the term."""
+        from snowball_bootstrap import classify, decide
+        records = paragraph(spec_page("tohum", "29e"), "**Kurucu kayıtları.**")
+        self.assertIn(f"Kökteki `{classify.LEDGER_FILE}` ve kökteki `{classify.REPORTS_DIR}` altındaki dosyalar "
+                      "Kurucu kayıtlarıdır", records)
+        self.assertTrue(classify.is_founder_record(classify.LEDGER_FILE))
+        self.assertTrue(classify.is_founder_record(classify.REPORTS_DIR + "a.json"))
+        self.assertIn("(iç içe bir `reports/` dizini koddur)", records)
+        self.assertFalse(classify.is_founder_record("referee/" + classify.REPORTS_DIR + "a.json"))
+        self.assertEqual(classify.classify(["spec/asama-0/a.md", classify.LEDGER_FILE]), ("spec", []))
+        self.assertEqual(classify.classify([classify.LEDGER_FILE, classify.REPORTS_DIR + "a.json"]), ("none", []))
+        self.assertIn("none", decide.NOTHING_TO_JUDGE)
+        self.assertIn("sonuç `noop`'tur", records)
+        self.assertIn('verdict = "noop"', Path(decide.__file__).read_text(encoding="utf-8"))
+        self.assertIn("(`founder_ledger_invalid`, `asama-0/10` #kurucu-defteri)", records)
+        push_kinds = paragraph(spec_page("tohum", "29b"), "**Üç tür push.**")
+        self.assertIn("Kurucu kayıtları: `29e`.", push_kinds)
+
+    def test_29e_names_what_the_referee_writes_for_secret_shaped_text(self):
+        """Seed-009 and seed-010 (E392): the two rejections a secret-shaped string makes, the paths it names, and that
+        a rival-side failure leaves the commit to be reviewed again; `29b` counts `secret_in_prompt` among what the
+        Founder can fix and `secret_in_verdict` among the rival's failures (`decide.FOUNDERS_RIVAL_REASONS`)."""
+        from snowball_bootstrap import decide
+        text = paragraph(spec_page("tohum", "29e"), "**Sır desenli metin.**")
+        rival_src = Path(rival.__file__).read_text(encoding="utf-8")
+        decide_src = Path(decide.__file__).read_text(encoding="utf-8")
+        for prefix in ("secret_in_prompt", "secret_in_verdict"):
+            self.assertIn(f'out.reasons.append("{prefix}:" + ",".join(leaked))', rival_src)
+            self.assertIn(f"`{prefix}:<kural>[,<kural>…]`", text)
+        self.assertIn(f"(en çok {rival.MAX_SECRET_PATHS})", text)
+        token = "gh" + "p_" + "A" * 36  # built at run time, never written
+        context = f"note {token}\ndiff --git a/x.py b/x.py\n+{token}\ndiff --git a/y.py b/y.py\n+clean\n"
+        self.assertEqual(rival.secret_paths(context), ["(request text)", "x.py"])
+        self.assertIn("`(request text)`", text)
+        self.assertIn('"secret_paths": list(self.secret_paths)', rival_src)
+        self.assertIn("`rival.secret_paths`", text)
+        for warning in ("rival_side_retry", "rival_side_streak"):
+            self.assertIn(f'f"{warning}:{{state[', decide_src)
+            self.assertIn(f"`{warning}:<n>`", text)
+        self.assertEqual(decide.RIVAL_SIDE_WARN, 3)
+        self.assertIn("üst üste üçüncü", text)
+        self.assertEqual(decide.RIVAL_SIDE_FINAL, ("budget", "request_rejected"))
+        self.assertIn("(bütçe ve `request_rejected` dışında)", text)
+        page = spec_page("tohum", "29b")
+        memory = paragraph(page, "**Ret hafızası.**")
+        founders = memory.split("Rakibin hataları", 1)[0]
+        for reason in decide.FOUNDERS_RIVAL_REASONS:
+            self.assertIn(f"`{reason}`", founders)
+        self.assertIn("`secret_in_verdict`", memory.split("Rakibin hataları", 1)[1].split(")", 1)[0])
+        self.assertIn("Sır desenli metin: `29e`.", paragraph(page, "**Rakip çağrısı.**"))
+
+    def test_29d_says_what_the_chain_judge_reads(self):
+        """Seed-007 (E159): `chain` has its own judge, and what it compares was only in the code."""
+        import inspect
+        page = flat(spec_page("tohum", "29d"))
+        self.assertIn("`chain`'in yargıcı da stdout'un son JSON satırını okur, çıkış kodunu karşılaştırmaz", page)
+        judge = inspect.getsource(vectors._chain)
+        for field in ("row_hash", "valid", "broken_row"):
+            self.assertIn(f'.get("{field}")', judge)
+            self.assertIn(f"`{field}`", page)
+        self.assertNotIn("exit", judge)
+        seed = json.loads((BOOT / "vectors" / "vectors.json").read_text(encoding="utf-8"))
+        self.assertIn(f"`broken_row`'a (`{seed['chain']['v3_broken_row']}`, `29a`)", page)
+        self.assertIn("Kırık zincirin çıkış kodunu ve `row_id`'si olmayan satırın `broken_row` değerini tohum "
+                      "sabitlemez", page)
+
+    def test_29k_says_the_diffguard_lists_are_the_floor_of_01bs_rule(self):
+        """Seed-017 (E393): `29k`'s closed name lists read as the whole rule; the rule is `01b`'s ret list."""
+        page = flat(spec_page("tohum", "29k"))
+        self.assertIn("`config`, `manifest` ve `lockfile` listeleri vektörlerin tabanıdır; kural `01b`'nin ret "
+                      "listesidir (lint, tip ve test yapılandırmaları, bağımlılık manifestleri ve kilitler), Kurucu "
+                      "fazlasını tanıyabilir (`29a`)", page)
+        self.assertIn("lint, tip ve test yapılandırmaları, bağımlılık manifestleri ve lockfile'lar",
+                      flat(spec_page("tohum", "01b")))
+
+    def test_26a_says_calls_is_read_for_the_order_alone_and_the_code_reads_it_so(self):
+        """Spec-019 (E397; spec-014 (2), spec-021, spec-032): the frozen `calls` line names fewer edges than the
+        tools' callers. The bootstrap referee reads `calls` only while loading the table, for the order; nothing
+        compares the brain's imports with it."""
+        import ast
+        page = flat(spec_page("tohum", "26a"))
+        self.assertIn("Önyükleme hakemi `calls`'u yalnız tabloyu yüklerken okur ve yalnız sırayı denetler", page)
+        self.assertIn("Beyin ağacındaki içe aktarmaları ya da çağrıları `calls`'la karşılaştırmaz", page)
+        self.assertIn("(`calls`'un okunuşu: `26a`)", flat(spec_page("tohum", "26c")))
+        readers = []
+        for path in sorted((BOOT / "snowball_bootstrap").glob("*.py")):
+            for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+                if isinstance(node, ast.Attribute) and node.attr == "calls":
+                    readers.append(path.stem)
+                elif isinstance(node, ast.Subscript) and isinstance(node.slice, ast.Constant) \
+                        and node.slice.value == "calls":
+                    readers.append(path.stem)
+        self.assertEqual(readers, ["stages"])  # parse_table's order check, the one reader
+        with self.assertRaisesRegex(Exception, "must come before its caller"):
+            stages.parse_table(json.dumps({"stage": 0, "mfs": [
+                {"mf": 1, "tests": [1], "groups": [], "module": "a.py", "calls": [2]},
+                {"mf": 2, "tests": [2], "groups": [], "module": "b.py", "calls": []}]}), 0)
+
+    def test_every_tool_in_26a_is_called_only_by_later_micro_features(self):
+        """Spec-021, spec-026, spec-028, spec-032 (E398, E234): a tool's "Çağıran" that is itself a micro-feature's
+        tool comes after it (`asama-0/14` "Sıra"; `gate.check` is MF8's pure decision, MF10's append calls MF11's
+        anchor, not the other way). An item that is a tool's name alone is a caller; words beside it (a job, an
+        event such as "`sentinel.run` kırmızısı") describe when, not who."""
+        page = spec_page("tohum", "26a")
+        mf, callers = {}, {}
+        for line in page.splitlines():
+            cells = [c.strip() for c in line.strip().strip("|").split(" | ")]
+            if len(cells) != 8 or not cells[0].startswith("`"):
+                continue
+            number = re.match(r"(?:Aşama 0 )?MF(\d+)", cells[7])
+            for tool in re.findall(r"`([a-z_.]+)`", cells[0]):
+                callers[tool] = cells[6]
+                if number:
+                    mf[tool] = int(number.group(1))
+        self.assertEqual(len(mf), 18)
+        wrong = []
+        for tool, cell in callers.items():
+            items = [i.strip() for i in re.split(r"[,;](?![^()]*\))", cell)]
+            for item in items:
+                alone = re.fullmatch(r"`([a-z_.]+)`(?: \([^)]*\))?", item)
+                if alone and alone.group(1) in mf and tool in mf and mf[alone.group(1)] <= mf[tool]:
+                    wrong.append(f"{tool} (MF{mf[tool]}) <- {alone.group(1)} (MF{mf[alone.group(1)]})")
+        self.assertEqual(wrong, [])
+        write = next(line for line in page.splitlines() if line.startswith("| `target.write` |"))
+        cells = [c.strip() for c in write.strip().strip("|").split(" | ")]
+        self.assertIn("`brain/state` commit'i", cells[3])  # 26a's last paragraph: every write to brain/state is its
+        self.assertIn("`exit.drill`", cells[6])  # MF14 plants the drill's bad merge through it (`22a`)
+        self.assertIn("`yaz` işi (`gate.check`'in merge kararıyla)", cells[6])
+
+    def test_25a_names_the_required_check_the_genesis_vectors_record(self):
+        """Spec-021 (b) (E398): the loop's check-run must carry the name `brain/integration`'s ruleset requires."""
+        row = next(line for line in spec_page("tohum", "25a").splitlines() if line.startswith("| 3 |"))
+        name = re.search(r"zorunlu kontrol \(adı `([^`]+)`", row)
+        self.assertIsNotNone(name, "25a row 3 names no required check")
+        contexts = set()
+        for path in sorted((BOOT / "vectors" / "genesis").glob("api*.json")):
+            for rules in json.loads(path.read_text(encoding="utf-8")).values():
+                for rule in rules if isinstance(rules, list) else []:
+                    if isinstance(rule, dict) and rule.get("type") == "required_status_checks":
+                        contexts |= {c["context"] for c in rule["parameters"]["required_status_checks"]}
+        self.assertEqual(contexts, {name.group(1)})
+
+    def test_26c_says_which_reason_expect_json_names_and_when_ret_holds(self):
+        """Spec-038 (E399): `expect.json`'s `reason` is a gate reason, not the row's `cause`, and #ret holds when the
+        candidate's gate decision's reasons are exactly `[reason]`."""
+        ready = paragraph(spec_page("tohum", "26c"), "**Hazır aday**")
+        example = re.search(r"ör\. `([a-z_]+)`", ready).group(1)
+        gate_reasons = set(re.findall(r"`([a-z_]+)` \(", paragraph(spec_page("tohum", "29h"), "`python -m gate.check map")))
+        self.assertIn(example, gate_reasons)
+        self.assertIn("satırın `cause`'u değil", ready)
+        self.assertIn("adayın kapı kararındaki sıralı, tekil nedenler tam olarak `[reason]` olduğunda tutar", ready)
+
+
+class YamlSubsetPageTest(unittest.TestCase):
+    """Seed-035 (E281): `asama-0/10` #is-akisi reads `loop.yml` with "the seed's restricted YAML subset", which only
+    `wiring.py` defined. `29r` is the subset; every reason, bound and known-answer example on it is the parser's."""
+
+    @classmethod
+    def setUpClass(cls):
+        from snowball_bootstrap import wiring
+        cls.wiring = wiring
+        cls.page = flat(spec_page("tohum", "29r"))
+
+    def why(self, data):
+        with self.assertRaises(self.wiring.Unparseable) as caught:
+            self.wiring.parse(data)
+        return caught.exception.why
+
+    def test_every_reason_the_parser_gives_is_on_the_page_and_no_other(self):
+        listed = re.search(r"Nedenler: ((?:`[a-z0-9_]+`(?:, )?)+)\.", self.page)
+        self.assertIsNotNone(listed, "29r lists no reasons")
+        src = Path(self.wiring.__file__).read_text(encoding="utf-8")
+        code = set(re.findall(r'Unparseable\([^,()]+, "([a-z0-9_]+)"\)', src))
+        chars = re.search(r'why = \{(.*?)\}\.get\(bad, "([a-z0-9_]+)"\)', src)
+        code |= set(re.findall(r'"([a-z0-9_]+)"', chars.group(1))) | {chars.group(2)}
+        named = re.findall(r"`([a-z0-9_]+)`", listed.group(1))
+        self.assertEqual(len(named), len(set(named)))
+        self.assertEqual(set(named), code)
+        self.assertEqual(len(code), 20)
+
+    def test_the_known_answer_examples_give_their_reason(self):
+        examples = re.findall(r"`([^`]+)` → `([a-z_]+)`", self.page.split("Bilinen cevaplı örnekler", 1)[1])
+        self.assertEqual(len(examples), 4)
+        for text, why in examples:
+            with self.subTest(text=text):
+                self.assertEqual(self.why(text.encode("utf-8") + b"\n"), why)
+        self.assertIn("CRLF satır sonu → `carriage_return`", self.page)
+        self.assertEqual(self.why(b"on: push\r\n"), "carriage_return")
+
+    def test_the_bounds_the_format_and_the_plain_scalar_indicators_are_the_parsers(self):
+        self.assertIn(f"en çok {self.wiring.MAX_BYTES} bayt", self.page)
+        self.assertIn(f"iç içelik en çok {self.wiring.MAX_DEPTH} düzeydir", self.page)
+        start = self.page.split("Düz skaler ", 1)[1].split(" ile ya da ", 1)[0]
+        named = set(re.findall(r"`(.)`", start)) | ({"`"} if "ters tırnak" in start else set())
+        self.assertEqual(named, self.wiring.INDICATORS)
+        self.assertIn(f"`workflow_unparseable:{self.wiring.WORKFLOW_FILE}:L<satır>:<neden>`", self.page)
+        self.assertEqual(self.wiring.check({"loop.yml": b"- a\n"}), ["workflow_unparseable:loop.yml:L1:not_a_mapping"])
+        self.assertIn("kök bir blok dizisiyse `L1:not_a_mapping`", self.page)
+        self.assertEqual(self.wiring.check({"loop.yml": b""}), ["workflow_unparseable:loop.yml:L0:empty"])
+        self.assertEqual(self.wiring.parse(b"a: |\n  x\n  y\n\n\nb: c\n"), {"a": "x\ny\n", "b": "c"})  # one final LF
+        self.assertEqual(self.why(b"a:\n- x\n"), "not_a_key")  # an entry sits deeper than its key
+        self.assertEqual(self.wiring.parse(b"a: false\nb: 1\nc: {}\nd: []\n"), {"a": "false", "b": "1", "c": {}, "d": []})
+        self.assertIn("`29r`", flat(spec_page("tohum", "29p")))
 
 
 VECTOR_PAGES = ("29f", "29g", "29h", "29i", "29j", "29k", "29m", "29n", "29o")

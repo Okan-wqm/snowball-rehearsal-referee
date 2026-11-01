@@ -2638,7 +2638,7 @@
     "owner": "asama-0",
     "runner": "data",
     "interface": "spec/tohum/29h-vektor-arayuzleri-mf8-13.md",
-    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); the later cases of E236 and E237 give the same values on A and on the workflow's B, written before them (docs/eksik-kaydi.md E236-E240)",
+    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); the later cases of E236 and E237 give the same values on A and on the workflow's B, written before them (docs/eksik-kaydi.md E236-E240); the cases of E394-E396 (docs/eksik-kaydi.md E390-E399) give the same values on A and on the Founder's own blind implementation, written from the pages before them",
     "cases": [
       {
         "id": "k0map.map_shift",
@@ -2893,6 +2893,41 @@
           "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
           "fixture": [
             "k0map/cand/split",
+            "k0map/kos/base.jsonl",
+            "k0map/kos/good",
+            "k0map/kos/good.hashes.json"
+          ],
+          "expect_not": {
+            "decision": "reject",
+            "reasons": [
+              "artefact_hash_mismatch"
+            ]
+          }
+        }
+      },
+      {
+        "id": "k0map.mismatched_file_not_read",
+        "purpose": "The manifest's sha256 for base.jsonl is one hex digit off, and the base run does not report the finding's target (cand/ghost names no-var at line 4): a ko\u015f file whose hash does not match is neither read nor parsed, so the reasons that read it are not evaluated and only artefact_hash_mismatch is written, not the target_not_found its violations would give (29h).",
+        "cmd": "python -m gate.check decide /vec/k0map/cand/ghost /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes_bad.json",
+        "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+        "fixture": [
+          "k0map/cand/ghost",
+          "k0map/kos/base.jsonl",
+          "k0map/kos/good",
+          "k0map/kos/good.hashes_bad.json"
+        ],
+        "expect": {
+          "decision": "reject",
+          "reasons": [
+            "artefact_hash_mismatch"
+          ]
+        },
+        "changed": {
+          "description": "One byte: the manifest's digit is right again; the base run is read and the target is not found (the target_not_found case).",
+          "cmd": "python -m gate.check decide /vec/k0map/cand/ghost /vec/k0map/kos/base.jsonl /vec/k0map/kos/good /vec/k0map/kos/good.hashes.json",
+          "stdin": "{\"control\":{\"kill_switch\":false,\"merge_paused\":false},\"unfinished_sentinels\":[]}",
+          "fixture": [
+            "k0map/cand/ghost",
             "k0map/kos/base.jsonl",
             "k0map/kos/good",
             "k0map/kos/good.hashes.json"
@@ -3267,7 +3302,7 @@
     "owner": "asama-0",
     "runner": "data",
     "interface": "spec/tohum/29i-vektor-arayuzleri-mf8-13-devam.md",
-    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); E240's later case gives the same values on A and on the workflow's B with one added line reporting `forced` (docs/eksik-kaydi.md E236-E240)",
+    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); E240's later case gives the same values on A and on the workflow's B with one added line reporting `forced` (docs/eksik-kaydi.md E236-E240); the cases of E394-E396 (docs/eksik-kaydi.md E390-E399) give the same values on A and on the Founder's own blind implementation, written from the pages before them",
     "cases": [
       {
         "id": "refs.revert_first_parent_tree",
@@ -3315,6 +3350,37 @@
               "POST /repos/example/toy/git/commits",
               "POST /repos/example/toy/git/refs"
             ]
+          }
+        }
+      },
+      {
+        "id": "refs.refuse_revert_not_head",
+        "purpose": "Revert of merge M2 onto brain/integration, whose head is M, not M2: the first parent's tree would silently revert M as well, so the request is refused before any write call (29i).",
+        "cmd": "python -m target.write replay /vec/refs/api.json",
+        "stdin": "{\"op\":\"revert\",\"repo\":\"example/toy\",\"merge_sha\":\"3a139f674f372f3f0cfcc56ea253e49065ff79b9\",\"onto\":\"refs/heads/brain/integration\",\"ref\":\"refs/heads/brain/c/revert-12\"}",
+        "fixture": [
+          "refs/api.json"
+        ],
+        "expect": {
+          "commit": null,
+          "forced": false,
+          "ok": false,
+          "refs": [],
+          "writes": []
+        },
+        "changed": {
+          "description": "One field: merge_sha names M, the head of brain/integration (the revert_first_parent_tree case).",
+          "cmd": "python -m target.write replay /vec/refs/api.json",
+          "stdin": "{\"op\":\"revert\",\"repo\":\"example/toy\",\"merge_sha\":\"4a479c25153b63e58db4c254f56ea8a37aad95ce\",\"onto\":\"refs/heads/brain/integration\",\"ref\":\"refs/heads/brain/c/revert-12\"}",
+          "fixture": [
+            "refs/api.json"
+          ],
+          "expect_not": {
+            "commit": null,
+            "forced": false,
+            "ok": false,
+            "refs": [],
+            "writes": []
           }
         }
       },
@@ -3496,7 +3562,7 @@
     "owner": "asama-0",
     "runner": "data",
     "interface": "spec/tohum/29i-vektor-arayuzleri-mf8-13-devam.md",
-    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); the later cases of E238 give the same values on A and on the workflow's B, written before them (docs/eksik-kaydi.md E236-E240)",
+    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); the later cases of E238 give the same values on A and on the workflow's B, written before them (docs/eksik-kaydi.md E236-E240); the cases of E394-E396 (docs/eksik-kaydi.md E390-E399) give the same values on A and on the Founder's own blind implementation, written from the pages before them",
     "cases": [
       {
         "id": "append.cycle_one_commit",
@@ -3836,6 +3902,68 @@
             "valid": false
           }
         }
+      },
+      {
+        "id": "append.refuse_known_row_id",
+        "purpose": "A new row reuses r2, a row_id the ledger already has (no other row of the request does): an unusable request, nothing written, no hard stop (29i).",
+        "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[{\"row_id\":\"r2\",\"ts\":\"2026-10-28T00:00:03Z\",\"part\":\"cost\",\"kind\":\"run\",\"payload\":{\"usd_micros\":1500},\"derivation\":\"tool\",\"trust\":\"observed\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+        "fixture": [
+          "append/good.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 0,
+          "hard_stop": false,
+          "ok": false,
+          "row_hashes": []
+        },
+        "changed": {
+          "description": "One field: the row_id is r4, new to the ledger.",
+          "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r4\",\"ts\":\"2026-10-28T00:00:03Z\",\"part\":\"cost\",\"kind\":\"run\",\"payload\":{\"usd_micros\":1500},\"derivation\":\"tool\",\"trust\":\"observed\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+          "fixture": [
+            "append/good.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 0,
+            "hard_stop": false,
+            "ok": false,
+            "row_hashes": []
+          }
+        }
+      },
+      {
+        "id": "append.refuse_empty_rows",
+        "purpose": "The request's rows are empty: a cycle makes its one brain/state commit, so empty rows are an unusable request, not an accepted cycle with no commit (29i).",
+        "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+        "stdin": "{\"rows\":[]}",
+        "fixture": [
+          "append/good.jsonl",
+          "append/good.jsonl"
+        ],
+        "expect": {
+          "commits": 0,
+          "hard_stop": false,
+          "ok": false,
+          "row_hashes": []
+        },
+        "changed": {
+          "description": "One field: rows holds one decision row.",
+          "cmd": "python -m ledger.append cycle /vec/append/good.jsonl /vec/append/good.jsonl",
+          "stdin": "{\"rows\":[{\"row_id\":\"r3\",\"ts\":\"2026-10-28T00:00:02Z\",\"part\":\"events\",\"kind\":\"decision\",\"payload\":{\"decision\":\"merge\",\"pr\":12},\"derivation\":\"tool\",\"trust\":\"verified\",\"snapshot_id\":\"s0\",\"evidence_refs\":[]}]}",
+          "fixture": [
+            "append/good.jsonl",
+            "append/good.jsonl"
+          ],
+          "expect_not": {
+            "commits": 0,
+            "hard_stop": false,
+            "ok": false,
+            "row_hashes": []
+          }
+        }
       }
     ]
   },
@@ -4105,7 +4233,7 @@
     "owner": "asama-0",
     "runner": "data",
     "interface": "spec/tohum/29j-vektor-arayuzleri-mf8-13-son.md",
-    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); E239's later case gives the same values on A and on the workflow's B, written before it (docs/eksik-kaydi.md E236-E240)",
+    "source": "reconciled cases, every expected value given alike by two blind independent implementations (docs/eksik-kaydi.md E161); E239's later case gives the same values on A and on the workflow's B, written before it (docs/eksik-kaydi.md E236-E240); the cases of E394-E396 (docs/eksik-kaydi.md E390-E399) give the same values on A and on the Founder's own blind implementation, written from the pages before them",
     "cases": [
       {
         "id": "flaky.green_first_run",
@@ -4241,6 +4369,60 @@
             ],
             "revert": true,
             "verdict": "red"
+          }
+        }
+      },
+      {
+        "id": "flaky.unread_run_not_checked",
+        "purpose": "test/rate.test.js fails in the first run and in all three reruns, and a fifth run follows whose status is neither pass nor fail: runs after the first four are not read, nor checked for their form, so the 3/3 verdict stands (29j).",
+        "cmd": "python -m gate.sentinel decide",
+        "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"skipped\"}]}]}",
+        "fixture": [],
+        "expect": {
+          "flaky": [],
+          "red": [
+            "test/rate.test.js"
+          ],
+          "revert": true,
+          "verdict": "red"
+        },
+        "changed": {
+          "description": "One field: rate passes in the third rerun; the fifth run is still not read.",
+          "cmd": "python -m gate.sentinel decide",
+          "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"fail\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"pass\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]},{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"skipped\"}]}]}",
+          "fixture": [],
+          "expect_not": {
+            "flaky": [],
+            "red": [
+              "test/rate.test.js"
+            ],
+            "revert": true,
+            "verdict": "red"
+          }
+        }
+      },
+      {
+        "id": "flaky.empty_runs_rerun",
+        "purpose": "No run yet: fewer than four runs, so the verdict is rerun, not unusable input (29j).",
+        "cmd": "python -m gate.sentinel decide",
+        "stdin": "{\"runs\":[]}",
+        "fixture": [],
+        "expect": {
+          "flaky": [],
+          "red": [],
+          "revert": false,
+          "verdict": "rerun"
+        },
+        "changed": {
+          "description": "One field: one run with tests, all passing (green).",
+          "cmd": "python -m gate.sentinel decide",
+          "stdin": "{\"runs\":[{\"results\":[{\"id\":\"test/rate.test.js\",\"status\":\"pass\"},{\"id\":\"test/scale.test.js\",\"status\":\"pass\"}]}]}",
+          "fixture": [],
+          "expect_not": {
+            "flaky": [],
+            "red": [],
+            "revert": false,
+            "verdict": "rerun"
           }
         }
       }
