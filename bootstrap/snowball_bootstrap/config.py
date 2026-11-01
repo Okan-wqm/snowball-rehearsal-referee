@@ -3,7 +3,8 @@
 Files, all in the referee repository and written only by the operator (`tohum/25`):
 - ``bootstrap.json``: what this bootstrap watches and how it runs.
 - ``control.json``: the kill switch, the budget brake and the loop's schedule (`26c`), for this workflow and, through
-  the `control` command, for every job of the loop (`29p`).
+  the `control` command, for every job of the loop (`29p`); for this workflow also the operator's waivers, reverted
+  exits and confirmed exam faults (`29`, `29b`, `29e`).
 - ``policy.json``: the constitutional policy (only the keys this bootstrap reads are checked).
 - ``setup/summary.json``: the setup summary (seed commit and seed tree hash), the seed epochs delivered since, the
   Stage 0 targets, the honesty commitment and the owner's exception to #durustluk beside it (`26c`, every key
@@ -181,6 +182,38 @@ def load_waivers(root: Path) -> list[str]:
     return sorted(set(waived))
 
 
+@dataclass(frozen=True)
+class ExamFault:
+    """A rejection the operator confirmed was the exam's own fault (`29e` "Sınav hatası", E53, E426): the head it
+    rejected and the signature it was counted under (`decide.signature`, the state's ``reject_streaks`` key)."""
+    head: str
+    signature: str
+
+
+EXAM_FAULT_KEYS = frozenset({"head", "signature"})
+SIGNATURE_RE = re.compile(r"^[a-z_]+:[^\r\n]{0,500}\Z")  # `<kind>:<test_id or ref>`; `zero_tests:` names none
+
+
+def load_exam_faults(root: Path) -> list[ExamFault]:
+    """``control.json`` ``exam_faults``: ``[{head, signature}]``, optional (missing is none). The operator's file, so
+    anything malformed stops the run instead of turning into the Founder's rejection."""
+    data = _load(root / "control.json")
+    rows = data.get("exam_faults", []) if isinstance(data, dict) else []
+    if not isinstance(rows, list):
+        raise ConfigError("control.json.exam_faults must be a list of {head, signature}")
+    faults = []
+    for i, row in enumerate(rows):
+        where = f"control.json.exam_faults[{i}]"
+        if not isinstance(row, dict) or set(row) != EXAM_FAULT_KEYS:
+            raise ConfigError(f"{where} must have exactly the keys head, signature (`26c`, `29e`)")
+        if not isinstance(row["head"], str) or not SHA_RE.match(row["head"]):
+            raise ConfigError(f"{where}.head must be the 40-character SHA of the rejected head")
+        if not isinstance(row["signature"], str) or not SIGNATURE_RE.match(row["signature"]):
+            raise ConfigError(f"{where}.signature must be a rejection signature, <kind>:<test or ref> (`29b`)")
+        faults.append(ExamFault(row["head"], row["signature"]))
+    return faults
+
+
 def load_reverted_exits(root: Path) -> list[str]:
     """Accepted exits whose transfer the operator reverted after a red (B): ``control.json`` ``reverted_exits``, a list
     of the brain heads the signed results named (`asama-0/10a` and `25a` "Başarısızlık", E333). Optional: missing is
@@ -286,6 +319,9 @@ class Summary:
 
 EPOCH_KEYS = frozenset({"commit", "spec_tohum_sha256", "seed_sha256", "bootstrap_sha256"})
 TARGET_KEYS = frozenset({"id", "repo", "kind", "base_sha", "identifiers", "excluded_paths", "unit_candidates"})
+# The owner's optional physical safety paths (`05` "Fiziksel güvenlik", E421): they only widen what the brain's
+# `profile.derive` derives, so this referee checks their form and nothing else reads them here.
+TARGET_OPTIONAL_KEYS = frozenset({"safety_paths"})
 TARGET_KINDS = ("toy", "copy")
 HONESTY_EXCEPTION_KEYS = frozenset({"stage", "carry_to", "reason"})
 
@@ -307,9 +343,13 @@ def _texts(row: dict[str, Any], key: str, where: str) -> tuple[str, ...]:
 
 def target(row: Any, where: str) -> Target:
     """One ``targets[]`` row, read strictly: exactly `26c`'s keys, so a misspelt key stops the run instead of leaving a
-    list unread (`26c`: a missing or unknown field fails closed)."""
-    if not isinstance(row, dict) or set(row) != TARGET_KEYS:
-        raise ConfigError(f"{where} must have exactly the keys {', '.join(sorted(TARGET_KEYS))} (`26c`)")
+    list unread (`26c`: a missing or unknown field fails closed). ``safety_paths`` may be left out; when present it is
+    a list of non-empty strings like the other lists."""
+    if not isinstance(row, dict) or not TARGET_KEYS <= set(row) <= TARGET_KEYS | TARGET_OPTIONAL_KEYS:
+        raise ConfigError(f"{where} must have exactly the keys {', '.join(sorted(TARGET_KEYS))}, and optionally "
+                          f"{', '.join(sorted(TARGET_OPTIONAL_KEYS))} (`26c`)")
+    if "safety_paths" in row:
+        _texts(row, "safety_paths", where)
     if not isinstance(row["id"], str) or not row["id"].strip():
         raise ConfigError(f"{where}.id must be a non-empty string")
     if not isinstance(row["repo"], str) or not REPO_RE.match(row["repo"]):

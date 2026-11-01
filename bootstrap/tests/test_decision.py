@@ -11,7 +11,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from snowball_bootstrap import cli, decide as decide_module, ghapi, state as st
+from snowball_bootstrap import cli, decide as decide_module, ghapi, parts, state as st
 from snowball_bootstrap.classify import classify
 from snowball_bootstrap.config import ConfigError, Policy
 from snowball_bootstrap.container import RunResult
@@ -552,10 +552,10 @@ class SmallGates(unittest.TestCase):
     def test_is_green_needs_every_part(self):  # L22 L23 L24
         ok, bad = [{"ok": True}], [{"ok": False}]
         lic = [{"allowed": True}]
-        self.assertTrue(cli.is_green(ok, ok, ok, lic))
-        self.assertFalse(cli.is_green(bad, ok, ok, lic))
-        self.assertFalse(cli.is_green(ok, bad, ok, lic))
-        self.assertFalse(cli.is_green(ok, ok, bad, lic))
+        self.assertTrue(parts.is_green(ok, ok, ok, lic))
+        self.assertFalse(parts.is_green(bad, ok, ok, lic))
+        self.assertFalse(parts.is_green(ok, bad, ok, lic))
+        self.assertFalse(parts.is_green(ok, ok, bad, lic))
 
     def test_a_container_that_the_host_killed_once_is_asked_again_before_the_judge_is_blamed(self):
         """Under load a vector container was killed and two vectors were recorded as the Founder's failure."""

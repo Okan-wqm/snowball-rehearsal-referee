@@ -20,7 +20,7 @@ from snowball_bootstrap.manifest import ManifestError, check_stage0, parse_lockf
 from snowball_bootstrap.treehash import TreeError, extract
 from snowball_bootstrap.vectors import missing_groups, run_vectors
 
-from helpers import DRILL, EVERY_GROUP, STATS, FakeRunner, commit, make_repo
+from helpers import DRILL, EVERY_GROUP, STATS, FakeRunner, commit, kos_part_count, make_repo
 
 BOOTSTRAP = Path(__file__).resolve().parents[1]
 VECTORS = BOOTSTRAP / "vectors"
@@ -367,19 +367,29 @@ class DataRunnerTest(unittest.TestCase):
         self.assertEqual(len(silent.calls), 4 * 2)  # each vector, each with its retry
 
     def test_the_seed_vectors_fit_the_budget_at_the_worst_measured_call(self):
-        """E273: with every micro-feature done, one push's vector calls times the worst call measured in the real sandbox
-        (5.0 s, E161) stay within `BUDGET_S`; what the budget leaves unrun is red and the Founder's, so a seed whose
-        vectors outgrow it would charge the Founder for the referee's own cost."""
+        """E273: with every micro-feature done, the vector calls of each `kos` part (E440: the workflow's parts share a
+        push's inputs, each part its own job and budget) times the worst call measured in the real sandbox (5.0 s,
+        E161) stay within `BUDGET_S`; what the budget leaves unrun is red and the Founder's, so a seed whose vectors
+        outgrow it would charge the Founder for the referee's own cost."""
         class Counting:
-            calls = 0
+            def __init__(self):
+                self.calls = 0
 
             def run(self, cmd, *, cwd=".", stdin=b"", timeout_s):
-                Counting.calls += 1
+                self.calls += 1
                 return RunResult(0, b"{}\n", b"", 1)
         seed = json.loads((VECTORS / "vectors.json").read_text(encoding="utf-8"))
-        results = run_vectors(Counting(), VECTORS, tuple(range(1, 19)))
-        self.assertEqual(len(results), 2 * sum(len(seed[g]["cases"]) for g in DATA_GROUPS) + 6)
-        self.assertLessEqual(Counting.calls * WORST_CALL_S, vectors.BUDGET_S, Counting.calls)
+        self.assertEqual(len(run_vectors(Counting(), VECTORS, tuple(range(1, 19)))),
+                         2 * sum(len(seed[g]["cases"]) for g in DATA_GROUPS) + 6)
+        groups = vectors.applied(VECTORS, tuple(range(1, 19)))
+        inputs, count = list(dict.fromkeys(vectors.call_inputs(groups))), kos_part_count()
+        busiest = 0
+        for part in range(count):
+            runner = Counting()
+            vectors.run_part(runner, groups, {key for place, key in enumerate(inputs) if place % count == part})
+            busiest = max(busiest, runner.calls)
+        self.assertEqual(busiest, -(-len(inputs) // count))  # each input once, a part's share place mod N
+        self.assertLessEqual(busiest * WORST_CALL_S, vectors.BUDGET_S, busiest)
 
     def test_the_fixtures_are_mounted_without_the_expected_values(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -661,7 +671,7 @@ class LicensePolicyTest(unittest.TestCase):
                 self.policy(**bad)
 
     def test_a_wheel_that_is_not_allowed_makes_the_run_red(self):
-        from snowball_bootstrap.cli import is_green
+        from snowball_bootstrap.parts import is_green
         ok = [{"ok": True}]
         self.assertTrue(is_green(ok, ok, ok, [{"allowed": True}]))
         self.assertFalse(is_green(ok, ok, ok, [{"allowed": True}, {"allowed": False}]))

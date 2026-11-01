@@ -300,5 +300,76 @@ class SummaryEpochsTest(unittest.TestCase):
         self.assertEqual(st.initial(Summary("a" * 40, "b" * 64), "2026-10")["last_accepted_sha"], "a" * 40)
 
 
+class ExamFaultFlow(unittest.TestCase):
+    """E426 (`29e` "Sınav hatası"): `pull` reads `control.json` `exam_faults` and hands `decide` the signatures still in
+    force. An entry holds while the exam that judged its head is the one in force, that is while the last seed epoch's
+    commit (the setup seed's without one) is an ancestor of the head; the next epoch, which brings the exam's fix, ends
+    it by itself. A malformed list or a head the brain does not have stops the run: the operator's file, never the
+    Founder's rejection."""
+
+    setUp = test_flow.Flow.setUp
+    tearDown = test_flow.Flow.tearDown
+    pull = test_flow.Flow.pull
+    finish = test_flow.Flow.finish
+    rival_ok = test_flow.Flow.rival_ok
+    green_run = test_flow.Flow.green_run
+    freeze_stage0 = test_flow.Flow.freeze_stage0
+    summary_path = SeedEpochFlow.summary_path
+    epoch_row = SeedEpochFlow.epoch_row
+    deliver = SeedEpochFlow.deliver
+    accept_mf1 = SeedEpochFlow.accept_mf1
+    red_push = SeedEpochFlow.red_push
+
+    def confirm(self, *faults):
+        control = self.referee / "control.json"
+        doc = json.loads(control.read_text())
+        doc["exam_faults"] = [{"head": head, "signature": sig} for head, sig in faults]
+        control.write_text(json.dumps(doc))
+
+    def test_a_confirmed_fault_is_off_the_streaks_until_the_next_epoch(self):
+        self.accept_mf1()
+        wrong = self.red_push(2)
+        self.assertEqual(self.state["reject_streaks"], {FIRST_TEST: 1})
+        self.confirm((wrong["head"], FIRST_TEST))
+        again = self.red_push(3)  # the Founder keeps its code; the exam is still the one that judged it
+        self.assertEqual(again["verdict"], "rejected")
+        self.assertEqual((again["exam_faults"], again["state"]["reject_streaks"]), ([FIRST_TEST], {}))
+        self.assertEqual(again["learning"]["repeated"], [])
+        self.deliver()  # the epoch that brings the fix
+        meta = self.pull()
+        self.assertEqual((meta["kind"], meta["exam_faults"]), ("seed_update", []))
+        self.finish(meta)
+        later = self.red_push(4)  # the entry is still in control.json, but the exam that judged its head is gone
+        self.assertEqual((later["exam_faults"], later["state"]["reject_streaks"]), ([], {FIRST_TEST: 1}))
+
+    def test_without_an_epoch_the_setup_seed_is_the_exam_in_force(self):
+        self.accept_mf1()
+        wrong = self.red_push(2)
+        self.confirm((wrong["head"], FIRST_TEST), (wrong["head"], "vector_failed:chain.v1"))
+        commit(self.brain, {"referee/ledger/chain.py": "x = 3\n"}, "red 3")
+        self.assertEqual(self.pull()["exam_faults"], [FIRST_TEST, "vector_failed:chain.v1"])
+
+    def test_a_malformed_list_or_a_head_the_brain_does_not_have_stops_the_run(self):
+        self.accept_mf1()
+        commit(self.brain, {"referee/ledger/chain.py": "x = 2\n"}, "red 2")
+        state = Path(self.tmp.name) / "state-stop.json"
+        state.write_text(json.dumps(self.state))
+        for faults, why in (("x", "must be a list"), ([{"head": "a" * 40}], "exactly the keys head, signature"),
+                            ([{"head": "a" * 39, "signature": FIRST_TEST}], "40-character SHA"),
+                            ([{"head": "a" * 40, "signature": "no colon"}], "rejection signature"),
+                            ([{"head": "a" * 40, "signature": FIRST_TEST}], "the brain does not have")):
+            control = self.referee / "control.json"
+            doc = json.loads(control.read_text())
+            doc["exam_faults"] = faults
+            control.write_text(json.dumps(doc))
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                rc = cli.main(["pull", "--root", str(self.referee), "--state", str(state),
+                               "--work", str(Path(self.tmp.name) / "work"), "--out", str(Path(self.tmp.name) / "stop"),
+                               "--remote", str(self.brain)])
+            self.assertEqual(rc, 2, faults)
+            self.assertIn(why, err.getvalue(), faults)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -13,6 +13,8 @@ from pathlib import Path
 
 from snowball_bootstrap import cli, rival, stages, vectors
 
+from helpers import kos_part_count, workflow_job
+
 BOOT = Path(__file__).resolve().parents[1]
 ROOT = BOOT.parents[1]
 WORKFLOW = (BOOT / "workflow" / "bootstrap.yml").read_text(encoding="utf-8")
@@ -156,10 +158,42 @@ class WorkflowWiringTest(unittest.TestCase):
 
     def test_the_vectors_leave_the_kos_job_half_its_time(self):
         """A vector run that outlives `kos` is booked as an outage the Founder never hears of: the vectors' budget is
-        at most half the job, the rest is the controls', the Founder's tests' and module-less red's (E18 for those)."""
-        job = WORKFLOW[WORKFLOW.index("  kos:"):WORKFLOW.index("  cagir:")]
-        minutes = int(re.search(r"timeout-minutes: ([0-9]+)", job).group(1))
+        at most half the job that runs them, a part since E440, the rest is the controls', the Founder's tests' and
+        module-less red's (E18 for those)."""
+        minutes = int(re.search(r"timeout-minutes: ([0-9]+)", workflow_job("kos_parca")).group(1))
         self.assertLessEqual(vectors.BUDGET_S * 2, minutes * 60)
+
+
+class KosPartsTest(unittest.TestCase):
+    """E440: `kos` runs as N parts and one join. The matrix, the parts' outputs, the count each part is told and the
+    artifacts the join reads, each by the hash its part's job named, must all be the same N parts: a part the join
+    does not read would go unjudged, one it reads by another part's hash would not verify."""
+
+    def test_the_matrix_the_outputs_and_the_join_name_the_same_parts(self):
+        part, join, count = workflow_job("kos_parca"), workflow_job("kos"), kos_part_count()
+        self.assertGreater(count, 1)
+        self.assertIn(f"        part: {list(range(count))}", part)
+        self.assertEqual(re.findall(r"(?m)^      (part_sha_[0-9]+): \$\{\{ steps\.pack\.outputs\.(part_sha_[0-9]+) \}\}$",
+                                    part), [(f"part_sha_{k}", f"part_sha_{k}") for k in range(count)])
+        for line in ("PART: ${{ matrix.part }}", "PARTS: ${{ strategy.job-total }}", 'run-part --part "$PART/$PARTS"',
+                     '--out "part-$PART.tar" | sed -n "s/^sha256=/part_sha_${PART}=/p" >> "$GITHUB_OUTPUT"',
+                     "name: run-part-${{ matrix.part }}", "path: part-${{ matrix.part }}.tar"):
+            self.assertIn(line, part)
+        self.assertEqual(re.findall(r"--part parts/part-([0-9]+)\.tar=\$\{\{ needs\.kos_parca\.outputs\.part_sha_([0-9]+) \}\}",
+                                    join), [(str(k), str(k)) for k in range(count)])
+        self.assertEqual(join.count("--part "), count)
+        self.assertIn('pattern: "run-part-*", path: parts, merge-multiple: true', join)
+
+    def test_the_join_fails_on_a_part_that_did_not_succeed_and_runs_no_brain_code(self):
+        join = workflow_job("kos")
+        self.assertIn("    needs: [cek, getir, kos_parca]\n", join)
+        first = join[join.index("    steps:\n"):].split("      - ", 2)[1]
+        self.assertEqual(first, "name: Every part finished\n        env:\n          RESULT: ${{ needs.kos_parca.result }}\n"
+                                '        run: test "$RESULT" = success\n')
+        self.assertIn("    permissions: {}\n", join)
+        for word in ("docker", "secrets."):
+            self.assertNotIn(word, join)
+        self.assertEqual(set(re.findall(r"-m snowball_bootstrap ([a-z-]+)", join)), {"control", "join-parts", "pack"})
 
 
 MF_COLUMNS = ["MF", "Mekanizma", "Test", "Vektör grubu", "Modül (`referee/` altında)", "Adım", "Kum"]
@@ -613,6 +647,213 @@ class ReportAnswerPagesTest(unittest.TestCase):
         self.assertIn(example, gate_reasons)
         self.assertIn("satırın `cause`'u değil", ready)
         self.assertIn("adayın kapı kararındaki sıralı, tekil nedenler tam olarak `[reason]` olduğunda tutar", ready)
+
+
+def bullet(page, opening):
+    """The flattened bullet of ``page`` that starts with ``opening`` (``- **Title.**``), up to the next bullet or blank."""
+    found, current = [], None
+    for line in page.splitlines():
+        if line.startswith("- ") or not line.strip():
+            if current is not None:
+                found.append(flat(" ".join(current)))
+            current = [line] if line.startswith(opening) else None
+        elif current is not None:
+            current.append(line)
+    if current is not None:
+        found.append(flat(" ".join(current)))
+    if len(found) != 1:
+        raise AssertionError(f"expected one bullet starting {opening!r}, found {len(found)}")
+    return found[0]
+
+
+def changelog_entry(page, first_words):
+    """The flattened changelog entry (a ``- 2.2 (`` bullet) that starts with ``first_words``."""
+    return bullet(page, "- 2.2 (" + first_words)
+
+
+class OwnerDecisionPagesTest(unittest.TestCase):
+    """The owner's decisions the operator wrote with the owner's authority on 2026-11-01 (E421-E436; the owner can
+    take each back). Each is a rule or an interface fact on one page, held here against the code that applies it, and
+    the Founder's reports this epoch answers are named in its changelog entry."""
+
+    def spec_pages(self):
+        return [p for p in sorted((ROOT / "spec").rglob("*.md")) if not p.name.startswith("CHANGELOG")]
+
+    def test_physical_safety_is_one_rule_on_05_and_every_other_page_points_there(self):
+        """Item 1 (E421): code that drives, stops, raises an alarm for or protects a physical process is on the
+        security tier. One page states it (`05`); the class ladder, the derivation, setup day, the schema and the
+        catalogue point at it, so no second wording can drift (the `29g` lesson, E400)."""
+        rule = bullet(spec_page("tohum", "05"), "- **Fiziksel güvenlik.**")
+        for words in ("Fiziksel bir süreci süren, durduran, onun için alarm veren ya da onu koruyan kod",
+                      "eşikleri ve eskalasyonu dahil) güvenlik yoludur", "risk ağırlıklıdır (`20`)",
+                      "K6 canlı olana kadar hiç, sonra yalnız K6 kapısından dokunulur, biçimleyici ve `--fix` dahil",
+                      "Bu yolları sistem hedeften türetir (`14`)", "`targets[].safety_paths`",
+                      "türetmeyi yalnız genişletir, hiçbir öneri daraltamaz",
+                      "K6 canlı olana kadar birim seçimi güvenlik yollarını dışlar", "Aşama 1'in ilk birimi de"):
+            self.assertIn(words, rule)
+        self.assertNotIn("/", rule.replace("`--fix`", ""))  # a rule, not a product path
+        source = next((ROOT / "spec" / "tohum").glob("05-*.md"))
+        for page in self.spec_pages():
+            text = flat(page.read_text(encoding="utf-8")).lower()
+            with self.subTest(page=page.relative_to(ROOT).as_posix()):
+                self.assertEqual("fiziksel bir süreci" in text, page == source)
+        k6 = next(line for line in spec_page("tohum", "03").splitlines() if line.startswith("| K6 |"))
+        self.assertIn("fiziksel güvenlik (`05`)", k6)
+        for prefix in ("14", "25", "26c", "30"):
+            self.assertIn('`05` "Fiziksel güvenlik"', flat(spec_page("tohum", prefix)), prefix)
+        self.assertIn("safety_paths[]?}", flat(spec_page("tohum", "26c")))
+
+    def test_the_referee_reads_the_owners_safety_paths_as_26c_names_them(self):
+        """E421: `26c` makes `targets[].safety_paths` optional; the referee reads `targets[]` strictly, so a summary
+        that carries the owner's list must load, and a malformed one must stop the run like any other list."""
+        import tempfile
+        from snowball_bootstrap import config
+        self.assertEqual(config.TARGET_OPTIONAL_KEYS, frozenset({"safety_paths"}))
+        row = {"id": "copy", "repo": "owner/copy", "kind": "copy", "base_sha": "c" * 40, "identifiers": ["X"],
+               "excluded_paths": [], "unit_candidates": ["packages/api"]}
+        base = {"seed_commit": "a" * 40, "seed_tree_sha256": "b" * 64}
+
+        def load(*rows):
+            with tempfile.TemporaryDirectory() as tmp:
+                (Path(tmp) / "setup").mkdir()
+                (Path(tmp) / "setup" / "summary.json").write_text(json.dumps(dict(base, targets=list(rows))))
+                return config.load_summary(Path(tmp))
+
+        self.assertEqual(len(load(row, dict(row, id="c2", safety_paths=["units/a", "units/b/c.py"])).targets), 2)
+        self.assertEqual(len(load(dict(row, safety_paths=[])).targets), 1)
+        for bad in (dict(row, safety_paths=["", "x"]), dict(row, safety_paths="units/a"), dict(row, safety_paths=[1]),
+                    dict(row, safety_path=["units/a"])):
+            with self.assertRaises(config.ConfigError, msg=repr(bad)):
+                load(bad)
+
+    def test_05_blocks_a_change_whose_consumers_the_gate_cannot_count(self):
+        """Item 2 (E422): an unseen consumer is assumed, never ruled out (fail-closed)."""
+        rule = bullet(spec_page("tohum", "05"), "- **Görünmeyen tüketici.**")
+        self.assertEqual(rule, "- **Görünmeyen tüketici.** Kapının tüketicilerini sayamadığı değişiklik görünmeyen bir "
+                               "tüketiciye dokunmuş sayılır ve `blocked`'dır (kapalıya düşüş).")
+
+    def test_03_says_what_k0_is_in_an_ecosystem_without_a_rule_id_linter(self):
+        """Item 7 (E423)."""
+        k0 = next(line for line in spec_page("tohum", "03").splitlines() if line.startswith("| K0 |"))
+        self.assertIn("ekosistemin kimlik ve konum veren ilk mekanik denetimi (kural kimliği veren linter yoksa da)", k0)
+
+    def test_04_keeps_module_less_red_and_names_the_mutation_floor_but_not_its_value(self):
+        """Item 10 (E424, E386): the measure is named (kills by non-import failures on the changed lines of the
+        Founder's own code), never how to reach it; the floor's value is the owner's and not on the page."""
+        rule = flat(spec_page("tohum", "04")).split("1. **Kasıtlı bozma.**", 1)[1].split("2. **Canlı yol.**", 1)[0]
+        self.assertIn("**Modülsüz kırmızı:**", rule)
+        self.assertIn("Modülsüz kırmızı şimdilik kalır.", rule)
+        floor = rule.split("**Mutant öldürme tabanı:**", 1)[1]
+        for words in ("Aşama 1'in çıkışından başlayarak her aşama çıkışı",
+                      "Kurucu'nun kendi kodunun değişen satırlarında bir mutant öldürme tabanı ister",
+                      "bir mutant ancak içe aktarma ya da sözdizimi hatası olmayan bir kırmızıyla öldürülmüş sayılır",
+                      "Taban değeri aşama çıkışından önce sahip koyar."):
+            self.assertIn(words, floor)
+        self.assertEqual(re.findall(r"\d+", floor), ["1"])  # the stage, and no floor value
+        self.assertNotIn("%", floor)
+
+    def test_08_limits_processes_and_cpu_in_every_sandbox_that_runs_the_targets_tests(self):
+        """Item 13 (E425)."""
+        rule = flat(spec_page("tohum", "08")).split("2. **Konteyner.**", 1)[1].split("3. **Kırmızı kontrol.**", 1)[0]
+        self.assertIn("Hedefin test paketini koşan her kum havuzu, kimin kodunda kurulursa kurulsun (Kurucu'nunki "
+                      "dahil), süreç sayısı ve CPU sınırıyla koşar.", rule)
+
+    def test_seed_001_the_founder_writes_its_ledger_and_the_brain_gets_spec_tohum_alone(self):
+        """Seed-001 (E150), option (a): no seed ledger tool exists and no `seed/` reaches the brain. The six places
+        that said otherwise say what the code does: the Founder appends its rows with its own code under `26`'s
+        chain rule, the launcher appends the `cost` row, the brain receives `spec/tohum` alone."""
+        import argparse
+        # The seed's pages; the frozen `asama-0/03` and `asama-0/13` keep their words, the seed prevails (`02`).
+        for page in self.spec_pages():
+            if page.parent.name != "tohum":
+                continue
+            text = flat(page.read_text(encoding="utf-8"))
+            with self.subTest(page=page.relative_to(ROOT).as_posix()):
+                for stale in ("founder-ledger append", "defter aracı", "tohumun aracıyla", "seed/` varsa"):
+                    self.assertNotIn(stale, text)
+        sub = next(a for a in cli.build_parser()._actions if isinstance(a, argparse._SubParsersAction))
+        self.assertEqual([c for c in sub.choices if "ledger" in c or "append" in c], [])  # the tool is not there
+        ledger = bullet(spec_page("tohum", "00a"), "- **Durum defteri.**")
+        self.assertIn("satırı kendi kodun `26`'nın zincir kuralıyla ekler, oturumun `cost` satırını başlatıcı yazar "
+                      "(`24a` 4)", ledger)
+        self.assertIn("yalnız-eklemeyi yargıladığı her push'ta denetler (`29b`)", ledger)
+        launcher = (ROOT / "seed" / "founder" / "launch.py").read_text(encoding="utf-8")
+        self.assertIn('"part": "founder", "kind": "cost"', launcher)  # the launcher's row, chained by `26`
+        self.assertIn("row_hash", launcher)
+        layout = spec_page("tohum", "24a").split("```", 2)[1]
+        self.assertEqual([line for line in layout.splitlines() if line.startswith("seed/")], [])
+        self.assertIn("spec/tohum (beyne gelen tek tohum)", layout)
+        self.assertIn("Kurucu'nun koduyla zincirli (`26`); `cost` satırı başlatıcının", layout)
+        founder = next(line for line in spec_page("tohum", "26").splitlines() if line.startswith("| `founder` |"))
+        self.assertIn("Kurucu, kendi koduyla (zincir kuralı aşağıda); `cost` satırını başlatıcı (`24a` 4)", founder)
+        reader = next(line for line in spec_page("tohum", "27").splitlines()
+                      if line.startswith("| `founder-ledger.jsonl`"))
+        self.assertIn("Kurucu, kendi koduyla (`26`'nın zincir kuralı); başlatıcı (`cost`)", reader)
+        epoch = next(line for line in SETUP_DAY.splitlines() if line.startswith("| 10b |"))
+        self.assertIn("aynı `spec/tohum`'u beyin `main`'ine tek commit'le it (beyne yalnız `spec/tohum` gelir, tohum "
+                      "kodu gelmez: satırın `seed_sha256`'sı `null`)", epoch)
+        runbook = flat((ROOT / "seed" / "founder" / "README.md").read_text(encoding="utf-8"))
+        self.assertIn("beyne tohum kodu (`seed/`) gitmez", runbook)
+        self.assertNotIn("beyinde `seed/` varsa", runbook)
+
+    def test_seed_027_13_says_from_which_stage_the_root_record_binds_five_things(self):
+        """Seed-027 (g), option (b) (E427): `13` names five bindings `29j`'s Stage 0 row does not carry; `13` says when
+        they start and the Stage 0 row stays `29j`'s."""
+        root = bullet(spec_page("tohum", "13"), "- **Kök ve dış günlük.**")
+        self.assertIn("`policy.json` hash'ini bağlar; bu beş bağ Aşama 1'den başlar, Aşama 0'ın kök satırı `29j`'nin "
+                      "`root` satırıdır.", root)
+        self.assertIn("(zincirli `{row_id, ts, root, rekor_uuid, prev_hash, row_hash}` satırları, `27a`)",
+                      flat(spec_page("tohum", "29j")))
+
+    def test_seed_030_29j_names_where_the_inputs_are_made_and_promises_no_later_answer(self):
+        """Seed-030 (E231), option (a): `29j` said the spec did not name the producers "yet", a promise the Founder
+        would wait on (seed-040's lesson). The inputs are made in the Founder's referee code."""
+        for page in sorted((ROOT / "spec" / "tohum").glob("29*.md")):
+            with self.subTest(page=page.name):
+                self.assertNotIn("henüz adlandırmaz", flat(page.read_text(encoding="utf-8")))
+        self.assertIn("girdileri grubun dışında, Kurucu'nun hakem kodunda üretilir; tohum `build_ok`'un ve nöbetçinin "
+                      "lint toplamının üreticisini adlandırmaz.", flat(spec_page("tohum", "29j")))
+
+    def test_referee_016_the_rule_is_in_force_and_no_record_says_it_waits(self):
+        """Referee-016 (E260): in the seed since 3a; the changelog and the register still said "karar bekliyor"."""
+        for page in sorted((ROOT / "spec" / "tohum").glob("CHANGELOG*.md")):
+            for line in page.read_text(encoding="utf-8").splitlines():
+                if "E260" in line:
+                    self.assertNotIn("karar bekliyor", line, page.name)
+        row = next(line for line in (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
+                   if line.startswith("| E260 |"))
+        self.assertTrue(row.split(" | ")[-1].startswith("kapandı"), row[-200:])
+
+    def test_this_epochs_changelog_entry_names_every_report_it_answers(self):
+        """E342's rule: a seed epoch's changelog entry names each report it answers or declines."""
+        entry = changelog_entry((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8"),
+                                "2026-11-01, E421")
+        for report in ("seed-001-seed-dir-missing", "referee-016-reproducer-polarity", "seed-027-root-choices",
+                       "seed-030-cause-choices"):
+            self.assertRegex(entry, re.escape(f"`{report}` → `") + r"\d\d[a-z]?:\d")
+        for report in ("seed-023-run-record-producer", "spec-036-cycle-composition-unowned"):
+            self.assertIn(f"`{report}` → declined: ", entry)
+        self.assertIn("sahibin yetkisiyle operatör kararı (2026-11-01); sahip geri alabilir", entry)
+
+    def test_29e_states_the_exam_fault_rule_the_referee_applies(self):
+        """Item 14 (E426, E53): the operator's confirmed exam fault takes the streak entry it caused back. The page
+        names the file, its fields and what changes; the code reads those fields and the result names them."""
+        from snowball_bootstrap import config, decide
+        rule = paragraph(spec_page("tohum", "29e"), "**Sınav hatası** (E53).")
+        for words in ("`control.json` `exam_faults`'a `{head, signature}` olarak yazar",
+                      "imzalı durumun `reject_streaks` anahtarı", "çürütmede `refutation:<anahtar>`",
+                      "son tohum döneminin commit'i (dönem yoksa kurulum tohumununki) adlandırdığı başın atası olduğu "
+                      "sürece", "sonraki tohum dönemi onu kendiliğinden kapatır",
+                      "imzalı durumdaki seri girdisi geri alınır, imza `repeated`, `not_learning` ve "
+                      "`repeat_events`'e girmez, başka nedeni olmayan ret seriler için kabul gibidir", "Ret kalır", "Geçerli imzalar sonucun `exam_faults`'undadır",
+                      "Biçimsiz liste ya da beyinde olmayan baş koşuyu durdurur"):
+            self.assertIn(words, rule)
+        self.assertEqual(config.EXAM_FAULT_KEYS, frozenset({"head", "signature"}))
+        self.assertEqual(decide.signature({"kind": "refutation_reproduced", "ref": "repro:" + "a" * 16}),
+                         "refutation:" + "a" * 16)
+        self.assertIn('"exam_faults": sorted(exam_faults)', Path(decide.__file__).read_text(encoding="utf-8"))
+        self.assertIn("reverted_exits?, exam_faults?}", flat(spec_page("tohum", "26c")))
+        self.assertIn("Sınav hatası: `29e`.", paragraph(spec_page("tohum", "29b"), "**Ret hafızası.**"))
 
 
 class YamlSubsetPageTest(unittest.TestCase):

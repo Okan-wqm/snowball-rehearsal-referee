@@ -4,22 +4,26 @@ is pinned here, so a later edit that loosens it fails a test instead of passing 
 from __future__ import annotations
 
 import argparse
+import contextlib
+import dataclasses
 import hashlib
 import importlib.util
 import io
 import json
+import os
 import re
 import subprocess
 import tarfile
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
 from snowball_bootstrap import rival, vectors
 
-from helpers import commit, ledger_bytes, ledger_rows, make_repo, quiet_pilot
+from helpers import (commit, definition, ledger_bytes, ledger_rows, load_brain_defs, make_repo, quiet_pilot, sh,
+                     tree_repo)
 
 FOUNDER = Path(__file__).resolve().parents[2] / "founder"
 VECTORS = Path(__file__).resolve().parents[1] / "vectors"
@@ -707,6 +711,30 @@ class RefereeRetryTest(unittest.TestCase):  # E166: the loop never waits on the 
                 pilot.dispatch_referee(1)
         self.assertTrue(issubclass(launch.NoVerdict, launch.Outage) and issubclass(launch.GitHubUnavailable, launch.Outage))
 
+    def test_the_dispatched_run_is_mains_never_a_branch_trial_of_the_same_minute(self):  # E461
+        launch = load_launch()
+        pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+        ok = mock.Mock(returncode=0, stdout=b"", stderr=b"")
+        later = (datetime.now(timezone.utc) + timedelta(seconds=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        latest = (datetime.now(timezone.utc) + timedelta(seconds=40)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        listed = [{"databaseId": 7, "createdAt": later, "headBranch": "ops/trial"},
+                  {"databaseId": 8, "createdAt": latest, "headBranch": "main"}]
+        asked = []
+
+        def gh(*args):
+            asked.append(args)
+            if args[:2] == ("run", "list"):
+                return listed
+            return {"status": "completed", "conclusion": "success", "url": "u"}
+
+        with mock.patch.object(launch, "run", return_value=ok), mock.patch.object(launch, "gh_json", side_effect=gh), \
+                mock.patch.object(launch.time, "sleep"):
+            got = pilot.dispatch_referee(60)
+        self.assertEqual(got["id"], "8")  # the earlier run was a branch's, not this dispatch's
+        listing = next(a for a in asked if a[:2] == ("run", "list"))
+        self.assertIn("--branch", listing)
+        self.assertEqual(listing[listing.index("--branch") + 1], "main")
+
     def test_the_usage_limit_reset_is_read_from_the_cli(self):  # E243
         wait = load_launch().usage_limit_wait
         at = datetime(2026, 10, 30, 2, 1, 20, tzinfo=timezone.utc)
@@ -1291,6 +1319,37 @@ class ImageAndEntrypointTest(unittest.TestCase):
         self.assertNotIn('"missing_capability"', source)  # no tuple or comparison names it as a kind
         self.assertEqual(source.count('row.get("kind") in REPORT_KINDS') + source.count('r.get("kind") in REPORT_KINDS'), 2)
 
+    def test_the_order_of_work_is_chosen_so_nothing_is_done_twice(self):  # E462, owner 2026-11-01
+        """The owner, in their own analogy: sweep the counter before the floor, or the crumbs make you sweep the floor
+        twice. The duty is general: choose an order in which a later step does not undo an earlier one, write why,
+        and write when a place had to be reopened. It names no layer, tool, class or concrete order."""
+        prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
+        for phrase in ("Sıra muhakemesi (sahip, 2026-11-01)", "önce tezgâhı yaparsan",
+                       "birinin sonucu bir öncekini bozmayacak ve aynı işi yeniden yaptırmayacak",
+                       "aynı yeri yeniden açmak zorunda kaldığında bunu ve nedenini de yaz",
+                       "Nasıl sıralayacağın senindir"):
+            self.assertIn(phrase, prompt)
+        start = prompt.index("Sıra muhakemesi")
+        paragraph = prompt[start:prompt.index("Nasıl sıralayacağın senindir", start)]
+        for hint in ("mimari", "arayüz", "kütüphane", "lint", "K0", "K2", "Nx", "önce ortak"):
+            self.assertNotIn(hint, paragraph)
+
+    def test_the_system_is_for_every_repository_and_its_lessons_are_claims(self):  # E460, owner 2026-11-01
+        """The owner: Snowball is a general application for every kind of repository, not tailored to this target; it
+        knows and closes its own gaps, understands the given repository fully, gives its agents the repository's map
+        with their task, and tests whether what it learned is right. The duty is general: it names no tool, adaptor,
+        ecosystem or format, and how stays the Founder's."""
+        prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
+        for phrase in ("Her repo için, en ileri düzeyde (sahip, 2026-11-01)", "Bu hedef senin ilk sınavındır, son değil",
+                       "hiç görmediğin bir repoda da doğru çalışacak kadar genel olmalı",
+                       "hedefin koddan üretilmiş güncel haritasını ve işin ilgili kısmını görevle birlikte ver",
+                       "Öğrendiğin her şey bir iddiadır", "Nasıl yapacağın senindir"):
+            self.assertIn(phrase, prompt)
+        start = prompt.index("Her repo için, en ileri düzeyde")
+        paragraph = prompt[start:prompt.index("Nasıl yapacağın senindir", start)]
+        for hint in ("Nx", "Rust", "Zig", "cargo", "depmap", "profile.fit", "mermaid", "adaptör"):
+            self.assertNotIn(hint, paragraph)
+
     def test_the_founder_owns_the_whole_target_even_a_domain_it_does_not_know(self):  # E364, owner 2026-10-31
         """The owner: in a domain it does not know at all, with no muscles for it, the system must understand it,
         learn and apply it, solve what it meets and become expert in it, by itself. The duty is general: it names no
@@ -1355,6 +1414,307 @@ class ImageAndEntrypointTest(unittest.TestCase):
         self.assertNotRegex(self.entry, r"https://[^\"\s]*\$\{?GITHUB_TOKEN")
         self.assertNotRegex(self.entry, r"echo[^\n]*\$\{?(GITHUB_TOKEN|CLAUDE_CODE_OAUTH_TOKEN|basic)")
         self.assertNotIn("set -x", self.entry)
+
+
+class BrainDefinitionsTest(unittest.TestCase):  # E450, owner 2026-11-01: the brain's agents/ and skills/ load, checked
+    """The capsule loads the agent and skill definitions the Founder keeps in its brain, at the start of every session,
+    and nothing else of the brain. Each guardrail is held here; the real CLI reading the result is in test_live_cli."""
+
+    def setUp(self):
+        self.defs = load_brain_defs()
+        self.tmp = Path(tempfile.mkdtemp())
+
+    def brain(self, entries: dict) -> Path:
+        path = self.tmp / f"brain{sum(1 for _ in self.tmp.iterdir())}"
+        tree_repo(path, entries)
+        return path
+
+    def load(self, entries: dict, limits=None) -> tuple[dict, Path]:
+        brain = self.brain(entries)
+        plugin = brain.with_name(brain.name + "-plugin")
+        with mock.patch.object(self.defs, "LIMITS", limits or self.defs.LIMITS):
+            record = self.defs.build(brain, plugin).record()
+        return record, plugin
+
+    @staticmethod
+    def files(plugin: Path) -> list[str]:
+        return sorted(p.relative_to(plugin).as_posix() for p in plugin.rglob("*") if p.is_file())
+
+    @staticmethod
+    def skipped(record: dict) -> dict[str, list[str]]:
+        return {row["path"]: row["reasons"] for row in record["skipped"]}
+
+    def test_only_agents_and_skills_become_the_plugin(self):
+        brain = self.brain({
+            "agents/reviewer.md": definition("reviewer"), "skills/probe/SKILL.md": definition("probe"),
+            "CLAUDE.md": b"# instructions\n", "AGENTS.md": b"x\n", ".mcp.json": b'{"mcpServers": {"x": {}}}\n',
+            ".claude/settings.json": b'{"hooks": {}}\n', ".claude/agents/inner.md": definition("inner"),
+            ".claude/skills/inner/SKILL.md": definition("inner"), "hooks/hooks.json": b'{"hooks": {}}\n',
+            "commands/c.md": b"c\n", "output-styles/s.md": b"s\n", "settings.json": b"{}\n",
+            ".claude-plugin/plugin.json": b'{"name": "other", "hooks": "./h.json"}\n', "monitors/monitors.json": b"{}\n",
+            "bin/tool": ("100755", b"#!/bin/sh\n"), "referee/agents/x.md": definition("x"),
+            "docs/skills/y/SKILL.md": definition("y")})
+        (brain / "agents").mkdir()  # in the working tree, not committed: git's objects are what is read
+        (brain / "agents" / "extra.md").write_bytes(definition("extra"))
+        plugin = self.tmp / "plugin"
+        record = self.defs.build(brain, plugin).record()
+        self.assertEqual(self.files(plugin), [".claude-plugin/plugin.json", "agents/reviewer.md", "skills/probe/SKILL.md"])
+        self.assertEqual(json.loads((plugin / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")),
+                         {"name": "brain"})
+        self.assertEqual([a["loaded_as"] for a in record["agents"]], ["brain:reviewer"])
+        self.assertEqual([s["loaded_as"] for s in record["skills"]], ["brain:probe"])
+        self.assertEqual(record["skipped"], [])  # nothing outside the two folders is even looked at
+        self.assertIsNone(record["error"])
+
+    def test_every_definition_is_written_anew_from_its_checked_fields(self):
+        agent = ('---\r\nname: reviewer\r\ndescription: "Reviews: \\"quoted\\" code, ç # text"\r\n\r\n'
+                 'tools: Read,  Grep ,Read\r\nmodel: sonnet\r\n---\r\nYou review.\r\n---\r\nstill the body\r\n')
+        script = b"#!/bin/sh\r\necho run\r\n"
+        record, plugin = self.load({
+            "agents/reviewer.md": agent.encode("utf-8"),
+            "skills/probe/SKILL.md": b"---\nname: probe\ndescription: 'It''s a probe: run it'\n---\nRun it.",
+            "skills/probe/scripts/run.sh": ("100755", script), "skills/probe/notes.md": b"notes\n"})
+        self.assertEqual((plugin / "agents" / "reviewer.md").read_text(encoding="utf-8"),
+                         '---\nname: reviewer\ndescription: "Reviews: \\"quoted\\" code, ç # text"\ntools: Read, Grep\n'
+                         "model: sonnet\n---\nYou review.\n---\nstill the body\n")
+        self.assertEqual((plugin / "skills" / "probe" / "SKILL.md").read_text(encoding="utf-8"),
+                         '---\nname: probe\ndescription: "It\'s a probe: run it"\n---\nRun it.\n')
+        self.assertEqual((plugin / "skills" / "probe" / "scripts" / "run.sh").read_bytes(), script)  # as it is
+        if os.name != "nt":
+            self.assertEqual((plugin / "skills" / "probe" / "scripts" / "run.sh").stat().st_mode & 0o777, 0o755)
+            self.assertEqual((plugin / "skills" / "probe" / "notes.md").stat().st_mode & 0o777, 0o644)
+        self.assertEqual(record["agents"][0]["tools"], ["Read", "Grep"])
+        self.assertEqual(record["agents"][0]["model"], "sonnet")
+
+    def test_a_key_outside_the_format_drops_the_definition(self):
+        keys = ("hooks", "mcpServers", "permissionMode", "skills", "isolation", "disallowedTools", "color")
+        entries = {f"agents/a{i}.md": definition(f"a{i}", extra={key: "x"}) for i, key in enumerate(keys)}
+        skill_keys = ("allowed-tools", "hooks", "model", "context", "tools")  # a skill takes name and description only
+        entries.update({f"skills/s{i}/SKILL.md": definition(f"s{i}", extra={key: "x"}) for i, key in enumerate(skill_keys)})
+        record, plugin = self.load(entries)
+        self.assertEqual(record["agents"] + record["skills"], [])
+        self.assertEqual(self.skipped(record), {**{f"agents/a{i}.md": [f"key_not_allowed:{k}"] for i, k in enumerate(keys)},
+                                                **{f"skills/s{i}/": [f"key_not_allowed:{k}"] for i, k in enumerate(skill_keys)}})
+        self.assertEqual(self.files(plugin), [".claude-plugin/plugin.json"])
+
+    def test_an_agent_whose_tools_leave_the_capsules_is_dropped_and_named(self):
+        entries = {"agents/ok.md": definition("ok", extra={"tools": "Read, Grep, Bash, Agent, Task, WebFetch, Skill"})}
+        for tool in self.defs.DENIED_TOOLS:
+            entries[f"agents/deny-{tool.lower()}.md"] = definition(f"deny-{tool.lower()}", extra={"tools": f"Read, {tool}"})
+        unknown = ("Foo", "Bash(git *)", "mcp__x__y", "read", "PowerShell")
+        for i, tool in enumerate(unknown):
+            entries[f"agents/unknown-{i}.md"] = definition(f"unknown-{i}", extra={"tools": f"Read, {tool}"})
+        entries["agents/empty.md"] = definition("empty", extra={"tools": ""})
+        entries["agents/hole.md"] = definition("hole", extra={"tools": "Read,,Grep"})
+        record, plugin = self.load(entries)
+        self.assertEqual([(a["name"], a["tools"]) for a in record["agents"]],
+                         [("ok", ["Read", "Grep", "Bash", "Agent", "Task", "WebFetch", "Skill"])])
+        skipped = self.skipped(record)
+        for tool in self.defs.DENIED_TOOLS:
+            self.assertEqual(skipped[f"agents/deny-{tool.lower()}.md"], [f"tool_denied:{tool}"])
+        for i, tool in enumerate(unknown):
+            self.assertEqual(skipped[f"agents/unknown-{i}.md"], [f"tool_not_allowed:{tool}"])
+        self.assertEqual(skipped["agents/empty.md"], ["bad_tools"])
+        self.assertEqual(skipped["agents/hole.md"], ["bad_tools"])
+        self.assertEqual(self.files(plugin), [".claude-plugin/plugin.json", "agents/ok.md"])
+
+    def test_the_tool_sets_are_the_capsules(self):  # E380: the four the entrypoint denies, never one of them allowed
+        entry = (FOUNDER / "entrypoint.sh").read_text(encoding="utf-8")
+        self.assertEqual(re.findall(r'--disallowedTools "([^"]*)"', entry), [",".join(self.defs.DENIED_TOOLS)])
+        self.assertEqual(self.defs.ALLOWED_TOOLS & set(self.defs.DENIED_TOOLS), set())
+        self.assertTrue(all(self.defs.TOOL_RE.fullmatch(tool) for tool in self.defs.ALLOWED_TOOLS))
+
+    def test_the_limits_are_one_named_constant_and_each_is_enforced(self):
+        Limits = self.defs.Limits
+        self.assertIsInstance(self.defs.LIMITS, Limits)
+        big = definition("big", body="x" * 300 + "\n")
+        cases = [  # (limits, brain, skipped, loaded)
+            (Limits(agents=2), {f"agents/{n}.md": definition(n) for n in "abc"}, {"agents/c.md": ["over_limit:agents"]},
+             ["a", "b"]),
+            (Limits(skills=1), {f"skills/{n}/SKILL.md": definition(n) for n in "ab"}, {"skills/b/": ["over_limit:skills"]},
+             ["a"]),
+            (Limits(definition_bytes=200), {"agents/big.md": big, "skills/big/SKILL.md": big, "agents/a.md": definition("a")},
+             {"agents/big.md": ["over_limit:definition_bytes"], "skills/big/": ["over_limit:definition_bytes"]}, ["a"]),
+            (Limits(skill_files=2), {"skills/s/SKILL.md": definition("s"), "skills/s/a": b"a", "skills/s/b": b"b",
+                                     "skills/t/SKILL.md": definition("t"), "skills/t/a": b"a"},
+             {"skills/s/": ["over_limit:skill_files"]}, ["t"]),
+            (Limits(skill_bytes=100), {"skills/s/SKILL.md": definition("s"), "skills/s/a": b"a" * 60,
+                                       "skills/t/SKILL.md": definition("t")},
+             {"skills/s/": ["over_limit:skill_bytes"]}, ["t"]),
+            (Limits(skill_depth=1), {"skills/s/SKILL.md": definition("s"), "skills/s/a/c/d.txt": b"d",
+                                     "skills/t/SKILL.md": definition("t"), "skills/t/a/b.txt": b"b"},
+             {"skills/s/": ["over_limit:skill_depth:skills/s/a/c/d.txt"]}, ["t"]),
+            (Limits(total_bytes=100), {f"agents/{n}.md": definition(n) for n in "ab"},  # 64 bytes each
+             {"agents/b.md": ["over_limit:total_bytes"]}, ["a"]),
+            (Limits(entries=3), {**{f"agents/{n}.md": definition(n) for n in "abcd"}, "skills/s/SKILL.md": definition("s")},
+             {"agents/": ["over_limit:entries"]}, ["s"]),
+        ]
+        for limits, entries, skipped, loaded in cases:
+            with self.subTest(limits=limits):
+                record, _ = self.load(entries, limits)
+                self.assertEqual(self.skipped(record), skipped)
+                self.assertEqual([d["name"] for d in record["agents"] + record["skills"]], loaded)
+                self.assertEqual(record["limits"], dataclasses.asdict(limits))
+        record, _ = self.load({f"agents/{n}.md": b"broken\n" for n in "abc"}, Limits(skipped_listed=2))
+        self.assertEqual((len(record["skipped"]), record["skipped_total"]), (2, 3))  # the rest are counted
+
+    def test_names_are_checked_and_nothing_leads_out_of_the_brain(self):
+        record, plugin = self.load({
+            "agents/Upper.md": definition("Upper"), "agents/under_score.md": definition("under_score"),
+            "agents/-dash.md": definition("-dash"), f"agents/{'a' * 65}.md": definition("a" * 65),
+            "agents/mismatch.md": definition("other"), "agents/claude.md": definition("claude"),
+            "agents/agents.md": definition("agents"), "agents/link.md": ("120000", b"../../../run/secrets/founder.env"),
+            "agents/sub.md": ("160000", b"a" * 40), "agents/readme.txt": b"x\n", "agents/nested/x.md": definition("x"),
+            "skills/linked/SKILL.md": ("120000", b"../../CLAUDE.md"),
+            "skills/inner-link/SKILL.md": definition("inner-link"), "skills/inner-link/data": ("120000", b"/etc/passwd"),
+            "skills/sub/SKILL.md": definition("sub"), "skills/sub/vendor": ("160000", b"b" * 40),
+            "skills/conf/SKILL.md": definition("conf"), "skills/conf/.claude/settings.json": b"{}\n",
+            "skills/conf2/SKILL.md": definition("conf2"), "skills/conf2/docs/CLAUDE.md": b"x\n",
+            "skills/odd/SKILL.md": definition("odd"), "skills/odd/a b.txt": b"x\n",
+            "skills/uni/SKILL.md": definition("uni"), "skills/uni/\u00f6.txt": b"x\n",
+            "skills/Bad_Name/SKILL.md": definition("Bad_Name"), "skills/README.md": b"x\n",
+            "skills/ok/SKILL.md": definition("ok"), "skills/ok/.gitkeep": b""})
+        self.assertEqual(record["agents"], [])
+        self.assertEqual([s["name"] for s in record["skills"]], ["ok"])
+        self.assertEqual(self.skipped(record), {
+            "agents/Upper.md": ["bad_name"], "agents/under_score.md": ["bad_name"], "agents/-dash.md": ["bad_name"],
+            f"agents/{'a' * 65}.md": ["bad_name"], "agents/mismatch.md": ["name_mismatch"],
+            "agents/claude.md": ["agent_config"], "agents/agents.md": ["agent_config"], "agents/link.md": ["symlink"],
+            "agents/sub.md": ["submodule"], "agents/readme.txt": ["not_a_definition"],
+            "agents/nested/": ["not_a_definition"], "skills/README.md": ["not_a_definition"],
+            "skills/linked/": ["symlink:skills/linked/SKILL.md"], "skills/inner-link/": ["symlink:skills/inner-link/data"],
+            "skills/sub/": ["submodule:skills/sub/vendor"],
+            "skills/conf/": ["agent_config:skills/conf/.claude/settings.json"],
+            "skills/conf2/": ["agent_config:skills/conf2/docs/CLAUDE.md"], "skills/odd/": ["bad_path:skills/odd/a b.txt"],
+            "skills/uni/": ["bad_path:skills/uni/\u00f6.txt"], "skills/Bad_Name/": ["bad_name"]})
+        self.assertEqual(self.files(plugin), [".claude-plugin/plugin.json", "skills/ok/.gitkeep", "skills/ok/SKILL.md"])
+
+    def test_the_record_names_what_loaded_with_the_sha256_of_its_source(self):
+        agent, skill, notes = definition("reviewer", extra={"model": "inherit"}), definition("probe"), b"notes\n"
+        brain = self.brain({"agents/reviewer.md": agent, "skills/probe/SKILL.md": skill, "skills/probe/notes.md": notes,
+                            "agents/bad.md": b"no front matter\n"})
+        logs = self.tmp / "logs"
+        logs.mkdir()
+        rc = self.defs.main([str(brain), str(self.tmp / "plugin"), str(logs / "brain-definitions.json")])
+        self.assertEqual(rc, 0)
+        record = json.loads((logs / "brain-definitions.json").read_text(encoding="utf-8"))
+        sha = lambda data: hashlib.sha256(data).hexdigest()  # noqa: E731  the blob's bytes: `git cat-file blob | sha256sum`
+        self.assertEqual(record["schema"], "snowball-brain-definitions/1")
+        self.assertEqual(record["brain"], sh(brain, "git", "rev-parse", "HEAD"))
+        self.assertIsNone(record["error"])
+        self.assertEqual(record["agents"], [{"name": "reviewer", "loaded_as": "brain:reviewer", "path": "agents/reviewer.md",
+                                             "sha256": sha(agent), "tools": None, "model": "inherit"}])
+        self.assertEqual(record["skills"], [{"name": "probe", "loaded_as": "brain:probe", "path": "skills/probe/SKILL.md",
+                                             "sha256": sha(skill), "files": {"skills/probe/SKILL.md": sha(skill),
+                                                                             "skills/probe/notes.md": sha(notes)}}])
+        self.assertEqual(record["skipped"], [{"path": "agents/bad.md", "reasons": ["no_frontmatter"]}])
+        self.assertEqual(record["limits"], dataclasses.asdict(self.defs.LIMITS))
+        self.assertEqual(record["denied_tools"], list(self.defs.DENIED_TOOLS))
+        self.assertEqual(record["allowed_tools"], sorted(self.defs.ALLOWED_TOOLS))
+        self.assertEqual(sorted(p.name for p in logs.iterdir()), ["brain-definitions.json"])  # no temporary left
+
+    def test_a_broken_definition_is_skipped_and_the_rest_load(self):
+        record, plugin = self.load({
+            "agents/good.md": definition("good"),
+            "agents/latin.md": "---\nname: latin\ndescription: café\n---\nx\n".encode("latin-1"),
+            "agents/bare.md": b"You review.\n", "agents/open.md": b"---\nname: open\ndescription: d\nno end\n",
+            "agents/line.md": b"---\nname: line\n  indented: x\ndescription: d\n---\nx\n",
+            "agents/twice.md": b"---\nname: twice\nname: twice\ndescription: d\n---\nx\n",
+            "agents/nodesc.md": b"---\nname: nodesc\n---\nx\n", "agents/empty.md": b"---\nname: empty\ndescription: d\n---\n\n \n",
+            "agents/quote.md": b'---\nname: quote\ndescription: "open\n---\nx\n',
+            "agents/ctrl.md": b'---\nname: ctrl\ndescription: "a\\u0007b"\n---\nx\n',
+            "agents/sep.md": "---\nname: sep\ndescription: a\u2028b\n---\nx\n".encode("utf-8"),
+            "agents/long.md": definition("long", description="d" * 1025),
+            "agents/model.md": definition("model", extra={"model": "sonnet; rm -rf /"}),
+            "skills/good/SKILL.md": definition("good"),
+            "skills/nobody/SKILL.md": b"---\nname: nobody\ndescription: d\n---\n"})
+        self.assertEqual([a["name"] for a in record["agents"]], ["good"])
+        self.assertEqual([s["name"] for s in record["skills"]], ["good"])
+        self.assertEqual(self.skipped(record), {
+            "agents/latin.md": ["not_utf8"], "agents/bare.md": ["no_frontmatter"], "agents/open.md": ["no_frontmatter"],
+            "agents/line.md": ["bad_frontmatter_line"], "agents/twice.md": ["duplicate_key:name"],
+            "agents/nodesc.md": ["missing:description"], "agents/empty.md": ["empty_body"],
+            "agents/quote.md": ["bad_quotes:description", "missing:description"], "agents/ctrl.md": ["bad_description"],
+            "agents/sep.md": ["bad_description"], "agents/long.md": ["bad_description"], "agents/model.md": ["bad_model"],
+            "skills/nobody/": ["empty_body"]})
+        self.assertIsNone(record["error"])
+
+    def test_an_unforeseen_failure_in_one_definition_names_it_and_the_rest_load(self):
+        real = self.defs.check_fields
+
+        def failing(fields, name):
+            if name == "boom":
+                raise RuntimeError("unforeseen")
+            return real(fields, name)
+
+        with mock.patch.object(self.defs, "check_fields", failing):
+            record, plugin = self.load({"agents/boom.md": definition("boom"), "agents/good.md": definition("good"),
+                                        "skills/boom/SKILL.md": definition("boom"), "skills/boom/a.txt": b"a",
+                                        "skills/good/SKILL.md": definition("good")})
+        self.assertEqual(self.skipped(record), {"agents/boom.md": ["error:RuntimeError"],
+                                                "skills/boom/": ["error:RuntimeError"]})
+        self.assertEqual(self.files(plugin), [".claude-plugin/plugin.json", "agents/good.md", "skills/good/SKILL.md"])
+
+    def test_a_loader_that_cannot_read_the_brain_leaves_no_plugin_and_says_why(self):
+        plugin, record_file = self.tmp / "plugin", self.tmp / "brain-definitions.json"
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            self.assertEqual(self.defs.main([str(self.tmp / "no-brain"), str(plugin), str(record_file)]), 0)
+        self.assertIn("brain definitions not loaded: CalledProcessError", err.getvalue())  # the container's log
+        record = json.loads(record_file.read_text(encoding="utf-8"))
+        self.assertTrue(record["error"].startswith("CalledProcessError"), record["error"])
+        self.assertEqual((record["agents"], record["skills"]), ([], []))
+        self.assertFalse(plugin.exists())  # the CLI starts without a plugin it cannot find (test_live_cli)
+        self.assertFalse(plugin.with_name("plugin.partial").exists())
+
+    def test_the_capsule_loads_them_after_the_clone_and_before_claude_and_never_stops_on_them(self):
+        entry = (FOUNDER / "entrypoint.sh").read_text(encoding="utf-8")
+        loader = ('python3 /opt/founder/brain_defs.py /work/brain "$CLAUDE_CONFIG_DIR/brain-plugin" '
+                  '/work/logs/brain-definitions.json \\\n  || echo ')
+        self.assertEqual(entry.count("/opt/founder/brain_defs.py"), 1)
+        self.assertIn(loader, entry)  # `||`: under `set -e` a failed loader never stops the session
+        self.assertLess(entry.index("gc --quiet --prune=now"), entry.index(loader))
+        self.assertLess(entry.index(loader), entry.index("claude -p"))
+        call = entry[entry.index("claude -p"):entry.index('> "/work/logs/session-')]
+        self.assertEqual(re.findall(r"--plugin-dir \S+", entry), ['--plugin-dir "$CLAUDE_CONFIG_DIR/brain-plugin"'])
+        self.assertIn('--plugin-dir "$CLAUDE_CONFIG_DIR/brain-plugin"', call)
+        self.assertIn('--setting-sources ""', call)
+        for other in ("--agents", "--agent ", "--add-dir", "--settings", "--plugin-url", "--bare", "--safe-mode"):
+            self.assertNotIn(other, call)  # the plugin is the one way in
+        self.assertIn('CLAUDE_CONFIG_DIR="$(mktemp -d)"', entry)  # the plugin's folder is this session's own
+        self.assertIn("COPY founder/brain_defs.py /opt/founder/brain_defs.py", (FOUNDER / "Dockerfile").read_text(
+            encoding="utf-8"))
+        self.assertIn("founder/brain_defs.py", load_launch().BUILD_FILES)
+        self.assertEqual(self.defs.PLUGIN, "brain")
+
+    def test_the_prompt_states_which_brain_folders_load_and_where_their_record_is(self):  # E450, owner 2026-11-01
+        prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
+        title = "**Beynin tanımları (gözlem).**"
+        paragraph = prompt[prompt.index(title):]
+        paragraph = paragraph[:paragraph.index("**", len(title))]
+        for phrase in ("her oturumun başında", "`agents/` ve `skills/`", "`brain:<ad>`", "`spec/tohum/24a`",
+                       "başka hiçbir dosyasını yapılandırma olarak yüklemez", "`/work/logs/brain-definitions.json`"):
+            self.assertIn(phrase, paragraph)
+        for nudge in ("yaz", "kullan", "öner", "oluştur", "faydal", "yararl", "gerekirse", "istersen", "senindir", "meli",
+                      "malı"):
+            self.assertNotIn(nudge, paragraph.casefold())  # a fact: whether, when and why is the Founder's own choice
+        self.assertEqual(prompt.count("brain-definitions.json"), 1)
+        self.assertIn("`.claude/`", prompt[prompt.index("**Yapamazsın:**"):])  # its own .claude/ still loads nothing
+
+    def test_the_referee_judges_a_push_of_them_as_the_founders_code(self):  # E450: not out of scope, not a record
+        from snowball_bootstrap import classify
+        paths = ["agents/reviewer.md", "skills/probe/SKILL.md", "skills/probe/scripts/run.sh"]
+        self.assertEqual(classify.classify(paths), ("code", []))
+        self.assertEqual(classify.classify(paths + [classify.LEDGER_FILE]), ("code", []))
+        self.assertEqual(classify.classify(["spec/asama-0/a.md", "agents/reviewer.md"]),
+                         ("rejected", [classify.MIXED]))  # like any code beside a spec request
+        for path in paths:
+            self.assertFalse(classify.is_agent_config(path), path)
+            self.assertFalse(classify.is_founder_record(path), path)
+            self.assertFalse(classify.is_seed_path(path), path)
+            self.assertFalse(rival.hidden(path), path)  # the rival reads them like the rest of the push
+        self.assertEqual(self.defs.AGENT_CONFIG_DIRS, classify.AGENT_DIRS)  # one rule for both
+        self.assertEqual(self.defs.AGENT_CONFIG_FILES, classify.AGENT_FILES)
 
 
 if __name__ == "__main__":

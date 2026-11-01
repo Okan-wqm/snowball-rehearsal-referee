@@ -520,6 +520,14 @@ class E11LearningSplit(unittest.TestCase):
             st_ = res["state"]
         self.assertEqual(res["learning"]["not_learning"], ["rival_unresolved:secret_in_prompt:aws_access_key"])
 
+    def test_an_unrelated_streak_is_left_alone_by_an_exam_fault_list(self):
+        """E426: a fault names one signature; the rival's own failure still leaves every other streak as it was."""
+        st_ = state2(reject_streaks=dict(self.STREAKS), repeat_events=1)
+        res = run_decide(meta2("code", st_, exam_faults=["vector_failed:other"]), green(), unresolved("refusal"), [],
+                         dict(CODE_JOBS, yeniden="skipped"))
+        self.assertEqual((res["state"]["reject_streaks"], res["state"]["repeat_events"]), (self.STREAKS, 1))
+        self.assertEqual(res["exam_faults"], ["vector_failed:other"])  # named, though it took nothing off
+
     def test_three_rival_side_failures_in_a_row_warn_the_operator(self):
         st_ = state2()
         for n in range(3):
@@ -565,6 +573,87 @@ class E11LearningSplit(unittest.TestCase):
                                        ["getir=success", "kos=success", "cagir=success", "yeniden=skipped"])
         self.assertIn("rival_side_streak:3", result["warnings"])
         self.assertIn("::warning title=Rival", shown.getvalue())
+
+
+# ---------------------------------------------------------------- E426 an exam fault the operator confirmed
+
+
+class E426ExamFaultRetraction(unittest.TestCase):
+    """Item 14 (E426, folded into E53's rule): when the operator confirms that a rejection was the exam's own fault
+    (`control.json` `exam_faults`, handed over by pull while the exam that judged the head is in force), the streak
+    entry the wrong verdict caused is retracted and the signature is never counted, so keeping correct code under a
+    wrong verdict never ends in not_learning (E306: a wrong vector rejected correct code twice, the second `repeated`;
+    E260: a wrong proof rejected every correct head). The rejection itself stands until the exam is fixed."""
+
+    FAULT = "vector_failed:prompt.secret_never_sent"
+    RED_JOBS = {"getir": "success", "kos": "success", "cagir": "skipped"}
+
+    def vectors_red(self, *ids):
+        run = green()
+        run["vectors"] = [{"id": i, "ok": False, "detail": "wrong input"} for i in ids]
+        run["green"] = False
+        return run
+
+    def push(self, st_, n, *vector_ids, faults=()):
+        return run_decide(meta2("code", st_, head=f"{n:040d}", exam_faults=list(faults)), self.vectors_red(*vector_ids),
+                          None, [], self.RED_JOBS)
+
+    def test_the_streak_entry_a_wrong_verdict_caused_is_retracted_and_the_rejection_stands(self):
+        st_ = state2(reject_streaks={self.FAULT: 2, "test_failed:T9": 1}, repeat_events=1)
+        res = self.push(st_, 3, "prompt.secret_never_sent", faults=[self.FAULT])
+        self.assertEqual(res["verdict"], "rejected")
+        self.assertEqual([(r["kind"], r["ref"]) for r in res["reasons"]],
+                         [("vector_failed", "prompt.secret_never_sent")])
+        self.assertEqual(res["state"]["reject_streaks"], {})  # rejected for nothing else: the streaks end as on a pass
+        self.assertEqual(res["state"]["repeat_events"], 1)  # what was counted before stays counted
+        self.assertEqual((res["learning"]["repeated"], res["learning"]["not_learning"]), ([], []))
+        self.assertEqual(res["exam_faults"], [self.FAULT])
+        self.assertEqual(res["state"]["last_evaluated_sha"], f"{3:040d}")  # judged, not retried
+
+    def test_keeping_correct_code_under_a_wrong_verdict_never_reaches_not_learning(self):
+        for faults, expected in (((), [self.FAULT]), ((self.FAULT,), [])):
+            st_ = state2()
+            for n in range(1, 5):
+                res = self.push(st_, n, "prompt.secret_never_sent", faults=faults)
+                st_ = res["state"]
+            self.assertEqual(res["learning"]["not_learning"], expected, faults)
+            self.assertEqual(st_["repeat_events"], 3 if not faults else 0, faults)
+
+    def test_every_other_signature_still_counts(self):
+        st_ = state2(reject_streaks={self.FAULT: 1, "vector_failed:chain.v1": 1})
+        res = self.push(st_, 2, "prompt.secret_never_sent", "chain.v1", faults=[self.FAULT])
+        self.assertEqual(res["state"]["reject_streaks"], {"vector_failed:chain.v1": 2})
+        self.assertEqual(res["state"]["repeat_events"], 1)
+        self.assertEqual(res["learning"]["repeated"], ["vector_failed:chain.v1"])
+
+    def test_a_retraction_needs_no_evaluated_run(self):
+        """The entry goes from the state on the first run after the confirmation, whatever that run judges."""
+        st_ = state2(reject_streaks={self.FAULT: 2, "test_failed:T9": 1})
+        res = run_decide(meta2("none", st_, exam_faults=[self.FAULT]))
+        self.assertEqual(res["verdict"], "noop")
+        self.assertEqual(res["state"]["reject_streaks"], {"test_failed:T9": 1})
+        self.assertEqual(res["exam_faults"], [self.FAULT])
+
+    def test_a_wrong_proof_keeps_rejecting_but_is_never_the_founders_streak(self):
+        """E260's shape: a kept refutation still reproduces on correct code; the operator confirmed the exam fault
+        (its waiver is a separate, explicit choice, `waived_refutations`), so the push is rejected and counted for
+        nothing."""
+        entry = refutation_entry()
+        fault = "refutation:" + entry["key"]
+        st_ = state2(open_refutations=[entry], reject_streaks={fault: 2})
+        res = run_decide(meta2("code", st_, state_repro=[entry["key"]], exam_faults=[fault]), green(), not_refuted(),
+                         [], CODE_JOBS, state_repro=[state_ran(entry["key"], "refutation", True)])
+        self.assertEqual(res["verdict"], "rejected")
+        self.assertEqual([r["kind"] for r in res["reasons"]], ["refutation_still_reproduces"])
+        self.assertEqual((res["state"]["reject_streaks"], res["learning"]["not_learning"]), ({}, []))
+        self.assertEqual(len(res["state"]["open_refutations"]), 1)
+
+    def test_without_a_confirmed_fault_nothing_changes(self):
+        st_ = state2(reject_streaks={self.FAULT: 2})
+        res = self.push(st_, 3, "prompt.secret_never_sent")
+        self.assertEqual(res["state"]["reject_streaks"], {self.FAULT: 3})
+        self.assertEqual(res["learning"]["not_learning"], [self.FAULT])
+        self.assertEqual(res["exam_faults"], [])
 
 
 # ---------------------------------------------------------------- E12 permanent failures and operator stops

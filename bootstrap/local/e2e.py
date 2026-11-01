@@ -4,7 +4,8 @@ It builds a throwaway brain repository from the reference brain in ``reference_b
 tested implementation of micro-feature 1, the hash-chained ledger, and nothing it does not have; the reference
 implementations of MF2-MF16 and MF18 it also carries are not declared done, so their vectors do not run here), writes
 operator files for a throwaway referee, and runs the same steps the workflow runs: pull -> fetch-deps
--> run-tests (real docker, no network) -> decide. Sigstore signing is not run (it needs a workflow's
+-> run-tests (real docker, no network), then `kos` as the workflow runs it (run-part 0/2 and 1/2, join-parts; the
+same run but for the tests' timings, E440) -> decide. Sigstore signing is not run (it needs a workflow's
 OIDC identity). The reference brain uses the standard library only, so fetch-deps has nothing to fetch;
 the real hash-pinned download and the licence gate run in the workflow's own Sigstore step.
 
@@ -63,6 +64,33 @@ def brain_files() -> dict[str, str]:
     """The reference brain's files, keyed by their path in the brain repository."""
     return {p.relative_to(BRAIN).as_posix(): p.read_text(encoding="utf-8") for p in sorted(BRAIN.rglob("*"))
             if p.is_file() and "__pycache__" not in p.parts}
+
+
+def run_in_parts(referee: Path, pulled: Path, deps: Path, work: Path, count: int) -> dict:
+    """`kos` as the workflow runs it (E440): each part in its own work directory, packed with its hash; the join reads
+    every part only by that hash."""
+    common = ["--root", str(referee), "--pulled", str(pulled), "--deps", str(deps)]
+    argv = ["join-parts", *common, "--work", str(work / "join"), "--out", str(work / "joined")]
+    for k in range(count):
+        out = work / f"part-{k}"
+        assert cli.main(["run-part", "--part", f"{k}/{count}", *common, "--work", str(work / f"pw{k}"),
+                         "--out", str(out)]) == 0, f"run-part {k}/{count} failed"
+        sha = cli.pack_dir(out, work / f"part-{k}.tar")
+        argv += ["--part", f"{work / f'part-{k}.tar'}={sha}"]
+    assert cli.main(argv) == 0, "join-parts failed"
+    return json.loads((work / "joined" / "run.json").read_text())
+
+
+def timeless(run: dict) -> dict:
+    """A run without what two real runs of the same test never share: its duration and what it printed about it."""
+    run = json.loads(json.dumps(run))
+    for t in run["tests"]:
+        for key in ("duration_ms", "stdout_sha256", "stderr_sha256", "output_tail"):
+            t.pop(key, None)
+    for m in run["module_less"]:
+        m.pop("output_sha256", None)
+        m.pop("output_tail", None)
+    return run
 
 
 def main() -> int:
@@ -143,6 +171,14 @@ def main() -> int:
           f"module-less red {[(m['test_id'], m['exit']) for m in run['module_less']]}, green={run['green']}")
     for item in bad:
         print("   NOT OK:", json.dumps(item)[:300])
+    joined = run_in_parts(referee, pulled, deps, work, 2)
+    same = timeless(joined) == timeless(run)
+    print(f"4b/4 the workflow's kos: run-part 0/2 and 1/2 in docker, join-parts by hash: the same run as run-tests "
+          f"but for timings: {same}")
+    if not same:
+        print("work directory:", work)
+        return 1
+    run = joined  # what the workflow's `kos` uploads and `yaz` decides on
     rival, repro, jobs = rival_ok, [], {"getir": "success", "kos": "success", "cagir": "success",
                                         "yeniden": "skipped"}
     if args.rival and run["green"]:

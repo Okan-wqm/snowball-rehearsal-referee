@@ -7,10 +7,15 @@ and a changed input must not.
 
 `chain` and the P1 and drill groups have judges of their own, written before `29d`. Every other group is data
 (`"runner": "data"`) and one judge applies it, so a seed epoch adds a group without adding code (`29d`).
+
+The judges only judge; who runs a call is the run's (E440). `VectorRun` runs every call itself, `PartRun` only the
+inputs one part of `kos` owns, `Replay` none: it hands each call the answer a part recorded for it, so the join judges
+every vector over the parts' answers exactly as the single job judges over its own.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import re
@@ -31,11 +36,13 @@ _HASH = re.compile("[0-9a-f]{40}|[0-9a-f]{64}")
 # `docker run` exits with this when docker itself failed. Since E01 the container turns a command's own 125 into 1,
 # so 125 here never comes from the Founder's code: such a vector is the sandbox failing, not a wrong answer (E141).
 DOCKER_ERROR = 125
-# Every vector call of one push together, retries included. The spec names no limit; this one keeps a command that
-# hangs on every input from outliving the `kos` job (60 min), which would book the push as an outage that never
-# reaches the Founder. What the budget leaves unrun is red as `not_run:time_budget` and the Founder's (E18's plan).
+# Every vector call of one `kos` part together, retries included: a part is its own job, and the single job is one
+# part (E440). The spec names no limit; this one keeps a command that hangs on every input from outliving the job
+# (60 min), which would book the push as an outage that never reaches the Founder. What the budget leaves unrun is red
+# as `not_run:time_budget` and the Founder's (E18's plan).
 BUDGET_S = 1200
 _now = time.monotonic
+TAPE_FIELDS = ("input", "line", "exit", "fault")  # one call's answer as a part records it (E440)
 
 
 def fixtures(vectors_dir: Path, dest: Path) -> Path:
@@ -117,17 +124,35 @@ def _lookups(vectors_dir: Path, spec: dict[str, Any]) -> list[str]:
     return sorted(found)
 
 
-def _last_json(stdout: bytes) -> dict[str, Any] | None:
+def _last_line(stdout: bytes) -> str | None:
+    """A call's answer as it printed it: the last line of stdout that is not blank, or None when every line is. The
+    line is what a part records, so the join reads the object, its fields and their order as the single job does."""
     for line in reversed(stdout.decode("utf-8", "replace").splitlines()):
         line = line.strip()
-        if not line:
-            continue
-        try:
-            value = json.loads(line)
-        except (json.JSONDecodeError, RecursionError):  # nested deeper than the parser goes is no answer, not a crash
-            return None
-        return value if isinstance(value, dict) else None
+        if line:
+            return line
     return None
+
+
+def _parse(line: str | None) -> dict[str, Any] | None:
+    """The JSON object an answer's line holds, or None."""
+    if line is None:
+        return None
+    try:
+        value = json.loads(line)
+    except (json.JSONDecodeError, RecursionError):  # nested deeper than the parser goes is no answer, not a crash
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def input_key(cmd: str, stdin: bytes) -> str:
+    """One input of the run (E273: one command on one stdin over the same tree and `/vec`), as a tape names it."""
+    raw = cmd.encode("utf-8", "surrogatepass")
+    return hashlib.sha256(len(raw).to_bytes(8, "big") + raw + stdin).hexdigest()
+
+
+class TapeError(ValueError):
+    """The answers handed to the judges are not the calls the judges make (E440): nothing is judged on them."""
 
 
 def _rounded(value: Any, like: str) -> str | None:
@@ -151,13 +176,21 @@ class VectorRun:
         # E273: one command on one stdin over the same read-only tree and `/vec` is one input. A case whose input an
         # earlier case ran (a changed input is often another case's input) reuses that answer: a container less, the
         # budget kept for inputs not yet asked. Only answers are kept; a call that gave none is asked again.
-        self.answers: dict[tuple[str, bytes], tuple[dict[str, Any] | None, int]] = {}
+        self.answers: dict[tuple[str, bytes], tuple[str | None, int]] = {}
+        # E440: every call in order, with what a record reads of it (the answer's line, the exit, the fault): what a
+        # part of `kos` hands the join.
+        self.tape: list[dict[str, Any]] = []
 
     def call(self, cmd: str, stdin: bytes = b"") -> dict[str, Any] | None:
+        line = self._ask(cmd, stdin)
+        self.tape.append({"input": input_key(cmd, stdin), "line": line, "exit": self.exit, "fault": self.fault})
+        return _parse(line)
+
+    def _ask(self, cmd: str, stdin: bytes) -> str | None:
         if (cmd, stdin) in self.answers:
-            out, self.exit = self.answers[(cmd, stdin)]
+            line, self.exit = self.answers[(cmd, stdin)]
             self.fault = ""
-            return out
+            return line
         res = None
         for _ in range(2):  # a container the host killed under load answers nothing: ask again before blaming the judge
             left = self.deadline - _now()
@@ -167,7 +200,7 @@ class VectorRun:
             self.exit = res.exit_code
             if not res.timed_out and res.stdout.strip():
                 self.fault = ""
-                self.answers[(cmd, stdin)] = (_last_json(res.stdout), res.exit_code)
+                self.answers[(cmd, stdin)] = (_last_line(res.stdout), res.exit_code)
                 return self.answers[(cmd, stdin)][0]
         if res is None:  # the budget was spent before this call: it never ran
             self.exit = None
@@ -183,6 +216,59 @@ class VectorRun:
             self.fault = ""
         self.results.append({"id": vid, "ok": ok, "detail": detail[:200], "exit": self.exit,
                              "runner_fault": not ok and self.exit == DOCKER_ERROR})
+
+
+class PartRun(VectorRun):
+    """One part's share of a push (E440): it runs the calls whose input ``mine`` holds, each exactly as the single job
+    runs it (the same retries, the same remembered answers, its own budget), and no other. A record after a call it
+    left to another part reads no answer of its own: it is not kept here (the join writes every record)."""
+
+    def __init__(self, runner: Runner, timeout_s: int, mine: set[str]):
+        super().__init__(runner, timeout_s)
+        self.mine = mine
+        self.blind = False
+
+    def call(self, cmd: str, stdin: bytes = b"") -> dict[str, Any] | None:
+        if input_key(cmd, stdin) in self.mine:
+            return super().call(cmd, stdin)
+        self.blind = True
+        return None
+
+    def record(self, vid: str, ok: bool, detail: str = "") -> None:
+        if self.blind:
+            self.blind = False
+            return
+        super().record(vid, ok, detail)
+
+
+class Replay(VectorRun):
+    """The join's run (E440): no container. Each call takes the next answer of the parts' merged tape, which must be
+    this call's input, and leaves its exit and fault where the record reads them, as the call that answered did."""
+
+    def __init__(self, tape: list[dict[str, Any]]):
+        super().__init__(None, 0)  # it runs nothing
+        self.queue, self.next = tape, 0
+
+    def call(self, cmd: str, stdin: bytes = b"") -> dict[str, Any] | None:
+        if self.next >= len(self.queue) or self.queue[self.next]["input"] != input_key(cmd, stdin):
+            raise TapeError(f"call {self.next} of the judges is not the parts' call {self.next}")
+        entry = self.queue[self.next]
+        self.next += 1
+        self.exit, self.fault = entry["exit"], entry["fault"]
+        return _parse(entry["line"])
+
+
+class _Plan(VectorRun):
+    """Runs nothing: it notes the input of every call the judges make. No judge asks a call for what an earlier
+    call answered, so this is the order every run asks them in (`Replay` refuses a tape that is not)."""
+
+    def __init__(self) -> None:
+        super().__init__(None, 0)
+        self.inputs: list[str] = []
+
+    def call(self, cmd: str, stdin: bytes = b"") -> dict[str, Any] | None:
+        self.inputs.append(input_key(cmd, stdin))
+        return None
 
 
 def _chain(run: VectorRun, spec: dict[str, Any]) -> None:
@@ -314,12 +400,51 @@ def missing_groups(vectors_dir: Path, done_mf: tuple[int, ...], table: stages.St
     return [g for g in table.groups_of(done_mf) if g not in judges]
 
 
-def run_vectors(runner: Runner, vectors_dir: Path, done_mf: tuple[int, ...], timeout_s: int = 120, *,
-                table: stages.StageTable | None = None, tree: Path | None = None) -> list[dict]:
+Applied = list[tuple[Callable[[VectorRun, dict[str, Any]], None], dict[str, Any]]]
+
+
+def applied(vectors_dir: Path, done_mf: tuple[int, ...], *, table: stages.StageTable | None = None,
+            tree: Path | None = None) -> Applied:
+    """The groups one push runs, in the seed's order, each with its judge and its vectors: those a finished
+    micro-feature owns and the seed has a judge for (E151, E199). The single job, every part and the join run these."""
     owned = set((table or stages.load(0)).groups_of(done_mf))
     spec = _seed(vectors_dir)
-    run = VectorRun(runner, timeout_s)
+    found: Applied = []
     for name, judge in _judges(spec, tree).items():
         if name in owned:
-            judge(run, spec[name])
+            found.append((judge, spec[name]))
+    return found
+
+
+def _judge(run: VectorRun, groups: Applied) -> list[dict]:
+    for judge, group in groups:
+        judge(run, group)
     return run.results
+
+
+def run_vectors(runner: Runner, vectors_dir: Path, done_mf: tuple[int, ...], timeout_s: int = 120, *,
+                table: stages.StageTable | None = None, tree: Path | None = None) -> list[dict]:
+    return _judge(VectorRun(runner, timeout_s), applied(vectors_dir, done_mf, table=table, tree=tree))
+
+
+def call_inputs(groups: Applied) -> list[str]:
+    """The input of every call a push's judges make, in order; nothing runs (E440)."""
+    plan = _Plan()
+    _judge(plan, groups)
+    return plan.inputs
+
+
+def run_part(runner: Runner, groups: Applied, mine: set[str], timeout_s: int = 120) -> tuple[list[dict], list[dict]]:
+    """One part's calls (E440): its tape, and the records it could write from its own answers alone."""
+    run = PartRun(runner, timeout_s, mine)
+    known = _judge(run, groups)
+    return run.tape, known
+
+
+def replay(tape: list[dict[str, Any]], groups: Applied) -> list[dict]:
+    """Every record of a push, judged over ``tape``: the parts' answers merged in the judges' call order (E440)."""
+    run = Replay(tape)
+    records = _judge(run, groups)
+    if run.next != len(tape):
+        raise TapeError(f"the parts answered {len(tape) - run.next} calls the judges never make")
+    return records

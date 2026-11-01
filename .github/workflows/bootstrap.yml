@@ -23,7 +23,8 @@
 # Jobs and what they may hold (tohum/08 1):
 #   cek     GITHUB_TOKEN (contents, actions: read); the brain is read anonymously - runs no brain code
 #   getir   nothing; network for wheels only                         - runs no brain code
-#   kos     nothing; brain code only inside --network none containers
+#   kos_parca  nothing; brain code only inside --network none containers (one job per part, E440)
+#   kos     nothing; joins the parts' records, judging the vectors on their answers - runs no brain code
 #   cagir   operator's Claude login (CLAUDE_CODE_OAUTH_TOKEN)        - runs no brain code
 #   yeniden nothing; reproducers only inside --network none containers
 #   yaz     OIDC (Sigstore) and contents: read                         - runs no brain code
@@ -169,15 +170,24 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-  kos:
+  kos_parca:
+    # `kos` in parts (E440): each part runs the controls in its own sandbox and its share of the push, place mod N,
+    # exactly as the single job runs it: the declared tests, the vector inputs (each asked once, by one part) and, when
+    # nothing it saw is red, module-less red. It judges nothing; `kos` joins the parts in the single job's order.
     needs: [cek, getir]
     if: needs.cek.outputs.run_tests == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions: {}
+    strategy:
+      fail-fast: true
+      matrix:
+        part: [0, 1, 2, 3]  # one output per part below, one --part per part in `kos` (test_wiring KosPartsTest)
     outputs:
-      run_sha: ${{ steps.pack.outputs.run_sha }}
-      green: ${{ steps.run.outputs.green }}
+      part_sha_0: ${{ steps.pack.outputs.part_sha_0 }}
+      part_sha_1: ${{ steps.pack.outputs.part_sha_1 }}
+      part_sha_2: ${{ steps.pack.outputs.part_sha_2 }}
+      part_sha_3: ${{ steps.pack.outputs.part_sha_3 }}
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with: { name: snapshot }
@@ -195,9 +205,64 @@ jobs:
         run: python3 -m snowball_bootstrap control --root snap
       - name: Pull the pinned image
         run: docker pull "${{ needs.cek.outputs.image }}"
+      - name: Red controls, this part's founder tests, vector inputs and module-less red in sandboxed containers
+        env:
+          PART: ${{ matrix.part }}
+          PARTS: ${{ strategy.job-total }}
+        run: python3 -m snowball_bootstrap run-part --part "$PART/$PARTS" --root snap --pulled pulled --deps deps --work work --out part
+      - id: pack
+        env:
+          PART: ${{ matrix.part }}
+        run: python3 -m snowball_bootstrap pack --dir part --out "part-$PART.tar" | sed -n "s/^sha256=/part_sha_${PART}=/p" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: run-part-${{ matrix.part }}
+          path: part-${{ matrix.part }}.tar
+          retention-days: 7
+          if-no-files-found: error
+
+  kos:
+    # Joins the parts (E440): each part's artifact only by the hash its job named, each part checked to be the part it
+    # says (place, count, head, plan) and to hold exactly its own share; then every vector is judged on the parts'
+    # answers in the single job's order. A part that failed, is missing or does not add up fails this job (`kos:failure`).
+    needs: [cek, getir, kos_parca]
+    if: >-
+      !cancelled() && needs.cek.outputs.run_tests == 'true' && needs.getir.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions: {}
+    outputs:
+      run_sha: ${{ steps.pack.outputs.run_sha }}
+      green: ${{ steps.run.outputs.green }}
+    steps:
+      - name: Every part finished
+        env:
+          RESULT: ${{ needs.kos_parca.result }}
+        run: test "$RESULT" = success
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: snapshot }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: pulled }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: deps }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { pattern: "run-part-*", path: parts, merge-multiple: true }
+      - name: Verify and unpack
+        run: |
+          echo "${{ needs.cek.outputs.snap_sha }}  snapshot.tar" | sha256sum -c -
+          echo "${{ needs.cek.outputs.pulled_sha }}  pulled.tar" | sha256sum -c -
+          echo "${{ needs.getir.outputs.deps_sha }}  deps.tar" | sha256sum -c -
+          mkdir snap pulled deps && tar -xf snapshot.tar -C snap && tar -xf pulled.tar -C pulled && tar -xf deps.tar -C deps
+      - name: Kill switch (snapshot of this run)
+        run: python3 -m snowball_bootstrap control --root snap
       - id: run
-        name: Red controls, founder tests, seed vectors and module-less red in sandboxed containers
-        run: python3 -m snowball_bootstrap run-tests --root snap --pulled pulled --deps deps --work work --out run
+        name: Join the parts and judge the vectors on their answers (no container)
+        run: >
+          python3 -m snowball_bootstrap join-parts --root snap --pulled pulled --deps deps --work work --out run
+          --part parts/part-0.tar=${{ needs.kos_parca.outputs.part_sha_0 }}
+          --part parts/part-1.tar=${{ needs.kos_parca.outputs.part_sha_1 }}
+          --part parts/part-2.tar=${{ needs.kos_parca.outputs.part_sha_2 }}
+          --part parts/part-3.tar=${{ needs.kos_parca.outputs.part_sha_3 }}
       - id: pack
         run: python3 -m snowball_bootstrap pack --dir run --out run.tar | sed -n 's/^sha256=/run_sha=/p' >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
