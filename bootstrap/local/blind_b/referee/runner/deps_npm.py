@@ -9,6 +9,13 @@ memory; nothing is written to disk. Prints one JSON line {ok, rejected, artefact
 
 Founder report E200: an install_scripts_required element is an exact lock key or name@version; anything else
 (a bare name) is refused as unusable input.
+
+Founder report spec-015 (npm workspaces locks, 29g): an in-repo link entry (link: true, relative target) and the
+workspace folder it names (a key with no node_modules component that an in-repo link's resolved names, e.g. "libs/x")
+are neither fetched nor checked; every other entry, nested "libs/x/node_modules/y" included, is fetched and checked
+and appears under its lock path. The folder rule was added by the integrator, not by B's blind author: the blind B of
+the first draft skipped any key outside node_modules with neither resolved nor integrity; only the folder an in-repo
+link names is skipped.
 """
 import base64
 import hashlib
@@ -128,18 +135,36 @@ def _read_tarball(data: bytes) -> dict:
     return {"manifest": manifest, "scripted": scripted}
 
 
-def check_package(path: str, entry: dict, mirror: str, egress: list, marks: set):
-    """Return (reason or None, info) for one lock entry; info is SKIP for an in-repo workspace link."""
+def _in_repo_link(entry: dict) -> bool:
+    resolved = entry.get("resolved")
+    return (entry.get("link") is True and isinstance(resolved, str) and not resolved.startswith(GIT_PREFIXES)
+            and not resolved.startswith("file:") and not _is_absolute(resolved) and not _has_dotdot(resolved))
+
+
+def _is_workspace_folder_key(path: str) -> bool:
+    """A lock key outside any node_modules directory: a workspace (or linked) folder, not an installed package."""
+    return "node_modules" not in re.split(r"[/\\]", path)
+
+
+def _link_targets(packages: dict) -> set:
+    """spec-015: the workspace folders, the keys outside node_modules that the lock's in-repo links resolve to."""
+    return {e["resolved"] for p, e in packages.items()
+            if p and isinstance(e, dict) and _in_repo_link(e) and _is_workspace_folder_key(e["resolved"])}
+
+
+def check_package(path: str, entry: dict, mirror: str, egress: list, marks: set, folders: set):
+    """Return (reason or None, info) for one lock entry; info is SKIP for an in-repo workspace link and the
+    workspace folder one names."""
+    if path in folders:
+        return None, SKIP
     resolved = entry.get("resolved")
     res = resolved if isinstance(resolved, str) else ""
     if res.startswith(GIT_PREFIXES):
         return "git_dependency", None
     if res.startswith("file:"):
         return "file_dependency", None
-    if entry.get("link") is True:
-        if not isinstance(resolved, str) or _is_absolute(resolved) or _has_dotdot(resolved):
-            return "file_dependency", None
-        return None, SKIP
+    if entry.get("link") is True:  # git and file: targets are named above; any other non-in-repo target is a file
+        return (None, SKIP) if _in_repo_link(entry) else ("file_dependency", None)
     if not any(res.startswith(e) for e in egress):
         return "registry_not_allowed", None
     fp = _mirror_file(mirror, res)
@@ -190,12 +215,13 @@ def fetch(lock, mirror: str, request) -> tuple:
         raise Unusable("mirror dir is unreadable") from e
 
     rejected, fetched = [], []
+    folders = _link_targets(lock["packages"])
     for path, entry in lock["packages"].items():
         if path == "":
             continue
         if not isinstance(entry, dict):
             raise Unusable(f"lock entry {path!r} is not an object")
-        reason, info = check_package(path, entry, mirror, egress, marks)
+        reason, info = check_package(path, entry, mirror, egress, marks, folders)
         if reason:
             rejected.append(f"{reason}:{path}")
         elif info is not SKIP:

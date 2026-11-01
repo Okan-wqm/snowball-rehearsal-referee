@@ -287,11 +287,11 @@ class ExitDecision(unittest.TestCase):
     and what the seed cannot check stays named with its open register row."""
 
     def state(self, **kw):
-        s = {"schema": "snowball-bootstrap-state/3", "origin": "artifact", "last_accepted_sha": A,
+        s = {"schema": "snowball-bootstrap-state/4", "origin": "artifact", "last_accepted_sha": A,
              "last_evaluated_sha": None, "frozen_specs": {}, "month": "2026-10", "month_spend_usd_micros": 0,
              "stage_spend_usd_micros": 0, "runs": 1, "reject_streaks": {}, "repeat_events": 0, "outage_sha": None,
              "outage_count": 0, "outage_since": None, "outage_stop": None, "rival_side_streak": 0,
-             "open_refutations": [], "open_claims": [], "pending_rival": None, "rejected_exit_request": None,
+             "open_refutations": [], "open_claims": [], "pending_rival": None, "rejected_exit_request": None, "exit_accepted_sha": None,
              "rival_artifacts": [{"sha": s_, "outcome": "survived"} for s_ in (A, "1" * 40, "2" * 40)]}
         s.update(kw)
         return s

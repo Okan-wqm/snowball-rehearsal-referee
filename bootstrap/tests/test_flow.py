@@ -59,13 +59,13 @@ class Flow(unittest.TestCase):
             "stage_budgets": {"asama_0": {"rival_usd": 30}},
             "license_allowlist": ["MIT", "Apache-2.0"], "license_exceptions": {}}}))
         (self.referee / "control.json").write_text(json.dumps({"kill_switch": False, "budget_state": "ok"}))
-        self.state = {"schema": "snowball-bootstrap-state/3", "origin": "initial",
+        self.state = {"schema": "snowball-bootstrap-state/4", "origin": "initial",
                       "last_accepted_sha": self.seed_sha, "last_evaluated_sha": None, "frozen_specs": {},
                       "rival_artifacts": [], "month": "2026-10", "month_spend_usd_micros": 0,
                       "stage_spend_usd_micros": 0, "runs": 0, "reject_streaks": {}, "repeat_events": 0,
                       "outage_sha": None, "outage_count": 0, "outage_since": None,
                       "outage_stop": None, "rival_side_streak": 0, "open_refutations": [], "open_claims": [],
-                      "pending_rival": None, "rejected_exit_request": None}
+                      "pending_rival": None, "rejected_exit_request": None, "exit_accepted_sha": None}
         self.n = 0
 
     def tearDown(self):
@@ -433,6 +433,72 @@ class Flow(unittest.TestCase):
         self.assertIsNone(result["state"]["last_evaluated_sha"])
         self.assertEqual((result["state"]["outage_sha"], result["state"]["outage_count"]), (meta["head"], 1))
 
+    def test_after_an_accepted_exit_a_push_that_touches_referee_is_refused(self):
+        """E333 (`asama-0/10a` "Başarısızlık", `asama-0/11`, `25a` 8): after (A) the referee tree is the one the exit was
+        accepted with; a code push that touches `referee/` is `referee_changed_after_exit`. Before (A) it is not."""
+        commit(self.brain, {"referee/a.py": "x = 2\n"}, "touches the referee")
+        self.assertNotIn("referee_changed_after_exit", self.pull()["pre_reasons"])
+        self.state["exit_accepted_sha"] = self.seed_sha
+        meta = self.pull()
+        self.assertIn("referee_changed_after_exit", meta["pre_reasons"])
+        self.assertFalse(meta["run_tests"])
+
+    def test_after_an_accepted_exit_only_candidates_and_targets_may_change(self):
+        """`asama-0/10a:42`, `asama-0/11:25`: "yalnız `candidates/` ve `targets/` değişebilir"; the Founder's memory
+        rides along. Any other path is named, a spec push and a new exit request too."""
+        self.state["exit_accepted_sha"] = self.seed_sha
+        commit(self.brain, {"candidates/toy/c1/expect.json": "{}\n", "targets/toy/units.json": "[]\n",
+                            "founder-ledger.jsonl": ledger_bytes(ledger_rows(1))}, "only what (B) may change")
+        self.assertEqual([r for r in self.pull()["pre_reasons"] if "after_exit" in r], [])
+        commit(self.brain, {"tests/test_x.py": "pass\n", "snowball-tests.json": "{}\n"}, "the exam's tests too")
+        self.assertEqual([r for r in self.pull()["pre_reasons"] if "after_exit" in r],
+                         ["changed_after_exit:snowball-tests.json", "changed_after_exit:tests/test_x.py"])
+        sh(self.brain, "git", "reset", "-q", "--hard", self.seed_sha)
+        commit(self.brain, {"spec/asama-1/00-ozet.md": "# stage 1\n"}, "the next stage's spec")
+        meta = self.pull()
+        self.assertEqual((meta["kind"], [r for r in meta["pre_reasons"] if "after_exit" in r]),
+                         ("spec", ["changed_after_exit:spec/asama-1/00-ozet.md"]))
+
+    def test_the_freeze_ends_when_the_operator_reverts_the_transfer(self):
+        """`asama-0/10a`, `25a` "Başarısızlık": (B) red, the operator reverts the transfer and names that exit in
+        `control.json` `reverted_exits`; the Founder's path is open again, referee/ too, and the next result forgets
+        the exit, so the freeze does not come back when the list is cleaned. The corrected SHA goes through (A) again."""
+        exit_sha = "e" * 40
+        self.state["exit_accepted_sha"] = exit_sha
+        control = self.referee / "control.json"
+        base_control = json.loads(control.read_text())
+        commit(self.brain, {"referee/a.py": "x = 2\n"}, "the fix (B) asked for")
+        control.write_text(json.dumps(dict(base_control, reverted_exits=["f" * 40])))  # another exit: still frozen
+        self.assertIn("referee_changed_after_exit", self.pull()["pre_reasons"])
+        control.write_text(json.dumps(dict(base_control, reverted_exits=[exit_sha])))
+        meta = self.pull()
+        self.assertNotIn("referee_changed_after_exit", meta["pre_reasons"])
+        self.assertTrue(meta["exit_released"])
+        self.assertIsNone(self.finish(meta)["state"]["exit_accepted_sha"])
+        control.write_text(json.dumps(base_control))
+        self.state["last_evaluated_sha"] = None
+        meta = self.pull()
+        self.assertEqual((meta["exit_released"], [r for r in meta["pre_reasons"] if "after_exit" in r]), (False, []))
+        for bad in ("e" * 40, ["short"], [exit_sha, 7]):
+            control.write_text(json.dumps(dict(base_control, reverted_exits=bad)))
+            with contextlib.redirect_stderr(io.StringIO()):
+                rc = cli.main(["pull", "--root", str(self.referee), "--state", str(Path(self.tmp.name) / "state1.json"),
+                               "--work", str(Path(self.tmp.name) / "work"), "--out", str(Path(self.tmp.name) / "bad"),
+                               "--remote", str(self.brain)])
+            self.assertEqual(rc, 2, bad)  # the operator's file: the run stops, the Founder is not rejected
+
+    def test_a_lock_that_opened_a_later_stage_ends_the_freeze(self):
+        """`asama-0/11`: the freeze is Stage 0's; after the PASS row and the lock the brain's referee/ changes again for
+        the next batch or stage exit (`01a`, `25a` 1). The lock's stage reaches `exit_freeze` as the table's."""
+        state = {"exit_accepted_sha": "e" * 40}
+        self.assertEqual(cli.exit_freeze(state, [], 0), (True, False))
+        self.assertEqual(cli.exit_freeze(state, [], 1), (False, True))
+        self.assertEqual(cli.exit_freeze(state, ["e" * 40], 0), (False, True))
+        self.assertEqual(cli.exit_freeze({"exit_accepted_sha": None}, ["e" * 40], 1), (False, False))
+        meta = self.pull()
+        result = self.finish(dict(meta, exit_released=True, state=dict(self.state, exit_accepted_sha="e" * 40)))
+        self.assertIsNone(result["state"]["exit_accepted_sha"])
+
     def test_full_stage0_path(self):
         meta = self.pull()
         self.assertEqual(meta["kind"], "none")
@@ -565,6 +631,7 @@ class Flow(unittest.TestCase):
             result = self.finish(meta, run=self.green_run(meta), jobs={"getir": "success", "kos": "success"})
         self.assertEqual(result["verdict"], "accepted", result["reasons"])
         self.assertTrue(result["exit"]["transferable"])
+        self.assertEqual(result["state"]["exit_accepted_sha"], meta["head"])  # (A): referee/ is frozen from here (E333)
         self.assertEqual(result["exit"]["repeat_events"], 0)
         tar_bytes = gitio.archive(self.brain, meta["head"])
         self.assertEqual(result["exit"]["toy_tree_sha256"],
@@ -677,6 +744,22 @@ class Flow(unittest.TestCase):
         meta = self.pull()
         self.assertIn("history_rewritten", meta["pre_reasons"])
         self.assertEqual(meta["kind"], "rejected")
+
+    def test_git_failing_on_the_ancestry_is_a_stop_never_history_rewritten(self):  # E384
+        """merge-base exits 128 on an object the pulled repository lacks: that is git failing, not the Founder
+        rewriting history, so the run stops (exit 2) instead of signing history_rewritten against the push."""
+        commit(self.brain, {"referee/a.py": "x = 1\n"}, "code")
+        self.state["last_accepted_sha"] = "e" * 40
+        out = Path(self.tmp.name) / "pulled_missing"
+        state_path = Path(self.tmp.name) / "state_missing.json"
+        state_path.write_text(json.dumps(self.state))
+        err = io.StringIO()
+        with mock.patch.object(cli.gitio, "has_commit", return_value=True), contextlib.redirect_stderr(err):
+            rc = cli.main(["pull", "--root", str(self.referee), "--state", str(state_path),
+                           "--work", str(Path(self.tmp.name) / "work"), "--out", str(out), "--remote", str(self.brain)])
+        self.assertEqual(rc, 2)
+        self.assertIn("git merge-base failed", err.getvalue())
+        self.assertFalse((out / "meta.json").exists())
 
     @posix_only
     def test_symlink_and_export_ignore(self):

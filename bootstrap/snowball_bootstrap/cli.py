@@ -17,10 +17,11 @@ from pathlib import Path
 from typing import Any
 
 from . import canon, config, exitchecks, ghapi, gitio, ledgercheck, licenses, stages, state as st, wiring
-from .classify import LEDGER_FILE, SEED_DIRS, classify, is_founder_record, is_seed_path, spec_stage_dirs
+from .classify import (LEDGER_FILE, REPORTS_DIR, SEED_DIRS, classify, is_founder_record, is_seed_path,
+                       spec_stage_dirs)
 from .container import DockerRunner
 from .controls import run_controls
-from .decide import OUTAGE_GIVE_UP_DAYS, OUTAGE_RETRY_LIMIT, decide, utc_now
+from .decide import OUTAGE_GIVE_UP_DAYS, OUTAGE_RETRY_LIMIT, REPORT_FIELDS, decide, utc_now
 from .importer import ImportErrorStop, run_import, verify_signature
 from .manifest import ManifestError, check_stage0, parse_lockfile, parse_manifest
 from .moduleless import run_module_less
@@ -281,8 +282,9 @@ def cmd_fetch_state(args: argparse.Namespace) -> int:
                 (prev_dir / name).write_bytes(zf.read(name))
         verify_signature(prev_dir / "result.json", prev_dir / "result.json.sigstore.json",
                          args.identity, args.sigstore_python)
-        raw = read_json(prev_dir / "result.json")["state"]
-        carried = st.migrate(raw, utc_now())  # an older schema is carried forward, never thrown away (`25`)
+        signed = read_json(prev_dir / "result.json")
+        raw = signed["state"]
+        carried = st.migrate(raw, utc_now(), signed)  # an older schema is carried forward, never thrown away (`25`)
         if carried is not raw:
             summary(f"The previous state ({raw.get('schema')}) was carried forward to {st.SCHEMA}.")
         prev = st.rollover(st.validate(carried), month_now())
@@ -315,8 +317,9 @@ def cmd_pull(args: argparse.Namespace) -> int:
     if summary_cfg.epoch is not None:  # outside the content guard: a wrong row is the operator's to fix
         _check_epoch(repo, summary_cfg.epoch)
     waived = config.load_waivers(root)
+    reverted = config.load_reverted_exits(root)  # the operator's file: a broken list stops the run, never a rejection
     try:
-        return _pull_classify(boot, policy, summary_cfg, table, prev, repo, base, head, meta, out, waived)
+        return _pull_classify(boot, policy, summary_cfg, table, prev, repo, base, head, meta, out, waived, reverted)
     except (ValueError, TypeError, KeyError, IndexError, AttributeError, RecursionError) as exc:
         # Content of the commit broke a step that should have named it. Rejecting it is the only safe
         # answer that does not wedge the referee: without a signed result the same head comes back every
@@ -334,7 +337,38 @@ def _pull_meta(head: str, base: str, prev: dict[str, Any]) -> dict[str, Any]:
             "kind": "none", "changed": [], "pre_reasons": [], "evaluate": True,
             "run_tests": False, "run_rival": False, "manifest": None, "exit_request": None, "exit_request_sha256": None,
             "referee_tree_sha256": None, "spec_dir_hashes": {}, "state_repro": [], "reuse_rival": False,
-            "waived": [], "module_less": [], "exit_checks": {}, "toy_tree_sha256": None, "honesty_exception": None}
+            "waived": [], "module_less": [], "exit_checks": {}, "toy_tree_sha256": None, "honesty_exception": None,
+            "reports": []}
+
+
+MAX_REPORTS = 200
+MAX_REPORT_FIELD = 500
+
+
+def read_reports(tar_bytes: bytes) -> list[dict[str, Any]]:
+    """The brain's reports (`26c` reports/*.json, E93): every regular file directly under the root `reports/` whose name
+    ends in `.json`, by path, as ``{id, kind, ref, state, sha256}``; the hash is of the file's bytes. A field that is
+    missing, not a string or longer than ``MAX_REPORT_FIELD``, or any field of a file that is not one JSON object, is
+    null: the reader names what a report holds and never turns a report into a reason (it is the Founder's memory, not
+    its code). An archive with something other than regular files has no reports to read here: `pull` names that."""
+    found: list[tuple[str, dict[str, Any]]] = []
+    try:
+        for path, content, _exec in iter_files(tar_bytes):
+            if len(path.parts) != 2 or path.parts[0] != REPORTS_DIR.rstrip("/") or not path.name.endswith(".json"):
+                continue
+            try:
+                data = json.loads(content.decode("utf-8"))
+            except (UnicodeDecodeError, ValueError, RecursionError):
+                data = None
+            row: dict[str, Any] = {}
+            for key in REPORT_FIELDS:
+                value = data.get(key) if isinstance(data, dict) else None
+                row[key] = value if isinstance(value, str) and len(value) <= MAX_REPORT_FIELD else None
+            row["sha256"] = hashlib.sha256(content).hexdigest()
+            found.append((path.as_posix(), row))
+    except TreeError:
+        return []
+    return [row for _path, row in sorted(found, key=lambda item: item[0])][:MAX_REPORTS]
 
 
 def seed_trees(tar_bytes: bytes) -> tuple[str | None, str | None]:
@@ -362,7 +396,8 @@ def _check_epoch(repo: Path, epoch: config.SeedEpoch) -> None:
 def _seed_update(repo: Path, base: str, head: str, meta: dict[str, Any], out: Path, waived: list[str]) -> int:
     """The operator's seed delivery itself (`25` 10b): nothing in it is the Founder's, so nothing is judged (E88)."""
     changed = gitio.changed_paths(repo, base, head) if gitio.has_commit(repo, base) else []
-    meta.update(kind="seed_update", changed=[shown(p) for p in changed], waived=waived)
+    meta.update(kind="seed_update", changed=[shown(p) for p in changed], waived=waived,
+                reports=read_reports(gitio.archive(repo, head)))  # the brain's reports are named on every result
     write_json(out / "meta.json", meta)
     output(skip=False, kind="seed_update", head=head, run_tests=False, run_rival=False, repro=False)
     return 0
@@ -385,10 +420,27 @@ def _base_done(repo: Path, base: str) -> set[int]:
         return set()
 
 
+EXIT_MAY_CHANGE = ("candidates/", "targets/")  # what (B) may change after (A) (`asama-0/10a`, `asama-0/11`)
+
+
+def exit_freeze(prev: dict[str, Any], reverted: list[str], stage: int) -> tuple[bool, bool]:
+    """(frozen, released) for the accepted exit the signed state names (E333). From (A) the brain stays the one the
+    exit was accepted with, but for (B)'s candidates and targets, while Stage 0 is open (`asama-0/11`); the operator's
+    revert of the transfer after a red (B), named in ``control.json`` ``reverted_exits``, or a lock that opened a later
+    stage ends it, and the state forgets that exit (`asama-0/10a` "Başarısızlık": the corrected SHA goes through (A)
+    again)."""
+    sha = prev.get("exit_accepted_sha")
+    if not sha:
+        return False, False
+    released = stage != 0 or sha in reverted
+    return not released, released
+
+
 def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: config.Summary,
                    table: stages.StageTable, prev: dict[str, Any], repo: Path, base: str, head: str,
-                   meta: dict[str, Any], out: Path, waived: list[str]) -> int:
+                   meta: dict[str, Any], out: Path, waived: list[str], reverted: list[str]) -> int:
     epoch = summary_cfg.epoch
+    frozen, meta["exit_released"] = exit_freeze(prev, reverted, table.stage)
     if epoch is not None and head == epoch.commit:
         return _seed_update(repo, base, head, meta, out, waived)
     pre: list[str] = []
@@ -407,6 +459,7 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     tar_bytes = gitio.archive(repo, head)
     readable = not {"non_utf8_path", "unsafe_path"} & set(pre)
     trees = seed_trees(tar_bytes) if readable else (None, None)
+    meta["reports"] = read_reports(tar_bytes) if readable else []  # `26c`, E93: named in the signed result
     # While the head's seed is the last epoch's commit's, the seed paths in the diff from the last accepted commit are
     # the operator's delivery, not the Founder's change (`25` 10b, E88); any other seed is checked below. Git compares
     # them: a mode change counts (the tree hashes leave the executable bit out) and an unreadable tree is no excuse
@@ -428,6 +481,14 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
         pre += reasons
         if EXIT_FILE in judged and not left_in_place:
             pre.append("exit_request_not_alone")
+    if frozen and kind in ("spec", "code", "exit"):
+        # After (A) the referee tree is the one the exit was accepted with: the import copies it and the loop runs
+        # it; only (B)'s candidates and targets may change, the Founder's memory beside them (`asama-0/10a`
+        # "Başarısızlık", `asama-0/11`, `25a` 8; E333).
+        moved = [p for p in own if not is_founder_record(p) and not p.startswith(EXIT_MAY_CHANGE)]
+        if any(p.startswith("referee/") for p in moved):
+            pre.append("referee_changed_after_exit")
+        pre += [f"changed_after_exit:{p}" for p in moved if not p.startswith("referee/")][:20]
     if {"base_unreachable", "history_rewritten", "non_utf8_path", "unsafe_path"} & set(pre):  # nothing can be read safely
         kind = "rejected"
     pre += [f"not_regular_file:{x}" for x in gitio.special_entries(repo, head)][:20]

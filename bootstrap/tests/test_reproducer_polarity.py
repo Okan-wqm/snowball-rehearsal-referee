@@ -25,6 +25,7 @@ from unittest import mock
 
 from snowball_bootstrap import reproduce, rival, secretscan, state as st
 from snowball_bootstrap.container import RunResult
+from helpers import quiet_pilot
 
 import test_rival_memory
 from test_founder_capsule import load_launch
@@ -331,7 +332,7 @@ class E260PilotMetric(unittest.TestCase):
         launch = load_launch()
         before, after = "a" * 40, "b" * 40
 
-        class Fake(launch.Pilot):
+        class Fake(quiet_pilot(launch)):
             heads = [before, after]
             dispatches = 0
 

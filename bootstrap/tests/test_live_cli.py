@@ -7,6 +7,8 @@ this module parses when it accepted every flag in `_cli_argv`.
 
 import json
 import os
+import re
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -17,10 +19,57 @@ from snowball_bootstrap import rival
 from snowball_bootstrap.config import RivalConfig
 
 PIN_FILE = Path(__file__).resolve().parents[1] / "requirements" / "claude-cli" / "package.json"
+ENTRYPOINT = Path(__file__).resolve().parents[2] / "founder" / "entrypoint.sh"
 CLAUDE = rival.resolve_claude(None)
 CFG = RivalConfig(model="claude-sonnet-5-5", effort="medium", max_turns=5, per_run_cap_usd_micros=1_000_000)
 # Flags the CLI accepts but leaves out of `claude --help` (verified against 2.1.293).
 HIDDEN_FLAGS = {"--system-prompt-file", "--max-turns"}
+DENIED = {"RemoteTrigger", "CronCreate", "CronDelete", "CronList"}  # E380
+# The default tools the Founder keeps. A signed-out CLI never offers WebFetch (nor RemoteTrigger), with the flag or
+# without it (2.1.293 on Windows and in the capsule's image); under a login it does, and the flag drops RemoteTrigger
+# only (checked with the API pointed at a closed port, E380). So a made-up token checks the rest.
+KEPT = {"Bash", "Read", "Write", "Edit", "Task", "Workflow", "WebSearch", "ScheduleWakeup", "ToolSearch", "TaskStop",
+        "ListAgents"}
+SIGNED_IN_ONLY = {"WebFetch"}
+
+
+def entrypoint_argv(claude: str, config_dir: Path, deny: bool = True) -> list[str]:
+    """The capsule's own `claude -p` call from entrypoint.sh, its shell defaults filled in and a one-word prompt; with
+    deny=False, without its --disallowedTools (the control: the tools the flag removes are there without it)."""
+    text = ENTRYPOINT.read_text(encoding="utf-8")
+    call = text[text.index("claude -p "):text.index('> "/work/logs/session-')]
+    call = re.sub(r"\$\{\w+:-([^}]*)\}", r"\1", call.replace("\\\n", " ").replace("\\\r\n", " "))
+    argv = [arg.replace("$CLAUDE_CONFIG_DIR", str(config_dir)) for arg in shlex.split(call)]
+    argv[argv.index("-p") + 1] = "hello"  # was "$(cat /opt/founder/prompt.md)"
+    if not deny:
+        i = argv.index("--disallowedTools")
+        del argv[i:i + 2]
+    return [claude, *argv[1:]]
+
+
+def init_tools(argv: list[str], env: dict[str, str], cwd: Path) -> list[str]:
+    """The tools the CLI's init event names; the CLI (behind a Windows .cmd shim too) is killed as soon as it is
+    printed, before its first request."""
+    group = {"start_new_session": True} if os.name != "nt" else {}
+    proc = subprocess.Popen(argv, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", **group)
+    try:
+        for line in proc.stdout:
+            if line.startswith("{"):
+                event = json.loads(line)
+                if event.get("type") == "system" and event.get("subtype") == "init":
+                    return sorted(map(str, event.get("tools") or []))
+        raise AssertionError("the CLI printed no init event")
+    finally:
+        rival._kill_tree(proc)
+        proc.wait()
+        proc.stdout.close()
+
+
+def cli_env(**extra: str) -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("ANTHROPIC_", "CLAUDE_"))}
+    env.update(extra)
+    return env
 
 
 @unittest.skipUnless(CLAUDE, "the claude CLI is not on PATH")
@@ -55,6 +104,47 @@ class LiveCliContractTest(unittest.TestCase):
         version = subprocess.run([CLAUDE, "--version"], capture_output=True, text=True).stdout.split()[0]
         if version != pin:
             self.skipTest(f"claude {version} is installed, the pin is {pin}; the contract tests above still apply")
+
+
+@unittest.skipUnless(CLAUDE, "the claude CLI is not on PATH")
+class CapsuleToolSurfaceTest(unittest.TestCase):  # E380
+    """The Founder's own call (entrypoint.sh) against the real CLI, with a made-up token: nothing reaches a model."""
+
+    def tools(self, deny: bool) -> list[str]:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            cfg, cwd = Path(tmp) / "cfg", Path(tmp) / "cwd"
+            cfg.mkdir()
+            cwd.mkdir()
+            (cfg / "no-mcp.json").write_text('{"mcpServers":{}}\n', encoding="utf-8")
+            env = cli_env(**rival.PINNED_ENV, CLAUDE_CODE_OAUTH_TOKEN="not-a-real-token", CLAUDE_CONFIG_DIR=str(cfg))
+            return init_tools(entrypoint_argv(CLAUDE, cfg, deny), env, cwd)
+
+    def test_the_four_are_gone_and_the_founders_tools_stay(self):
+        tools = set(self.tools(deny=True))
+        self.assertEqual(tools & DENIED, set(), sorted(tools))
+        self.assertEqual(KEPT - tools, set(), sorted(tools))
+
+    def test_the_flag_is_what_removes_them(self):  # the control: without it the CLI offers the Cron tools
+        without = set(self.tools(deny=False))
+        self.assertLessEqual({"CronCreate", "CronDelete", "CronList"}, without, sorted(without))
+        self.assertEqual(set(self.tools(deny=True)), without - DENIED)
+
+    @unittest.skipUnless(os.environ.get("SNOWBALL_CLI_LOGIN") == "1",
+                         "set SNOWBALL_CLI_LOGIN=1 to check the signed-in tool set with your own login")
+    def test_signed_in_the_flag_drops_remote_trigger_and_keeps_web_fetch(self):
+        """Opt-in, the operator's own login: the API is pointed at a closed port and the CLI is killed at init, so no
+        request leaves the machine. A custom API address turns ToolSearch off, so it is not asked for here."""
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            (Path(tmp) / "no-mcp.json").write_text('{"mcpServers":{}}\n', encoding="utf-8")
+            env = {k: v for k, v in os.environ.items() if not k.startswith("ANTHROPIC_")
+                   and k != "CLAUDE_CODE_OAUTH_TOKEN"}
+            env.update(rival.PINNED_ENV, ANTHROPIC_BASE_URL="http://127.0.0.1:9")
+            argv = entrypoint_argv(CLAUDE, Path(tmp))
+            tools = set(init_tools(argv, env, Path(tmp)))
+            without = set(init_tools(entrypoint_argv(CLAUDE, Path(tmp), deny=False), env, Path(tmp)))
+        self.assertIn("RemoteTrigger", without)
+        self.assertEqual(tools & DENIED, set())
+        self.assertEqual((KEPT | SIGNED_IN_ONLY) - {"ToolSearch"} - tools, set(), sorted(tools))
 
 
 if __name__ == "__main__":

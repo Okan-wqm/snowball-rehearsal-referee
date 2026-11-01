@@ -11,7 +11,7 @@ from pathlib import Path
 
 from unittest import mock
 
-from snowball_bootstrap import canon, licenses, secretscan, stages, vectors
+from snowball_bootstrap import canon, gitio, licenses, secretscan, stages, vectors
 from snowball_bootstrap.classify import classify, spec_stage_dirs
 from snowball_bootstrap.config import ConfigError, load_bootstrap
 from snowball_bootstrap.container import RunResult
@@ -20,7 +20,7 @@ from snowball_bootstrap.manifest import ManifestError, check_stage0, parse_lockf
 from snowball_bootstrap.treehash import TreeError, extract
 from snowball_bootstrap.vectors import missing_groups, run_vectors
 
-from helpers import DRILL, EVERY_GROUP, STATS, FakeRunner
+from helpers import DRILL, EVERY_GROUP, STATS, FakeRunner, commit, make_repo
 
 BOOTSTRAP = Path(__file__).resolve().parents[1]
 VECTORS = BOOTSTRAP / "vectors"
@@ -439,7 +439,7 @@ class SeedDataVectorsTest(unittest.TestCase):
                                                               if p.startswith("/vec/")])
                     ids.append(case["id"])
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 141)  # MF2-MF7 58, MF8-MF13 56, MF14-MF18 27
+        self.assertEqual(len(ids), 144)  # MF2-MF7 61, MF8-MF13 56, MF14-MF18 27
 
     def test_expected_values_carry_no_floats(self):
         """`tohum/26`: hashed artefacts carry no floats; nor do the vectors' answers (the runner tells 1 from 1.0)."""
@@ -710,6 +710,26 @@ class ClaudeCliPinTest(unittest.TestCase):
                 self.assertTrue(entry["integrity"].startswith("sha512-"), path)
                 self.assertTrue(entry["resolved"].startswith("https://registry.npmjs.org/"), path)
                 self.assertEqual(entry["version"], version, path)
+
+
+class GitAncestorTest(unittest.TestCase):  # E384
+    def test_yes_no_and_a_failing_git_are_three_answers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "r"
+            first = make_repo(repo, {"a.txt": "1\n"})
+            second = commit(repo, {"a.txt": "2\n"}, "second")
+            self.assertTrue(gitio.is_ancestor(repo, first, second))
+            self.assertFalse(gitio.is_ancestor(repo, second, first))
+            with self.assertRaisesRegex(gitio.GitError, "merge-base"):  # a missing head object: git exits 128
+                gitio.is_ancestor(repo, first, "e" * 40)
+
+    def test_it_runs_under_the_same_scrubbed_environment_as_every_other_git_call(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "r"
+            first = make_repo(repo, {"a.txt": "1\n"})
+            # A GIT_DIR inherited from the caller would point git at another repository: it must be dropped.
+            with mock.patch.dict("os.environ", {"GIT_DIR": str(Path(tmp) / "nowhere")}):
+                self.assertTrue(gitio.is_ancestor(repo, first, first))
 
 
 class TreeHardeningTest(unittest.TestCase):

@@ -211,6 +211,26 @@ BREAKS = [
      '"license": entry.get("license")}', ["npmlock.license_from_tarball"]),
     ("address_in_lock_order", "runner/deps_npm.py", 'fetched.sort(key=lambda r: r["path"])', "pass",
      ["npmlock.same_lock_same_address"]),
+    # spec-015 (E400): an npm workspaces lock; its link and the folder the link names are not fetched, every other entry
+    # is, nested ones included
+    ("workspace_link_fetched", "runner/deps_npm.py", 'if path == "" or path in links or path in folders:',
+     'if path == "" or path in folders:', ["npmlock.workspaces_lock", "npmlock.nested_registry_not_allowed"]),
+    ("workspace_folder_fetched", "runner/deps_npm.py", 'if path == "" or path in links or path in folders:',
+     'if path == "" or path in links:', ["npmlock.workspaces_lock", "npmlock.nested_registry_not_allowed"]),
+    ("nested_entries_skipped", "runner/deps_npm.py", 'if path == "" or path in links or path in folders:',
+     'if path == "" or path in links or path in folders or not path.startswith("node_modules/"):',
+     ["npmlock.workspaces_lock", "npmlock.nested_registry_not_allowed"]),
+    ("nested_registry_unchecked", "runner/deps_npm.py", "if not any(resolved.startswith(prefix) for prefix in egress):",
+     'if path.startswith("node_modules/") and not any(resolved.startswith(prefix) for prefix in egress):',
+     ["npmlock.nested_registry_not_allowed"]),
+    ("link_flag_ignored", "runner/deps_npm.py",
+     'return entry.get("link") is True and isinstance(resolved, str) and resolved != ""',
+     'return isinstance(resolved, str) and resolved != ""',
+     ["npmlock.workspace_folder_needs_its_link", "npmlock.workspaces_lock.changed_input"]),
+    ("folder_without_a_link_skipped", "runner/deps_npm.py",
+     'folders = {packages[p]["resolved"] for p in links if not _in_node_modules(packages[p]["resolved"])}',
+     'folders = {p for p, e in packages.items() if p and not _in_node_modules(p) and "resolved" not in e'
+     ' and "integrity" not in e}', ["npmlock.workspace_folder_needs_its_link"]),
 
     ("services_unchecked", "profile/unit_verify.py", 'if recipe.get("services") != []:', "if False:",
      ["recipe.good.changed_input"]),
@@ -674,7 +694,7 @@ class SeedVectorsOnReferenceImplementationsTest(unittest.TestCase):
         cases = [c["id"] for g in DATA_GROUPS for c in seed[g]["cases"]]
         data = [r for r in results if not r["id"].startswith("chain.")]
         self.assertEqual([r["id"] for r in data], [i + s for i in cases for s in ("", ".changed_input")])
-        self.assertEqual((len(data), len(results)), (282, 288))  # MF2-MF7 116, MF8-MF13 112, MF14-MF18 54; `chain` 6
+        self.assertEqual((len(data), len(results)), (288, 294))  # MF2-MF7 122, MF8-MF13 112, MF14-MF18 54; `chain` 6
         self.assertEqual([(r["id"], r["detail"]) for r in results if not r["ok"]], [])
         self.assertEqual(brain_manifest().done_mf, (1,))  # reference implementations, not declared done
 
@@ -690,7 +710,7 @@ class SeedVectorsOnReferenceImplementationsTest(unittest.TestCase):
             a = BRAIN / "referee" / rel
             self.assertFalse(a.exists() and a.read_bytes() == (BLIND_B / "referee" / rel).read_bytes(), rel)
         results = vectors.run_vectors(LocalRunner(BLIND_B), VECTORS, B_MFS)
-        self.assertEqual(len(results), 116)
+        self.assertEqual(len(results), 122)
         self.assertEqual([(r["id"], r["detail"]) for r in results if not r["ok"]], [])
 
     def test_its_profile_package_does_not_shadow_the_standard_library_here(self):

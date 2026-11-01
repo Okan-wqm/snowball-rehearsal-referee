@@ -38,12 +38,12 @@ WORKFLOW = (Path(__file__).resolve().parents[1] / "workflow" / "bootstrap.yml").
 
 
 def state2(**kw):
-    s = {"schema": "snowball-bootstrap-state/3", "origin": "artifact", "last_accepted_sha": A,
+    s = {"schema": "snowball-bootstrap-state/4", "origin": "artifact", "last_accepted_sha": A,
          "last_evaluated_sha": None, "frozen_specs": {}, "rival_artifacts": [], "month": "2026-10",
          "month_spend_usd_micros": 1000, "stage_spend_usd_micros": 2000, "runs": 4, "reject_streaks": {},
          "repeat_events": 0, "outage_sha": None, "outage_count": 0, "outage_since": None, "outage_stop": None,
          "rival_side_streak": 0, "open_refutations": [], "open_claims": [], "pending_rival": None,
-         "rejected_exit_request": None}
+         "rejected_exit_request": None, "exit_accepted_sha": None}
     s.update(kw)
     return s
 
@@ -400,6 +400,75 @@ class E153ReportsHidden(unittest.TestCase):
         self.assertNotIn("reports/r1.json", stdin)
         self.assertNotIn("REPORT-FOR-THE-RIVAL", stdin)
         self.assertIn("reports/r1.json", meta["changed"])
+
+
+class E93ReportsReader(unittest.TestCase):
+    """`26c` reports/*.json has a reader (E93, E342): `pull` reads the brain's root reports, the signed result names
+    each one as {id, kind, ref, state, sha256} and warns the operator of the open ones; the rival's request still leaves
+    them out (E153). The `disputed` rule of a report that names a vector stays with E53."""
+
+    OPEN = {"id": "seed-900-state-read", "kind": "seed_issue", "ref": "spec/tohum/29b-onyukleme-hakemi.md:30",
+            "state": "open", "evidence_test": "REPORT-EVIDENCE-FOR-THE-RIVAL"}
+    DONE = {"id": "spec-901-calls", "kind": "spec_issue", "ref": "spec/asama-0/14-sirali-mikro-ozellikler.md:47",
+            "state": "confirmed"}
+
+    def test_two_reports_reach_the_signed_result_and_never_the_rival(self):
+        flow = test_flow.Flow("test_full_stage0_path")
+        flow.setUp()
+        self.addCleanup(flow.tearDown)
+        seats = flow.referee / "seats"
+        seats.mkdir()
+        source = Path(test_flow.__file__).resolve().parents[3] / "spec" / "tohum" / cli.SEATS_FILE
+        (seats / cli.SEATS_FILE).write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+        files = {"referee/a.py": "x = 1\n", "reports/seed-900-state-read.json": json.dumps(self.OPEN) + "\n",
+                 "reports/spec-901-calls.json": json.dumps(self.DONE) + "\n",
+                 "referee/reports/fmt.json": '{"id": "not-a-report", "state": "open"}\n'}  # only the root ones
+        commit(flow.brain, files, "code and two reports")
+        meta = flow.pull()
+        digest = hashlib.sha256(files["reports/seed-900-state-read.json"].encode("utf-8")).hexdigest()
+        self.assertEqual(meta["reports"][0], {"id": "seed-900-state-read", "kind": "seed_issue",
+                                              "ref": "spec/tohum/29b-onyukleme-hakemi.md:30", "state": "open",
+                                              "sha256": digest})
+        self.assertEqual([r["id"] for r in meta["reports"]], ["seed-900-state-read", "spec-901-calls"])
+        result = flow.finish(meta)  # whatever the verdict (this bare brain froze no spec): the reports are named
+        self.assertEqual(result["reports"], meta["reports"])
+        self.assertIn("reports_open:1", result["warnings"])
+        pulled = Path(flow.tmp.name) / f"pulled{flow.n}"
+        bin_dir = Path(flow.tmp.name) / "bin"
+        bin_dir.mkdir()
+        claude = install_fake_claude(bin_dir)
+        (bin_dir / "scenario.json").write_text(json.dumps({"calls": [submit()], "result": ok_result()}))
+        with mock.patch.dict(os.environ, {"GITHUB_OUTPUT": str(Path(flow.tmp.name) / "gh")}), \
+                contextlib.redirect_stdout(io.StringIO()):
+            rc = cli.main(["rival", "--root", str(flow.referee), "--pulled", str(pulled), "--work",
+                           str(Path(flow.tmp.name) / "work_r"), "--out", str(Path(flow.tmp.name) / "rival"),
+                           "--claude", str(claude)])
+        self.assertEqual(rc, 0)
+        stdin = json.loads((bin_dir / "seen.json").read_text())["stdin"]
+        self.assertIn("referee/a.py", stdin)
+        self.assertNotIn("seed-900-state-read", stdin)
+        self.assertNotIn("REPORT-EVIDENCE-FOR-THE-RIVAL", stdin)
+
+    def test_a_report_that_is_not_a_json_object_or_carries_a_secret_is_named_not_quoted(self):
+        token = "gh" + "p_" + "FAKE" + "A" * 32
+        tar = io.BytesIO()
+        with tarfile.open(fileobj=tar, mode="w") as t:
+            for name, data in (("reports/broken.json", b"{not json"), ("reports/notes.md", b"# not a report"),
+                               ("reports/leak.json", json.dumps({"id": token, "kind": 7, "state": "open"}).encode())):
+                info = tarfile.TarInfo(name)
+                info.size = len(data)
+                t.addfile(info, io.BytesIO(data))
+        found = cli.read_reports(tar.getvalue())
+        self.assertEqual([r["sha256"] for r in found],
+                         [hashlib.sha256(b"{not json").hexdigest(),
+                          hashlib.sha256(json.dumps({"id": token, "kind": 7, "state": "open"}).encode()).hexdigest()])
+        self.assertEqual({k: found[0][k] for k in ("id", "kind", "ref", "state")},
+                         {"id": None, "kind": None, "ref": None, "state": None})
+        self.assertEqual(found[1]["kind"], None)  # not a string
+        result = decide(meta2("none", state2(), reports=found), None, None, None, {}, 2, 3, now=NOW)
+        self.assertNotIn(token, json.dumps(result))
+        self.assertEqual(result["reports"][1]["state"], "open")
+        self.assertIn("reports_open:1", result["warnings"])
 
 
 # ---------------------------------------------------------------- E11 what counts against the Founder
@@ -995,6 +1064,40 @@ class E08ProvenDefects(unittest.TestCase):
         spec = run_decide(meta2("spec", state2(open_refutations=[entry])), None, not_refuted(), [], {"cagir": "success"})
         self.assertEqual((spec["verdict"], len(spec["state"]["open_refutations"])), ("frozen", 1))  # never ran there
 
+    def test_a_timed_out_run_on_an_accepted_head_keeps_it_open(self):  # E387: a killed run showed nothing
+        entry = refutation_entry()
+        meta = meta2("code", state2(open_refutations=[entry]), state_repro=[entry["key"]])
+        res = run_decide(meta, green(), not_refuted(), [], CODE_JOBS,
+                         state_repro=[state_ran(entry["key"], "refutation", False, timed_out=True)])
+        self.assertEqual(res["verdict"], "accepted")
+        self.assertEqual([e["key"] for e in res["state"]["open_refutations"]], [entry["key"]])
+        closed = run_decide(meta, green(), not_refuted(), [], CODE_JOBS,
+                            state_repro=[state_ran(entry["key"], "refutation", False)])
+        self.assertEqual(closed["state"]["open_refutations"], [])  # one that ran to the end and showed nothing closes
+
+    def test_over_the_cap_the_oldest_defect_is_dropped_by_name(self):  # E387: never silently
+        old = [refutation_entry(dict(REP, cmd=f"python -m d{i}"), claim=f"defect {i}") for i in range(st.MAX_OPEN_REFUTATIONS)]
+        meta = meta2("code", state2(open_refutations=old), state_repro=[e["key"] for e in old])
+        res = run_decide(meta, green(), refuted_by(attempt("one more defect")), [ran(0, True)], CODE_JOBS,
+                         state_repro=[state_ran(e["key"], "refutation", True) for e in old])
+        kept = [e["key"] for e in res["state"]["open_refutations"]]
+        self.assertEqual(len(kept), st.MAX_OPEN_REFUTATIONS)
+        self.assertNotIn(old[0]["key"], kept)
+        self.assertIn(key_of(REP), kept)
+        self.assertEqual([w for w in res["warnings"] if "_evicted:" in w], [f"refutation_evicted:{old[0]['key']}"])
+        under = run_decide(meta, green(), not_refuted(), [], CODE_JOBS,
+                           state_repro=[state_ran(e["key"], "refutation", True) for e in old])
+        self.assertEqual([w for w in under["warnings"] if "_evicted:" in w], [])  # at the cap nothing goes
+
+    def test_over_the_cap_the_oldest_claim_is_dropped_by_name(self):  # E387
+        old = [claim_entry(f"claim {i}", rep=None) for i in range(st.MAX_OPEN_CLAIMS)]
+        res = run_decide(meta2("code", state2(open_claims=old)), green(),
+                         refuted_by(attempt("a new unproven claim", rep=None)), [], CODE_JOBS)
+        ids = [c["id"] for c in res["state"]["open_claims"]]
+        self.assertEqual(len(ids), st.MAX_OPEN_CLAIMS)
+        self.assertNotIn(old[0]["id"], ids)
+        self.assertEqual([w for w in res["warnings"] if "_evicted:" in w], [f"claim_evicted:{old[0]['id']}"])
+
     def test_an_operator_waiver_closes_it(self):
         entry = refutation_entry()
         res = run_decide(meta2("spec", state2(open_refutations=[entry]), waived=[entry["key"]]), None, not_refuted(),
@@ -1189,24 +1292,51 @@ class StateSchemaV2(unittest.TestCase):
 
     def test_a_v1_state_is_carried_forward(self):
         new = st.validate(st.migrate(self.v1(), NOW))
-        self.assertEqual(new["schema"], "snowball-bootstrap-state/3")
+        self.assertEqual(new["schema"], "snowball-bootstrap-state/4")
         for key in ("last_accepted_sha", "last_evaluated_sha", "frozen_specs", "month", "month_spend_usd_micros",
                     "stage_spend_usd_micros", "runs", "reject_streaks", "repeat_events", "outage_sha", "outage_count"):
             self.assertEqual(new[key], self.v1()[key], key)
         self.assertEqual(new["rival_artifacts"], [{"sha": A, "outcome": "survived"}, {"sha": "1" * 40, "outcome": "unknown"}])
         self.assertEqual((new["outage_since"], new["open_refutations"], new["open_claims"], new["pending_rival"],
-                          new["rejected_exit_request"]), (NOW, [], [], None, None))
+                          new["rejected_exit_request"], new["exit_accepted_sha"]), (NOW, [], [], None, None, None))
         self.assertEqual(st.migrate(new, NOW), new)  # a current state passes unchanged
 
     def test_a_v2_state_is_carried_forward_with_no_rejected_exit_request(self):
         """E97 added `rejected_exit_request`: a state of the schema before it keeps everything and remembers none."""
         v2 = dict(st.initial(Summary(A, "b" * 64), "2026-10"), schema="snowball-bootstrap-state/2",
                   reject_streaks={"test_failed:T13": 2}, open_claims=[claim_entry()])
-        del v2["rejected_exit_request"]
+        del v2["rejected_exit_request"], v2["exit_accepted_sha"]
         new = st.validate(st.migrate(v2, NOW))
-        self.assertEqual(new, dict(v2, schema="snowball-bootstrap-state/3", rejected_exit_request=None))
+        self.assertEqual(new, dict(v2, schema="snowball-bootstrap-state/4", rejected_exit_request=None,
+                                   exit_accepted_sha=None))
         with self.assertRaises(ConfigError):
             st.validate(dict(new, rejected_exit_request="not a hash"))
+
+    def test_a_v3_state_is_carried_forward_with_no_accepted_exit(self):
+        """E333 added `exit_accepted_sha` (the head of an accepted (A)): a state before it keeps everything, and no exit
+        was accepted then (none was requested)."""
+        v3 = dict(st.initial(Summary(A, "b" * 64), "2026-10"), schema="snowball-bootstrap-state/3",
+                  reject_streaks={"test_failed:T13": 2}, rejected_exit_request="e" * 64)
+        del v3["exit_accepted_sha"]
+        new = st.validate(st.migrate(v3, NOW))
+        self.assertEqual(new, dict(v3, schema="snowball-bootstrap-state/4", exit_accepted_sha=None))
+        st.validate(dict(new, exit_accepted_sha=B))
+        with self.assertRaises(ConfigError):
+            st.validate(dict(new, exit_accepted_sha="not a sha"))
+
+    def test_a_v3_state_carried_in_an_accepted_exit_keeps_that_exit(self):
+        """The carry does not drop an (A) silently: when the signed result the v3 state came in accepted an exit and
+        made it transferable, that head is the accepted exit; any other result names none (E333)."""
+        v3 = dict(st.initial(Summary(A, "b" * 64), "2026-10"), schema="snowball-bootstrap-state/3")
+        del v3["exit_accepted_sha"]
+        exit_result = {"kind": "exit", "verdict": "accepted", "head": B, "exit": {"transferable": True}, "state": v3}
+        self.assertEqual(st.validate(st.migrate(v3, NOW, exit_result))["exit_accepted_sha"], B)
+        for other in (dict(exit_result, verdict="rejected"), dict(exit_result, kind="code"),
+                      dict(exit_result, exit={"transferable": False}), dict(exit_result, exit=None),
+                      dict(exit_result, head="not a sha"), None, "x"):
+            self.assertIsNone(st.validate(st.migrate(dict(v3), NOW, other))["exit_accepted_sha"], str(other)[:60])
+        current = dict(v3, schema="snowball-bootstrap-state/4", exit_accepted_sha=None)
+        self.assertIsNone(st.migrate(current, NOW, exit_result)["exit_accepted_sha"])  # only a v3 carry reads it
 
     def test_states_of_unknown_shape_are_still_refused(self):
         for bad in ({"schema": "snowball-bootstrap-state/9"}, dict(self.v1(), extra=1), "x",
@@ -1239,7 +1369,7 @@ class StateSchemaV2(unittest.TestCase):
         self.assertEqual(case.fetch_ok(), 0)
         got = json.loads((case.root / "state" / "state.json").read_text())
         self.assertEqual((got["schema"], got["reject_streaks"], got["frozen_specs"]),
-                         ("snowball-bootstrap-state/3", {"test_failed:T13": 2}, {"spec/asama-0": "e" * 64}))
+                         ("snowball-bootstrap-state/4", {"test_failed:T13": 2}, {"spec/asama-0": "e" * 64}))
 
 
 class PullOutputsWiring(unittest.TestCase):

@@ -32,12 +32,12 @@ UNCHECKED = [decide_module.NOT_CHECKED + anchor
 
 
 def state0(**kw):
-    s = {"schema": "snowball-bootstrap-state/3", "origin": "artifact", "last_accepted_sha": A,
+    s = {"schema": "snowball-bootstrap-state/4", "origin": "artifact", "last_accepted_sha": A,
          "last_evaluated_sha": None, "frozen_specs": {}, "rival_artifacts": [], "month": "2026-10",
          "month_spend_usd_micros": 1000, "stage_spend_usd_micros": 2000, "runs": 4, "reject_streaks": {},
          "repeat_events": 0, "outage_sha": None, "outage_count": 0, "outage_since": None, "outage_stop": None,
          "rival_side_streak": 0, "open_refutations": [], "open_claims": [], "pending_rival": None,
-         "rejected_exit_request": None}
+         "rejected_exit_request": None, "exit_accepted_sha": None}
     s.update(kw)
     return s
 

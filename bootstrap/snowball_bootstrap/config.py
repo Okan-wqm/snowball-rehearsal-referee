@@ -181,6 +181,17 @@ def load_waivers(root: Path) -> list[str]:
     return sorted(set(waived))
 
 
+def load_reverted_exits(root: Path) -> list[str]:
+    """Accepted exits whose transfer the operator reverted after a red (B): ``control.json`` ``reverted_exits``, a list
+    of the brain heads the signed results named (`asama-0/10a` and `25a` "Başarısızlık", E333). Optional: missing is
+    none, so the freeze after (A) holds; anything else than a list of 40-character SHAs stops the run."""
+    data = _load(root / "control.json")
+    reverted = data.get("reverted_exits", []) if isinstance(data, dict) else []
+    if not isinstance(reverted, list) or not all(isinstance(s, str) and SHA_RE.match(s) for s in reverted):
+        raise ConfigError("control.json.reverted_exits must be a list of 40-character commit SHAs")
+    return sorted(set(reverted))
+
+
 SPDX_ID_RE = re.compile(r"^[A-Za-z0-9.+-]{1,64}\Z")
 PIN_RE = re.compile(r"^[a-z0-9][a-z0-9-]*==[A-Za-z0-9.+!-]+\Z")
 

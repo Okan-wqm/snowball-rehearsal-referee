@@ -5,6 +5,11 @@ lock's packages or name@X.Y.Z (E200); anything else (a bare name) makes the inpu
 The tarball of resolved https://<host>/<path> is the file <mirror_dir>/<host>/<path> (offline mirror).
 Prints one JSON line {ok, rejected, artefact, licenses}; exit 0 ok, 1 a package rejected, 2 unusable
 input. Tarballs are read in memory; nothing is written.
+
+npm workspaces locks (29g, Founder report spec-015): neither fetched nor checked are the root, a workspace link (link
+true, its resolved an in-repo relative path: not empty, not absolute, no '..' component, no ':') and the workspace
+folder such a link's resolved names (a key outside node_modules). Every other entry is a package, nested ones
+("libs/x/node_modules/y") included: fetched, checked and named by its lock path.
 """
 from __future__ import annotations
 
@@ -119,6 +124,17 @@ def _read_package(tgz: bytes) -> tuple[dict[str, Any], bool]:
     return manifest, "package/binding.gyp" in names
 
 
+def _in_node_modules(path: str) -> bool:
+    return "node_modules" in path.split("/")
+
+
+def _in_repo_link(entry: dict[str, Any]) -> bool:
+    """A workspace link (29g): nothing of its own to fetch; its target is a folder of the repository."""
+    resolved = entry.get("resolved")
+    return entry.get("link") is True and isinstance(resolved, str) and resolved != "" and ":" not in resolved \
+        and not _is_absolute(resolved) and not _has_dotdot(resolved)
+
+
 def check_package(path: str, entry: dict[str, Any], mirror: str, egress: list[str],
                   marked: set[str]) -> tuple[str | None, dict[str, Any] | None]:
     """(reason or None, license row or None) for one lock entry; the first failing check wins."""
@@ -164,19 +180,19 @@ def fetch(lock: Any, mirror: str, request: Any) -> dict[str, Any]:
         raise Unusable("stdin: a registry_egress entry does not end with '/'")
     if not isinstance(lock, dict) or not isinstance(lock.get("packages"), dict):
         raise Unusable("lock: no 'packages' object")
+    packages = lock["packages"]
+    for path, entry in packages.items():
+        if path != "" and not isinstance(entry, dict):
+            raise Unusable(f"lock: packages[{path!r}] is not an object")
     for mark in marked:
         if not ((mark != "" and mark in lock["packages"]) or NAME_AT_VERSION.fullmatch(mark)):
             raise Unusable("stdin: an install_scripts_required entry is neither a lock key nor name@version")
+    links = {path for path, entry in packages.items() if path and _in_repo_link(entry)}
+    folders = {packages[p]["resolved"] for p in links if not _in_node_modules(packages[p]["resolved"])}
     rejected, fetched, licenses = [], [], []
-    for path, entry in lock["packages"].items():
-        if path == "":
-            continue
-        if not isinstance(entry, dict):
-            raise Unusable(f"lock: packages[{path!r}] is not an object")
-        resolved = entry.get("resolved")
-        if entry.get("link") is True and isinstance(resolved, str) and resolved and ":" not in resolved \
-                and not _is_absolute(resolved) and not _has_dotdot(resolved):
-            continue  # workspace link to an in-repo target: nothing to fetch
+    for path, entry in packages.items():
+        if path == "" or path in links or path in folders:
+            continue  # the root, a workspace link, the workspace folder a link names: nothing of its own to fetch
         reason, row = check_package(path, entry, mirror, egress, set(marked))
         if reason is not None:
             rejected.append(f"{reason}:{path}")

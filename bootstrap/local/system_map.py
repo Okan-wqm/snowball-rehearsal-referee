@@ -45,6 +45,7 @@ LINKS = (
     ("launcher", "capsule", "docker run: one Founder session", (LAUNCHER, r'"docker", "run"')),
     ("capsule", "brain", "git push", (CAPSULE[1], r"push")),
     ("launcher", "referee", "dispatch: gh workflow run", (LAUNCHER, r'"gh", "workflow", "run"')),
+    ("launcher", "brain", "cost rows: git push as the launcher", (LAUNCHER, r'"push", "--quiet", "origin"')),
     ("brain", r"job:-m snowball_bootstrap pull\b", "read anonymously", (WORKFLOW, r"the brain is read anonymously")),
     (r"job:secrets\.CLAUDE_CODE_OAUTH_TOKEN", "rival", "claude CLI: claims and reproducers",
      (PACKAGE + "/rival.py", r"resolve_claude")),

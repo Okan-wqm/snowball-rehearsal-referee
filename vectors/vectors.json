@@ -1944,6 +1944,135 @@
             ]
           }
         }
+      },
+      {
+        "id": "npmlock.workspaces_lock",
+        "purpose": "An npm workspaces lock (lockfileVersion 3). The workspace link node_modules/@acme/ui (link true, resolved libs/ui) and the workspace folder entry libs/ui it names are neither fetched nor checked. The nested entry libs/ui/node_modules/snowball-fixture-a and the hoisted node_modules/snowball-fixture-b are fetched against their integrity, from the existing npmlock/mirror, and both appear in the content address and the license report under their lock paths. b's postinstall is marked as in the other cases.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_ws.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+        "fixture": [
+          "npmlock/lock_ws.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": true,
+          "rejected": [],
+          "artefact": "sha256:a25b94d9cbcc27c524aaa77f18eac1ddb1809cf965e5416aa8dbd0a9d3f39da9",
+          "licenses": [
+            {
+              "license": "MIT",
+              "name": "snowball-fixture-a",
+              "path": "libs/ui/node_modules/snowball-fixture-a",
+              "version": "1.0.0"
+            },
+            {
+              "license": "ISC",
+              "name": "snowball-fixture-b",
+              "path": "node_modules/snowball-fixture-b",
+              "version": "2.0.0"
+            }
+          ]
+        },
+        "changed": {
+          "description": "One field: node_modules/@acme/ui loses \"link\": true (lock_ws_nolink.json), so it is no workspace link. An implementation that skips every entry whose resolved is a relative path, ignoring link, is caught.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_ws_nolink.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_ws_nolink.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": true,
+            "rejected": [],
+            "artefact": "sha256:a25b94d9cbcc27c524aaa77f18eac1ddb1809cf965e5416aa8dbd0a9d3f39da9",
+            "licenses": [
+              {
+                "license": "MIT",
+                "name": "snowball-fixture-a",
+                "path": "libs/ui/node_modules/snowball-fixture-a",
+                "version": "1.0.0"
+              },
+              {
+                "license": "ISC",
+                "name": "snowball-fixture-b",
+                "path": "node_modules/snowball-fixture-b",
+                "version": "2.0.0"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "npmlock.workspace_folder_needs_its_link",
+        "purpose": "The changed input of workspaces_lock as the case: node_modules/@acme/ui has no \"link\": true, so it is a package entry and its relative resolved libs/ui is no allowed registry; and libs/ui, a key outside node_modules with neither resolved nor integrity, is no workspace folder, because no in-repo link names it, so it is checked too. A reading that exempts every such key gives one reason instead of two and is caught. Its second computation is B as the integrator aligned it, not blind: the workflow's blind B gives one reason here.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_ws_nolink.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+        "fixture": [
+          "npmlock/lock_ws_nolink.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false,
+          "rejected": [
+            "registry_not_allowed:libs/ui",
+            "registry_not_allowed:node_modules/@acme/ui"
+          ],
+          "artefact": null,
+          "licenses": null
+        },
+        "changed": {
+          "description": "One field: node_modules/@acme/ui carries \"link\": true again (lock_ws.json); the link and the folder it names are not fetched.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_ws.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_ws.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false,
+            "rejected": [
+              "registry_not_allowed:libs/ui",
+              "registry_not_allowed:node_modules/@acme/ui"
+            ],
+            "artefact": null,
+            "licenses": null
+          }
+        }
+      },
+      {
+        "id": "npmlock.nested_registry_not_allowed",
+        "purpose": "A nested workspace entry (libs/ui/node_modules/snowball-fixture-a) resolved from a host outside registry_egress (mirror.example.invalid) is rejected, even though its integrity is correct: the exemption ends at the link and the folder it names.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_ws_registry.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+        "fixture": [
+          "npmlock/lock_ws_registry.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false,
+          "rejected": [
+            "registry_not_allowed:libs/ui/node_modules/snowball-fixture-a"
+          ],
+          "artefact": null,
+          "licenses": null
+        },
+        "changed": {
+          "description": "One field: the nested entry's resolved is the allowed registry URL again (lock_ws.json).",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_ws.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-b@2.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_ws.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false,
+            "rejected": [
+              "registry_not_allowed:libs/ui/node_modules/snowball-fixture-a"
+            ],
+            "artefact": null,
+            "licenses": null
+          }
+        }
       }
     ]
   },

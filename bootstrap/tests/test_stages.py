@@ -5,6 +5,7 @@ the loader enforces is broken once on a copy of it, and module-less red's tree i
 """
 
 import copy
+import hashlib
 import io
 import json
 import tarfile
@@ -12,7 +13,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from snowball_bootstrap import stages
+from snowball_bootstrap import moduleless, stages
 from snowball_bootstrap.config import ConfigError
 from snowball_bootstrap.container import RunResult
 from snowball_bootstrap.moduleless import module_less_tree, run_module_less
@@ -151,6 +152,30 @@ class ModuleLessTreeTest(unittest.TestCase):
         self.assertEqual([(r["mf"], r["test_id"], r["stayed_green"], r["module_present"]) for r in results],
                          [(3, "T20", False, True), (3, "T21", True, True)])
         self.assertEqual({r["module"] for r in results}, {"referee/runner/contained.py"})
+
+    def test_each_run_keeps_its_output_hash_and_a_scanned_tail(self):  # E386: how it went red can be read later
+        outputs = {"t20": (b"x" * 600 + b"\nModuleNotFoundError: No module named 'referee.runner.contained'\n", b"E\n"),
+                   "t21": (b"ok\n", b"token = ghp_" + b"a" * 36 + b"\n")}
+
+        class Runner:
+            def __init__(self, src):
+                pass
+
+            def run(self, cmd, *, cwd=".", stdin=b"", timeout_s):
+                return RunResult(1, *outputs[cmd], 1)
+
+        tests = [{"id": "T20", "cmd": "t20", "stage": 0}, {"id": "T21", "cmd": "t21", "stage": 0}]
+        with tempfile.TemporaryDirectory() as tmp:
+            first, second = run_module_less(Runner, tar_of(self.TREE), Path(tmp), stages.load(0), [3], tests, 77,
+                                            10_000)
+        out, err = outputs["t20"]
+        self.assertEqual(first["output_sha256"], hashlib.sha256(out + b"\n" + err).hexdigest())
+        self.assertEqual(first["output_tail"], (out + b"\n" + err).decode()[-500:])
+        self.assertIn("ModuleNotFoundError", first["output_tail"])
+        self.assertEqual(len(first["output_tail"]), 500)
+        self.assertNotIn("ghp_", json.dumps(second))  # the record is signed into the public result
+        self.assertEqual(second["output_tail"], moduleless.WITHHELD)
+        self.assertEqual(second["output_sha256"], hashlib.sha256(b"ok\n\n" + outputs["t21"][1]).hexdigest())
 
 
 if __name__ == "__main__":

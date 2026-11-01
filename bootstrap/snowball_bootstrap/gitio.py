@@ -34,19 +34,29 @@ def _env() -> dict[str, str]:
     return full_env
 
 
-def git(repo: Path, *args: str, stdin: bytes | None = None) -> bytes:
-    proc = subprocess.run(["git", *SAFE_CONFIG, "-C", str(repo), *args], input=stdin,
-                          capture_output=True, env=_env(), check=False)
+def git(repo: Path, *args: str, stdin: bytes | None = None, timeout: float | None = None) -> bytes:
+    """Stdout of one git command; GitError when it fails or runs past ``timeout`` seconds (None: no limit, as in the
+    referee's jobs, which their workflow bounds)."""
+    try:
+        proc = subprocess.run(["git", *SAFE_CONFIG, "-C", str(repo), *args], input=stdin,
+                              capture_output=True, env=_env(), check=False, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise GitError(f"git {args[0]} timed out after {timeout} s") from None
     if proc.returncode != 0:
         raise GitError(f"git {args[0]} failed: {proc.stderr.decode('utf-8', 'replace')[:500]}")
     return proc.stdout
 
 
-def same_under(repo: Path, a: str, b: str, dirs: tuple[str, ...]) -> bool:
+def same_under(repo: Path, a: str, b: str, dirs: tuple[str, ...], timeout: float | None = None) -> bool:
     """Whether commits ``a`` and ``b`` hold the same entries under ``dirs``: names, contents and modes (an executable
-    bit too), as git compares them, so a tree with a name no archive can hold is compared all the same."""
-    proc = subprocess.run(["git", *SAFE_CONFIG, "-C", str(repo), "diff", "--quiet", "--no-ext-diff", "--no-textconv",
-                           "--no-renames", a, b, "--", *dirs], capture_output=True, env=_env(), check=False)
+    bit too), as git compares them, so a tree with a name no archive can hold is compared all the same. ``timeout`` as
+    in `git`."""
+    try:
+        proc = subprocess.run(["git", *SAFE_CONFIG, "-C", str(repo), "diff", "--quiet", "--no-ext-diff", "--no-textconv",
+                               "--no-renames", a, b, "--", *dirs], capture_output=True, env=_env(), check=False,
+                              timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise GitError(f"git diff timed out after {timeout} s") from None
     if proc.returncode not in (0, 1):
         raise GitError(f"git diff failed: {proc.stderr.decode('utf-8', 'replace')[:500]}")
     return proc.returncode == 0
@@ -85,8 +95,13 @@ def has_commit(repo: Path, sha: str) -> bool:
 
 
 def is_ancestor(repo: Path, base: str, head: str) -> bool:
+    """Whether ``base`` is an ancestor of ``head``. Git answers 0 (yes) or 1 (no); anything else (a missing object, a
+    broken repository) is git failing, never a "no": read as one it became ``history_rewritten`` against the Founder
+    (E384)."""
     proc = subprocess.run(["git", *SAFE_CONFIG, "-C", str(repo), "merge-base", "--is-ancestor", base, head],
-                          capture_output=True, check=False)
+                          capture_output=True, env=_env(), check=False)
+    if proc.returncode not in (0, 1):
+        raise GitError(f"git merge-base failed: {proc.stderr.decode('utf-8', 'replace')[:500]}")
     return proc.returncode == 0
 
 
