@@ -88,6 +88,35 @@ class LoaderRefusesTest(unittest.TestCase):
                     stages.parse_table(broken(lambda t: t["mfs"][0].update(module=module)), 0)
         self.refused(broken(lambda t: t["mfs"][1].update(module="ledger/chain.py")), "another micro-feature's")
 
+    def test_a_module_hiding_a_stdlib_module(self):  # stages_stdlib_shadow_unchecked stages_stdlib_kept_everywhere
+        """E507 (report spec-011): the referee runs a command with `referee/` first on `sys.path`, so a module whose
+        first name is a standard library module's hides it (`profile/` breaks `import cProfile`). The table is not
+        loaded; Stage 0's frozen `profile` is the one name kept, and only in Stage 0's table."""
+        for module in ("json/x.py", "types.py", "email/parser.py", "profile/other.py"):
+            with self.subTest(module=module):
+                if module.startswith("profile/"):
+                    stages.parse_table(broken(lambda t: t["mfs"][0].update(module=module)), 0)  # kept in Stage 0
+                else:
+                    self.refused(broken(lambda t: t["mfs"][0].update(module=module)), "hides the standard library")
+        batch = {"stage": 1, "batch": "P1", "mfs": [{"mf": 1, "tests": [1], "groups": [], "module": "profile/x.py",
+                                                       "calls": []}]}
+        with self.assertRaises(ConfigError) as caught:
+            stages.parse_table(json.dumps(batch), 1, "P1")
+        self.assertIn("hides the standard library's profile", str(caught.exception))
+        self.assertIsNone(stages.hidden_stdlib("profiling/derive.py"))
+        self.assertIsNone(stages.hidden_stdlib("ledger/chain.py"))
+
+    def test_no_table_the_seed_carries_hides_a_standard_library_module_but_the_kept_one(self):
+        """E507: every table in `stages/` loads under the rule, and Stage 0's `profile` is its only exception."""
+        hidden = set()
+        for path in sorted(stages.STAGES_DIR.glob("*.json")):
+            for item in json.loads(path.read_text(encoding="utf-8"))["mfs"]:
+                name = stages.hidden_stdlib(item["module"])
+                if name:
+                    hidden.add((path.name, name))
+        self.assertEqual(hidden, {("stage0.json", "profile")})
+        self.assertEqual(stages.STDLIB_KEPT, {0: frozenset({"profile"})})
+
     def test_calls_that_are_not_increasing_numbers(self):
         for calls in ([3, 3], [5, 3], ["3"], [True], [0], None):
             self.refused(broken(lambda t: t["mfs"][5].update(calls=calls)), "calls must be")

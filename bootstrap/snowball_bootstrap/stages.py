@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
@@ -55,6 +56,11 @@ BATCHES: dict[int, tuple[str, ...]] = {1: ("P1", "P2")}
 # The stage pages the rival reads beside a code push, per open stage (`26e`, E493): the pages its table copies.
 STAGE_PAGES: dict[int, tuple[str, ...]] = {0: ("asama-0/09-", "asama-0/14-"),
                                            1: ("asama-0/09-", "asama-1/06-", "asama-1/13-")}
+# A module's first name (its package, or its file without `.py`) is never a standard library module's: the
+# referee runs a command with `referee/` first on `sys.path`, so `profile/` hides the stdlib `profile` and
+# `import cProfile` fails (E191, report spec-011, E507). Stage 0's frozen table names `profile` from before the
+# rule; it stays until that table is reopened (`26e`).
+STDLIB_KEPT: dict[int, frozenset[str]] = {0: frozenset({"profile"})}
 BATCH_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}\Z")  # a batch's name as a request and a counter row carry it
 
 
@@ -117,6 +123,13 @@ def _module(value: Any, where: str) -> str:
     return value
 
 
+def hidden_stdlib(module: str) -> str | None:
+    """The standard library module a module path's first name hides, if any."""
+    first = PurePosixPath(module).parts[0]
+    name = first[:-3] if first.endswith(".py") else first
+    return name if name in sys.stdlib_module_names else None
+
+
 def table_name(stage: int, batch: str | None = None) -> str:
     return f"stage{stage}" + (f"-{batch}" if batch else "") + ".json"
 
@@ -158,6 +171,9 @@ def parse_table(text: str, stage: int, batch: str | None = None) -> StageTable:
                 or len(set(groups)) != len(groups):
             raise ConfigError(f"{where}: groups must be distinct vector group names")
         module = _module(item["module"], where)
+        hidden = hidden_stdlib(module)
+        if hidden and hidden not in STDLIB_KEPT.get(stage, frozenset()):
+            raise ConfigError(f"{where}: module {module} hides the standard library's {hidden} (`26e`, E507)")
         if module in modules:
             raise ConfigError(f"{where}: module {module} is another micro-feature's")
         modules.add(module)

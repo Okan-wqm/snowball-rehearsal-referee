@@ -55,6 +55,12 @@
       "commit": "7f8ef62bdb2790a1c494a1be05030b289b8fa6cb",
       "seed_sha256": null,
       "spec_tohum_sha256": "e3e34c4a7a109b60e8d648f158d5f049614ff38341e033bbabd709aea85b7d77"
+    },
+    {
+      "bootstrap_sha256": "142e8d73a878c8b2326700a2836f0cc88d66f20af415132079e949799868f7f7",
+      "commit": "252366a8bf22cc39d927b0622f169b11b7d3bea0",
+      "seed_sha256": null,
+      "spec_tohum_sha256": "af409f621f6cd621bbcab01d52449d805676afbb22dfd7ee1d948ec28a77fcc8"
     }
   ],
   "honesty_exception": {
@@ -152,7 +158,8 @@
         "infrastructure/monitoring/prometheus/alerts/aria-alerts.yml"
       ],
       "unit_candidates": [
-        "apps/alert-engine"
+        "web/modules/messaging-module",
+        "web/modules/hr-module"
       ]
     }
   ],

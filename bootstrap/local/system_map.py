@@ -32,7 +32,7 @@ SCORECARD = "seed/founder/scorecard.py"  # the operator's self-improvement card 
 CANARY = "seed/bootstrap/local/canary.py"  # the operator's measure of the rival's recall (E126), outside the loop too
 CAPSULE = ("seed/founder/Dockerfile", "seed/founder/entrypoint.sh", "seed/founder/prompt.md")
 CAPSULE = ("seed/founder/Dockerfile", "seed/founder/entrypoint.sh", "seed/founder/prompt.md",
-           "seed/founder/brain_defs.py")
+           "seed/founder/brain_defs.py", "seed/founder/ledger_index.py")
 
 # ---- The hand-written part: actors outside the code, the links that meet them, the package's areas. ----------------
 # Endpoints: an actor below, "launcher", "capsule", "referee" (the workflow as a whole) or "job:<regex>" (every job
@@ -48,6 +48,8 @@ LINKS = (
     ("launcher", "capsule", "docker run: one Founder session", (LAUNCHER, r'"docker", "run"')),
     ("capsule", "brain", "git push", (CAPSULE[1], r"push")),
     ("brain", "capsule", "agents/ and skills/ at HEAD, checked: plugin brain", (CAPSULE[3], r'"ls-tree"')),
+    ("brain", "capsule", "founder-ledger.jsonl: read-only index, when the Founder runs it",
+     (CAPSULE[4], r'DEFAULT_LEDGER = "/work/brain/founder-ledger\.jsonl"')),
     ("launcher", "referee", "dispatch: gh workflow run", (LAUNCHER, r'"gh", "workflow", "run"')),
     ("launcher", "brain", "cost rows: git push as the launcher", (LAUNCHER, r'"push", "--quiet", "origin"')),
     ("brain", r"job:-m snowball_bootstrap pull\b", "read anonymously", (WORKFLOW, r"the brain is read anonymously")),

@@ -498,6 +498,16 @@ def load_brain_defs():
     return module
 
 
+def load_ledger_index():
+    """The capsule's read-only index of the Founder's ledger (`seed/founder/ledger_index.py`, E506), loaded by path:
+    the capsule runs it as a script and nothing in the seed imports it."""
+    spec = importlib.util.spec_from_file_location("founder_ledger_index", FOUNDER_DIR / "ledger_index.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def definition(name: str, description: str = "Reviews code.", body: str = "You review.\n",
                extra: dict[str, str] | None = None) -> bytes:
     """A definition file in the brain's format (`brain_defs`): front matter, then the body."""

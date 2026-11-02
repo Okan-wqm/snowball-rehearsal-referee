@@ -1041,9 +1041,10 @@ class OwnerDecisionPagesTest(unittest.TestCase):
         self.assertTrue(row.split(" | ")[-1].startswith("kapandı"), row[-200:])
 
     def test_this_epochs_changelog_entry_names_every_report_it_answers(self):
-        """E342's rule: a seed epoch's changelog entry names each report it answers or declines."""
-        entry = changelog_entry((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8"),
-                                "2026-11-01, E421")
+        """E342's rule: a seed epoch's changelog entry names each report it answers or declines, in whichever
+        changelog file the 80-line cap has moved the entry to (E507 moved this one to `CHANGELOG-4.md`)."""
+        pages = "\n".join(p.read_text(encoding="utf-8") for p in sorted((ROOT / "spec" / "tohum").glob("CHANGELOG*.md")))
+        entry = changelog_entry(pages, "2026-11-01, E421")
         for report in ("seed-001-seed-dir-missing", "referee-016-reproducer-polarity", "seed-027-root-choices",
                        "seed-030-cause-choices"):
             self.assertRegex(entry, re.escape(f"`{report}` → `") + r"\d\d[a-z]?:\d")
