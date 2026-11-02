@@ -397,7 +397,7 @@ class KindsAndExit(unittest.TestCase):
                                                           '_reason("test_failed"', '_reason("vector_failed"',
                                                           'missing += [f"vector_group_missing:{g}"',
                                                           '_reason("license_not_allowed"']},
-            ("modulsuz",): {"cli": ['before = set() if kind == "exit" else _base_done(repo, base)'],
+            ("modulsuz",): {"cli": ['before = set() if kind == "exit" else _base_done(repo, base, table)'],
                             "decide": ["reasons += _module_less_green(module_less)"]},
             ("rakip",): {"decide": ['missing.append("no_rival_attempt_on_exit_sha")',
                                     'missing.append(f"rival_attempts:{len(others)}<{rival_min_attempts}")',
@@ -537,11 +537,11 @@ class StateRules(unittest.TestCase):
                 st.validate(bad)
 
     def test_remaining_budget_is_the_smaller_of_month_and_stage(self):  # L01 L02 L03 L05
-        policy = Policy(300_000_000, 30_000_000, 2, 3, frozenset({"MIT"}), {})
+        policy = Policy(300_000_000, {0: 30_000_000}, 2, 3, frozenset({"MIT"}), {})
         for month, stage, left in ((0, 0, 30_000_000), (299_500_000, 0, 500_000), (0, 29_000_000, 1_000_000),
                                    (300_000_000, 0, 0), (0, 30_000_000, 0)):
             prev = state0(month_spend_usd_micros=month, stage_spend_usd_micros=stage)
-            self.assertEqual(cli.remaining_budget(policy, prev), left, (month, stage))
+            self.assertEqual(cli.remaining_budget(policy, prev, 0), left, (month, stage))
 
 
 class SmallGates(unittest.TestCase):

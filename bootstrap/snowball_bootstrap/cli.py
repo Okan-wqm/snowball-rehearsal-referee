@@ -17,13 +17,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from . import canon, config, exitchecks, ghapi, gitio, ledgercheck, licenses, parts, stages, state as st, wiring
+from . import canon, config, exitchecks, ghapi, gitio, ledgercheck, licenses, parts, stagelock, stages, state as st, wiring
 from .classify import (LEDGER_FILE, REPORTS_DIR, SEED_DIRS, classify, is_founder_record, is_seed_path,
                        spec_stage_dirs)
 from .container import DockerRunner
 from .decide import OUTAGE_GIVE_UP_DAYS, OUTAGE_RETRY_LIMIT, REPORT_FIELDS, decide, utc_now
 from .importer import ImportErrorStop, run_import, verify_signature
-from .manifest import ManifestError, check_stage0, parse_lockfile, parse_manifest
+from .manifest import ManifestError, check_stage, declares, parse_lockfile, parse_manifest
 from .moduleless import run_module_less, units
 from .parts import PartError
 from .reproduce import run_reproducers, run_state_reproducers
@@ -39,8 +39,7 @@ SEATS_FILE = "29-tohum-koltuklari.md"
 PIP_PLATFORMS = ("manylinux_2_39_x86_64", "manylinux_2_34_x86_64", "manylinux_2_28_x86_64",
                  "manylinux_2_17_x86_64", "manylinux2014_x86_64", "any")
 SPEC_PAGES = ("00-", "00a-", "02-", "03-")
-CODE_PAGES = ("00-", "00a-", "04-", "04a-", "08-", "29a-", "29b-", "29c-")
-CODE_STAGE_PAGES = ("asama-0/09-", "asama-0/14-")
+CODE_PAGES = ("00-", "00a-", "04-", "04a-", "08-", "29a-", "29b-", "29c-")  # and the open stage's (`stages.STAGE_PAGES`)
 
 
 # ---------------------------------------------------------------- helpers
@@ -111,9 +110,11 @@ def tar_page(tar_bytes: bytes, prefix: str) -> tuple[str, str] | None:
     return None
 
 
-def remaining_budget(policy: config.Policy, prev: dict[str, Any]) -> int:
+def remaining_budget(policy: config.Policy, prev: dict[str, Any], stage: int) -> int:
+    """What the rival may still spend: the month's cap and the open stage's brake (`29b`, `26e`, E492), the stage's
+    spend counted from its lock (``prev`` is `state.for_stage`'s)."""
     return min(policy.monthly_cap_usd_micros - prev["month_spend_usd_micros"],
-               policy.stage0_rival_usd_micros - prev["stage_spend_usd_micros"])
+               policy.rival_usd_micros(stage) - prev["stage_spend_usd_micros"])
 
 
 # ---------------------------------------------------------------- commands
@@ -142,6 +143,7 @@ def cmd_control(args: argparse.Namespace) -> int:
     config.load_bootstrap(root)
     config.load_policy(root)
     config.load_summary(root)
+    stagelock.load(root)  # the stage lock and the counter it names (`asama-0/10a`, test 29)
     print("control ok: kill switch off, budget ok, operator files valid")
     return 0
 
@@ -294,9 +296,15 @@ def cmd_pull(args: argparse.Namespace) -> int:
     policy = config.load_policy(root)
     summary_cfg = config.load_summary(root)
     # The seed's stage table is loaded here, outside the content guard below: a broken table stops the run
-    # (a seed defect, `26a`) instead of turning into the Founder's `pull_error` rejection.
-    table = stages.load(0)
-    prev = read_json(Path(args.state))
+    # (a seed defect, `26a`) instead of turning into the Founder's `pull_error` rejection. It is the table that holds
+    # (`stagelock.open_table`): Stage 0's before the operator's lock (`setup/stage.json`, `asama-0/10a`), then the open
+    # batch's; a lock that does not match its counter stops the run too (`asama-0/09` test 29).
+    table = stagelock.open_table(root)
+    # The open stage's rival brake, read here, outside the content guard below: a policy without it stops the run (the
+    # operator's to write), never the Founder's `pull_error` (E492). Past the lock the stage's spend counts from the
+    # lock (`26e`); Stage 0's state is the one it always was.
+    policy.rival_usd_micros(table.stage)
+    prev = st.for_stage(read_json(Path(args.state)), table.stage)
     repo = Path(args.work) / "brain.git"
     remote = args.remote or f"https://github.com/{boot.brain_repo}.git"
     base = prev["last_accepted_sha"]
@@ -327,6 +335,8 @@ def cmd_pull(args: argparse.Namespace) -> int:
 
 
 def _pull_meta(head: str, base: str, prev: dict[str, Any]) -> dict[str, Any]:
+    # Nothing of the stage lock is here: every job reads the table that holds from the run's snapshot itself
+    # (`stagelock.open_table`), so Stage 0's meta is the one it always was (E402).
     return {"schema": "snowball-bootstrap-pull/1", "head": head, "base": base, "state": prev,
             "kind": "none", "changed": [], "pre_reasons": [], "evaluate": True,
             "run_tests": False, "run_rival": False, "manifest": None, "exit_request": None, "exit_request_sha256": None,
@@ -413,21 +423,30 @@ def _seed_update(repo: Path, base: str, head: str, meta: dict[str, Any], out: Pa
     return 0
 
 
-def _well_formed_exit_request(req: Any) -> bool:
-    return (isinstance(req, dict) and set(req) == {"stage", "sha", "spec_sha256"}
+def _well_formed_exit_request(req: Any, table: stages.StageTable) -> bool:
+    """`26c`: ``{stage, sha, spec_sha256}``; a batch's request is the same with ``batch`` (`26c:17`). Which form holds
+    is the open table's, never the request's (E402): under Stage 0's table there is no batch, so a ``batch`` key is
+    malformed as it always was; once the lock opened a stage, the request may name the batch it asks for."""
+    batch_key = {"batch"} if table.stage else set()
+    return (isinstance(req, dict) and set(req) - batch_key == {"stage", "sha", "spec_sha256"}
             and isinstance(req["stage"], int) and not isinstance(req["stage"], bool) and 0 <= req["stage"] <= 1000
             and isinstance(req["sha"], str) and bool(config.SHA_RE.match(req["sha"]))
-            and isinstance(req["spec_sha256"], str) and bool(config.HEX64_RE.match(req["spec_sha256"])))
+            and isinstance(req["spec_sha256"], str) and bool(config.HEX64_RE.match(req["spec_sha256"]))
+            and ("batch" not in req or (isinstance(req["batch"], str) and bool(stages.BATCH_RE.match(req["batch"])))))
 
 
-def _base_done(repo: Path, base: str) -> set[int]:
+def _base_done(repo: Path, base: str, table: stages.StageTable) -> set[int]:
     """The micro-features the last accepted commit had finished; none when it had no readable manifest (then every
-    finished one is new, and module-less red runs for all of them)."""
+    finished one is new, and module-less red runs for all of them). After the lock opened, a base whose manifest is
+    not the open stage's (Stage 0's 18, still there until the Founder's first Stage 1 push) has finished none of it."""
     raw = gitio.file_at(repo, base, MANIFEST_FILE)
     try:
-        return set(parse_manifest(raw.decode("utf-8")).done_mf) if raw is not None else set()
+        found = parse_manifest(raw.decode("utf-8")) if raw is not None else None
     except (ManifestError, UnicodeDecodeError):
         return set()
+    if found is None or (table.stage and not declares(found, table)):
+        return set()
+    return set(found.done_mf)
 
 
 EXIT_MAY_CHANGE = ("candidates/", "targets/")  # what (B) may change after (A) (`asama-0/10a`, `asama-0/11`)
@@ -513,22 +532,23 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     manifest = None
     finished: set[int] = set()
     if kind in ("code", "exit"):
-        frozen = prev["frozen_specs"].get("spec/asama-0")
-        try:
-            current = tree_hash(tar_bytes, "spec/asama-0", forbid_operator_names=False)
-        except TreeError:
-            current = None
-        if frozen is None:
-            pre.append("spec_not_frozen")
-        elif frozen != current:
-            pre.append("spec_changed_after_freeze")
+        for stage_dir in (f"spec/asama-{s}" for s in range(table.stage + 1)):  # code is built under a frozen spec (`02`)
+            frozen = prev["frozen_specs"].get(stage_dir)
+            try:
+                current = tree_hash(tar_bytes, stage_dir, forbid_operator_names=False)
+            except TreeError:
+                current = None
+            if frozen is None:
+                pre.append("spec_not_frozen")
+            elif frozen != current:
+                pre.append("spec_changed_after_freeze")
         raw = tar_file(tar_bytes, MANIFEST_FILE)
         if raw is None:
             pre.append("manifest_missing")
         else:
             try:
                 manifest = parse_manifest(raw.decode("utf-8"))
-                pre += check_stage0(manifest, table)
+                pre += check_stage(manifest, table)
                 for lock in manifest.lockfiles:
                     content = tar_file(tar_bytes, lock)
                     if content is None:
@@ -542,11 +562,11 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
             "done_mf": list(manifest.done_mf), "lockfiles": list(manifest.lockfiles)}
         if manifest is not None and base_ok:
             # Module-less red (`asama-0/14`): for the micro-features this push finishes, and at the exit for all.
-            before = set() if kind == "exit" else _base_done(repo, base)
+            before = set() if kind == "exit" else _base_done(repo, base, table)
             meta["module_less"] = [k for k in manifest.done_mf if k not in before]
         # A finished micro-feature stays finished: its vector group, and for MF17 the wiring check, run on every push
         # after the one it entered done_mf in (`asama-0/14`, `29a`), so no push may declare fewer (E292).
-        accepted_done = _base_done(repo, base) if base_ok else set()
+        accepted_done = _base_done(repo, base, table) if base_ok else set()
         declared = set(manifest.done_mf) if manifest is not None else set()
         finished = accepted_done | declared
         if manifest is not None:
@@ -567,15 +587,27 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
             req = json.loads((exit_raw or b"").decode("utf-8"))
         except (ValueError, RecursionError):  # bad UTF-8 or JSON, or nested deeper than the parser goes
             req = None
-        if not _well_formed_exit_request(req):
+        if not _well_formed_exit_request(req, table):
             pre.append("exit_request_malformed")
         else:
             meta["exit_request"] = req
-            if req["stage"] != 0:
+            # Which exit a request may ask for is the open table's (E402). Before the lock, Stage 0's alone, judged as it
+            # always was (`02`; under Stage 0's table no request has a batch). Past it, this seed signs only the open
+            # batch's (A), under its stage's frozen spec (`02` 6, `asama-1/13` 2, `26c:17`; E378): a request with no
+            # batch is the stage's own exit, not this seed's to judge.
+            batch = req.get("batch")
+            if table.stage:
+                wrong_stage = batch is None or req["stage"] != table.stage
+                spec_dir = f"spec/asama-{req['stage']}" if batch is not None else "spec/asama-0"
+            else:
+                wrong_stage, spec_dir = req["stage"] != 0, "spec/asama-0"
+            if wrong_stage:
                 pre.append("exit_request_wrong_stage")
+            elif batch != table.batch:
+                pre.append("exit_request_wrong_batch")
             if req["sha"] != base:
                 pre.append("exit_request_sha_is_not_last_accepted")
-            if req["spec_sha256"] != prev["frozen_specs"].get("spec/asama-0"):
+            if req["spec_sha256"] != prev["frozen_specs"].get(spec_dir):
                 pre.append("exit_request_spec_hash_mismatch")
         try:
             meta["referee_tree_sha256"] = tree_hash(tar_bytes, "referee")
@@ -605,7 +637,7 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     # A valid rival result whose reproducers never ran is reused for the same head, not asked for again (E20).
     pending = prev.get("pending_rival")
     reuse = needs_rival and isinstance(pending, dict) and pending.get("sha") == head
-    if needs_rival and not reuse and remaining_budget(policy, prev) <= 0:
+    if needs_rival and not reuse and remaining_budget(policy, prev, table.stage) <= 0:
         # Recorded once for this commit; re-evaluating it every poll would only churn signatures.
         # The founder pushes again after the month or the stage budget changes.
         pre.append("budget")
@@ -680,8 +712,8 @@ def _kos(args: argparse.Namespace) -> Kos:
     root, pulled = Path(args.root), Path(args.pulled)
     boot = config.load_bootstrap(root)
     policy = config.load_policy(root)
-    table = stages.load(0)
     meta = read_json(pulled / "meta.json")
+    table = stagelock.open_table(root)  # the snapshot's lock and counter, as `pull` read them (`asama-0/10a`, E402)
     tar_bytes = (pulled / "brain.tar").read_bytes()
     src = Path(args.work) / "src"
     extract(tar_bytes, src, boot.limits.max_tree_bytes)
@@ -689,7 +721,7 @@ def _kos(args: argparse.Namespace) -> Kos:
     done = tuple(manifest["done_mf"])
     groups = applied(root / "vectors", done, table=table, tree=src)
     push = parts.Push(
-        head=meta.get("head"), tests=[t for t in manifest["tests"] if t["stage"] == 0], groups=groups,
+        head=meta.get("head"), tests=[t for t in manifest["tests"] if t["stage"] <= table.stage], groups=groups,
         asked=call_inputs(groups),
         units=[(k, t["id"]) for k, t in units(table, meta.get("module_less") or [], manifest["tests"])],
         lic=licenses.check_dir(Path(args.deps), policy.license_allowlist, policy.license_exceptions),
@@ -748,11 +780,13 @@ def cmd_join_parts(args: argparse.Namespace) -> int:
     return _write_run(Path(args.out), parts.join(kos.push, records))
 
 
-def _pages(tar_bytes: bytes, kind: str) -> dict[str, str]:
+def _pages(tar_bytes: bytes, kind: str, stage: int) -> dict[str, str]:
+    """The pages beside the rival's diff: the seed's for the kind of push and, beside code, the stage pages the open
+    table copies (`stages.STAGE_PAGES`, `26e`; E493): Stage 0's before the lock, Stage 1's past it."""
     pages: dict[str, str] = {}
     prefixes = [f"spec/tohum/{p}" for p in (SPEC_PAGES if kind == "spec" else CODE_PAGES)]
     if kind != "spec":
-        prefixes += [f"spec/{p}" for p in CODE_STAGE_PAGES]
+        prefixes += [f"spec/{p}" for p in stages.STAGE_PAGES[stage]]
     for prefix in prefixes:
         found = tar_page(tar_bytes, prefix)
         if found:
@@ -764,6 +798,7 @@ def cmd_rival(args: argparse.Namespace) -> int:
     root, pulled, out = Path(args.root), Path(args.pulled), Path(args.out)
     boot = config.load_bootstrap(root)
     policy = config.load_policy(root)
+    stage = stagelock.open_table(root).stage  # the snapshot's lock, as `pull` read it: the brake and the stage pages
     meta = read_json(pulled / "meta.json")
     tar_bytes = (pulled / "brain.tar").read_bytes()
     tree = Path(args.work) / "tree"
@@ -771,12 +806,12 @@ def cmd_rival(args: argparse.Namespace) -> int:
     seat = extract_seat_prompt((root / "seats" / SEATS_FILE).read_text(encoding="utf-8"))
     changed = [p for p in meta["changed"] if not hidden(p)]  # the Founder's ledger is not the rival's to see (E10)
     context = build_context(meta["kind"], meta["base"], meta["head"], changed,
-                            (pulled / "diff.patch").read_text(encoding="utf-8"), _pages(tar_bytes, meta["kind"]),
+                            (pulled / "diff.patch").read_text(encoding="utf-8"), _pages(tar_bytes, meta["kind"], stage),
                             open_claims=meta["state"].get("open_claims", []))
     outcome = RivalOutcome()
     try:
         run_rival(boot.rival, claude_bin=resolve_claude(args.claude), seat_prompt=seat, context=context,
-                  tree_root=tree, budget_usd_micros=remaining_budget(policy, meta["state"]),
+                  tree_root=tree, budget_usd_micros=remaining_budget(policy, meta["state"], stage),
                   max_prompt_chars=boot.limits.max_prompt_chars, out=outcome)
     finally:  # on every path, an interrupt too: what the run spent must reach `decide` (E13)
         result = outcome.as_dict()
@@ -843,7 +878,8 @@ def cmd_decide(args: argparse.Namespace) -> int:
     jobs = dict(item.split("=", 1) for item in args.job or [])
     result = decide(meta, run, rival, None if repro_doc is None else repro_doc["results"], jobs,
                     policy.rival_min_attempts, policy.repeat_reject_limit,
-                    state_repro=None if repro_doc is None else repro_doc.get("state", []), now=utc_now())
+                    state_repro=None if repro_doc is None else repro_doc.get("state", []), now=utc_now(),
+                    table=stagelock.open_table(root))  # the snapshot's, as `pull` read it (E402)
     result["run"] = {"id": os.environ.get("GITHUB_RUN_ID", "local"),
                      "attempt": os.environ.get("GITHUB_RUN_ATTEMPT", "1")}
     write_json(out / "result.json", result)
@@ -911,9 +947,17 @@ def cmd_seed_epoch(args: argparse.Namespace) -> int:
 
 def cmd_import(args: argparse.Namespace) -> int:
     log = run_import(Path(args.result), Path(args.bundle), args.identity, args.sigstore_python,
-                     Path(args.brain), Path(args.referee), Path(args.toy) if args.toy else None)
+                     args.brain, args.referee, args.toy)  # `--toy ""` stops (E498)
     print(json.dumps(log, indent=2, sort_keys=True))
-    print("Review `git status` in the referee and toy checkouts, then commit and push them yourself.")
+    return 0
+
+
+def cmd_stage_open(args: argparse.Namespace) -> int:
+    """`25a` 9, `asama-0/10a` "Kilidin açılışı": after Stage 0's PASS row, write ``setup/stage.json`` (`26c`)."""
+    lock = stagelock.open_stage(Path(args.referee), Path(args.toy), Path(args.copy), args.ref, args.identity,
+                                args.sigstore_python, Path(args.result))
+    print(json.dumps(lock, indent=2, sort_keys=True))
+    print("Review setup/stage.json in the referee checkout, then commit and push it yourself.")
     return 0
 
 
@@ -955,7 +999,18 @@ def build_parser() -> argparse.ArgumentParser:
         ("--source", {"help": "repository whose seed/bootstrap/ the referee runs (default: the brain)"}),
         ("--source-commit", {"help": "commit of --source (default: --commit)"}))
     add("import", cmd_import, ("--result", req), ("--bundle", req), ("--identity", req),
-        ("--sigstore-python", req), ("--brain", req), ("--referee", req), ("--toy", {}))
+        ("--sigstore-python", req), ("--brain", dict(req, help="the brain repository (URL or path) the commit is in")),
+        ("--referee", dict(req, help="the referee repository (URL or path): its main is cloned bare, built on and "
+                                     "pushed to; no checkout is read or written")),
+        ("--toy", {"help": "the toy target's repository (URL or path), at Stage 0's exit"}))
+    add("stage-open", cmd_stage_open, ("--referee", dict(req, help="the referee repository's local checkout")),
+        ("--toy", dict(req, help="a local clone of the toy target")),
+        ("--copy", dict(req, help="a local clone of the copy target")),
+        ("--ref", {"default": stagelock.DEFAULT_REF, "help": "the targets' brain/state in those clones"}),
+        ("--identity", dict(req, help="the loop workflow's signing identity (its yaz job anchors the roots; each "
+                                      "root's bundle is read from brain/state, .brain/chain/<root>.sigstore.json)")),
+        ("--sigstore-python", req),
+        ("--result", dict(req, help="the signed (A) result the last transfer imported (its result_sha256)")))
     return parser
 
 

@@ -10,6 +10,7 @@ counted against the Founder. The trailing comment on a test names the mutants it
 import hashlib
 import io
 import json
+import os
 import tarfile
 import tempfile
 import unicodedata
@@ -23,7 +24,7 @@ from snowball_bootstrap.decide import decide
 from snowball_bootstrap.treehash import TreeError, tree_hash
 
 import test_flow
-from helpers import LOOP_YML, commit, ledger_bytes, ledger_rows, make_repo
+from helpers import GIT_IDENTITY, LOOP_YML, bare_repo, commit, ledger_bytes, ledger_rows, main_of, make_repo, plumbed
 
 A, B = "a" * 40, "b" * 40
 CODE_JOBS = {"getir": "success", "kos": "success", "cagir": "success", "yeniden": "skipped"}
@@ -712,36 +713,33 @@ class RefereeTree(unittest.TestCase):
         loose = tar_of({"spec/asama-0/a.md": "x", "spec/asama-0/A.md": "y"})  # not imported: hashed as it is
         self.assertEqual(len(tree_hash(loose, "spec/asama-0", forbid_operator_names=False)), 64)
 
-    def test_the_import_refuses_names_its_file_system_would_fold(self):
-        """The brain's git keeps both names; the import stops before it wipes anything of the operator's."""
-        brain_tar = tar_of({"referee/.github/workflows/loop.yml": LOOP_YML, "referee/.GITHUB/workflows/evil.yml": "x"})
-        with tempfile.TemporaryDirectory() as tmp:
-            result = Path(tmp) / "result.json"
-            result.write_text(json.dumps({"verdict": "accepted", "head": A, "exit": {
-                "transferable": True, "brain_sha": A, "referee_tree_sha256": "0" * 64}}))
-            referee = Path(tmp) / "referee"
-            (referee / ".github" / "workflows").mkdir(parents=True)
-            (referee / ".github" / "workflows" / "bootstrap.yml").write_text("name: bootstrap\n")
-            with mock.patch.object(importer, "verify_signature"), \
-                    mock.patch.object(importer.gitio, "has_commit", return_value=True), \
-                    mock.patch.object(importer.gitio, "archive", return_value=brain_tar), \
-                    self.assertRaises(TreeError):
-                importer.run_import(result, result, "id", "py", Path(tmp), referee, None)
-            self.assertEqual((referee / ".github" / "workflows" / "bootstrap.yml").read_text(), "name: bootstrap\n")
-
-    def test_the_import_refuses_a_mixed_case_operator_name(self):
-        with tempfile.TemporaryDirectory() as tmp:
+    def refused_by_the_import(self, brain_files):
+        """The import of a brain commit holding ``brain_files`` stops, and the referee's main is as it was (E470)."""
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, GIT_IDENTITY):
             brain = Path(tmp) / "brain"
-            sha = make_repo(brain, {"referee/a.py": "x\n", "referee/Control.json": "{}\n"})
+            make_repo(brain, {"README.md": "brain\n"})
+            sha = plumbed(brain, brain_files)
             result = Path(tmp) / "result.json"
             result.write_text(json.dumps({"verdict": "accepted", "head": sha, "exit": {
                 "transferable": True, "brain_sha": sha, "referee_tree_sha256": "0" * 64}}))
-            referee = Path(tmp) / "referee"
-            referee.mkdir()
-            (referee / "control.json").write_text('{"kill_switch": true}')
-            with mock.patch.object(importer, "verify_signature"), self.assertRaises(TreeError):
-                importer.run_import(result, result, "id", "py", brain, referee, None)
-            self.assertEqual((referee / "control.json").read_text(), '{"kill_switch": true}')
+            referee = bare_repo(Path(tmp) / "referee.git", {
+                ".github/workflows/bootstrap.yml": "name: bootstrap\n", "bootstrap/x.py": "seed\n",
+                "control.json": '{"kill_switch": true}'})  # `25a` 1: the import runs only so
+            before = main_of(referee)
+            with mock.patch.object(importer, "verify_signature"), self.assertRaises(importer.ImportErrorStop) as caught:
+                importer.run_import(result, result, "id", "py", str(brain), str(referee), None)
+            self.assertEqual(main_of(referee), before)
+            return str(caught.exception)
+
+    def test_the_import_refuses_names_its_file_system_would_fold(self):
+        """The brain's git keeps both names; the import stops before any object of the operator's main is written."""
+        said = self.refused_by_the_import({"referee/.github/workflows/loop.yml": LOOP_YML,
+                                           "referee/.GITHUB/workflows/evil.yml": "x"})
+        self.assertIn("one name case-folded", said)
+
+    def test_the_import_refuses_a_mixed_case_operator_name(self):
+        said = self.refused_by_the_import({"referee/a.py": "x\n", "referee/Control.json": "{}\n"})
+        self.assertIn("what the import keeps, in some case", said)
 
     def test_agent_configuration_is_refused_at_any_depth_and_in_any_case(self):  # agent_config_case_sensitive
         for path in ("referee/.claude/settings.json", "referee/tests/x/.claude/hooks.py", "referee/tests/x/CLAUDE.md",

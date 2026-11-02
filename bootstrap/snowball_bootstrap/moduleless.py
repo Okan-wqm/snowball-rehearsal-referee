@@ -52,7 +52,7 @@ def module_less_tree(tar_bytes: bytes, dest: Path, module_path: str, max_bytes: 
 def units(table: StageTable, mfs: Iterable[int], tests: list[dict[str, Any]]) -> list[tuple[int, dict[str, Any]]]:
     """Every module-less run of a push, in order: (micro-feature, test) for each declared test of each micro-feature in
     ``mfs``. A part of `kos` runs those whose place here is its own (E440)."""
-    by_id = {t["id"]: t for t in tests if t["stage"] == 0}
+    by_id = {t["id"]: t for t in tests if t["stage"] == table.stage}  # the table's own stage (`stage: 1` in Stage 1)
     found = []
     for k in mfs:
         for number in table.feature(k).tests:

@@ -29,6 +29,8 @@ WORKFLOW = "seed/bootstrap/workflow/bootstrap.yml"
 PACKAGE = "seed/bootstrap/snowball_bootstrap"
 LAUNCHER = "seed/founder/launch.py"
 SCORECARD = "seed/founder/scorecard.py"  # the operator's self-improvement card (E310), outside the launcher's loop
+CANARY = "seed/bootstrap/local/canary.py"  # the operator's measure of the rival's recall (E126), outside the loop too
+CAPSULE = ("seed/founder/Dockerfile", "seed/founder/entrypoint.sh", "seed/founder/prompt.md")
 CAPSULE = ("seed/founder/Dockerfile", "seed/founder/entrypoint.sh", "seed/founder/prompt.md",
            "seed/founder/brain_defs.py")
 
@@ -63,12 +65,16 @@ LINKS = (
     (r"job:-m sigstore sign", "scorecard", "signed results, digest-checked, cached",
      (SCORECARD, r'STATE_ARTIFACT = "bootstrap-state"')),
     ("brain", "scorecard", "ledger, chain verified, and test manifests", (SCORECARD, r"def verify_chain")),
+    ("operator", "canary", "plants a known defect: rival recall", (CANARY, r"--live")),
+    ("brain", "canary", "read-only mirror, plants stay local", (CANARY, r"gitio\.fetch\(mirror")),
+    ("canary", "rival", "the referee rival command on the planted push", (CANARY, r'\["rival", "--root"')),
+    ("referee", "canary", "a fresh read-only clone: its code, seats, vectors", (CANARY, r"def fresh_referee_clone")),
 )
 # Which area of the referee package a module belongs to (a role, which the code cannot say). A module missing here is
 # drawn under UNPLACED, so a new module shows up on the map before anyone files it.
 AREAS = (
     ("Entry", ("__init__", "__main__", "cli")),
-    ("Intake", ("canon", "classify", "config", "ghapi", "gitio", "importer", "licenses", "treehash")),
+    ("Intake", ("canon", "classify", "config", "ghapi", "gitio", "importer", "licenses", "stagelock", "treehash")),
     ("Sandbox", ("container", "controls", "manifest", "moduleless", "parts", "vectors")),
     ("Rival", ("reproduce", "rival", "rival_mcp", "secretscan")),
     ("Judgement", ("decide", "exitchecks", "ledgercheck", "stages", "state", "wiring")),
@@ -327,13 +333,13 @@ def _jobs_of(endpoint: str, jobs: dict[str, Job]) -> list[str]:
 def _ends(endpoint: str, jobs: dict[str, Job]) -> list[str]:
     if endpoint.startswith("job:"):
         return [_id("job_", j) for j in _jobs_of(endpoint, jobs)]
-    if endpoint in ACTORS or endpoint in ("launcher", "capsule", "referee", "scorecard"):
+    if endpoint in ACTORS or endpoint in ("launcher", "capsule", "referee", "scorecard", "canary"):
         return [endpoint]
     raise ValueError(f"unknown endpoint {endpoint!r}")
 
 
 def system_flow(src: Sources, jobs: dict[str, Job]) -> tuple[list[str], int, int]:
-    for rel in (LAUNCHER, SCORECARD, *CAPSULE):
+    for rel in (LAUNCHER, SCORECARD, CANARY, *CAPSULE):
         src.read(rel)  # a missing file stops the drawing
     lines = ["flowchart LR"]
     lines += ["  " + _node(a, label, shape) for a, (shape, label) in ACTORS.items()]
@@ -341,6 +347,7 @@ def system_flow(src: Sources, jobs: dict[str, Job]) -> tuple[list[str], int, int
     lines.append("    " + _node("launcher", "launcher<br/>seed/founder/launch.py"))
     lines.append("    " + _node("capsule", "Founder capsule, Docker<br/>" + " · ".join(Path(p).name for p in CAPSULE)))
     lines.append("    " + _node("scorecard", "scorecard<br/>" + SCORECARD))
+    lines.append("    " + _node("canary", "rival canary<br/>" + CANARY))
     lines.append("  end")
     lines.append('  subgraph referee["Referee repository: workflow/bootstrap.yml on GitHub Actions"]')
     for job in jobs.values():
@@ -356,7 +363,7 @@ def system_flow(src: Sources, jobs: dict[str, Job]) -> tuple[list[str], int, int
             for y in _ends(b, jobs):
                 lines.append("  " + _edge(x, y, label, dotted=True))
                 count += 1
-    nodes = len(ACTORS) + 3 + len(jobs)
+    nodes = len(ACTORS) + 4 + len(jobs)
     return lines, nodes, len(needs) + count
 
 

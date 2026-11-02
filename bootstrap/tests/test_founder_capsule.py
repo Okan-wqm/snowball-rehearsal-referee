@@ -1319,47 +1319,143 @@ class ImageAndEntrypointTest(unittest.TestCase):
         self.assertNotIn('"missing_capability"', source)  # no tuple or comparison names it as a kind
         self.assertEqual(source.count('row.get("kind") in REPORT_KINDS') + source.count('r.get("kind") in REPORT_KINDS'), 2)
 
-    def test_the_order_of_work_is_chosen_so_nothing_is_done_twice(self):  # E462, owner 2026-11-01
+    OWNER_AIM = "**Sahibin amacı (sahip, 2026-10-30 – 2026-11-01).**"  # E463: the owner's directions, one section
+
+    @classmethod
+    def owner_aim(cls, prompt: str) -> str:
+        """The owner's section in the whitespace-joined prompt: from its title to the next bold title."""
+        start = prompt.index(cls.OWNER_AIM)
+        return prompt[start:prompt.index("**", start + len(cls.OWNER_AIM))]
+
+    def test_the_owners_aim_is_one_section_right_after_the_real_target_duty(self):  # E463, owner 2026-11-01
+        """The owner's eight directions (E305, E337, E361-E364, E460, E462) are one section, merged by three experts
+        and a judge and approved by the owner. The eight old headings are gone; the section stands once, right after
+        the coverage duty that E364's "Kapsamını ölçtüğünde" leans on; it keeps the prompt's wrapping; and it names
+        no domain, tool, seed page or practice the operator holds back to measure what the Founder finds itself."""
+        raw = (FOUNDER / "prompt.md").read_text(encoding="utf-8").replace("\r\n", "\n")
+        prompt = " ".join(raw.split())
+        self.assertEqual(prompt.count(self.OWNER_AIM), 1)
+        self.assertEqual(prompt.count("Sahibin amacı"), 1)
+        self.assertNotIn("Sahibin hedefi", prompt)  # 'hedef' is the target repository in this prompt
+        for heading in ("**Sahibin önceliği (sahip, 2026-10-30).**", "**Değer hedefte ölçülür (sahip, 2026-10-31).**",
+                        "**Hedefin iyi yazıldığını varsayma (sahip, 2026-10-31).**",
+                        "**Açığı mimariyle kapat, yamayla değil (sahip, 2026-10-31).**",
+                        "**Bir kez sağlam yaz, tekrar kullan; her zaman daha iyi yolu sor (sahip, 2026-10-31).**",
+                        "**Bilmediğin alan (sahip, 2026-10-31).**",
+                        "**Her repo için, en ileri düzeyde (sahip, 2026-11-01).**",
+                        "**Sıra muhakemesi (sahip, 2026-11-01).**"):
+            self.assertNotIn(heading, prompt)
+        section = self.owner_aim(prompt)
+        blocks = raw.split("\n\n")
+        first = next(i for i, block in enumerate(blocks) if block.startswith(self.OWNER_AIM))
+        end = next(i for i in range(first + 1, len(blocks)) if blocks[i].startswith("**"))
+        self.assertTrue(blocks[first - 1].startswith("**Gerçek hedefte sına ve eksiğini kendin bul.**"))
+        self.assertTrue(blocks[end].startswith("**Anlaşmazlık kanıtla çözülür"))
+        self.assertEqual(" ".join(" ".join(blocks[first:end]).split()), section.strip())  # its paragraphs, no more
+        for line in "\n".join(blocks[first:end]).split("\n"):
+            self.assertLessEqual(len(line), 120, line)
+        for phrase in (self.OWNER_AIM, "bir çıtadır, iddia değil", "ürünün iş akışını da anla",
+                       "refactor davranışı korur, bir düzeltme yalnız düzelttiği davranışı bilerek değiştirir",
+                       "o işe dokunan derslerin de görevle gider", "sonuç dersi sınar, ders sonucu değil",
+                       "Neyi önce yapacağını değer ve risk belirler",
+                       "bekleyemeyecek bir risk bu sırayı bozmayı gerektiriyorsa riski önce kapat",
+                       "neyi neden sonraya bıraktığınla birlikte",
+                       "bu hedefe özgü bir varsayıma dayandığın her yeri açıkça yaz"):
+            self.assertIn(phrase, section)
+        self.assertIsNone(re.search(r"\byem", section, re.IGNORECASE))  # at a word start: 'işleyemediği' is pinned
+        for hint in ("besle", "balık", "akuakült", "alarm", "oksijen", "tank", "sensör", "müdahale",  # no domain
+                     "planlayıcı", "dispatcher", "görünüm", "enjeksiyon", "withheld", "lessons_injected",  # no seed
+                     "düzeltici", "`22`", "`05`", "Aşama 2",  # mechanism, page or stage timing
+                     "etki kümesi", "karakterizasyon", "golden", "mutant", "mutasyon", "sözleşme testi", "canary",
+                     "FMEA", "HAZOP", "uçtan",  # held-back practices
+                     "adaptör", "Nx", "Rust", "Zig", "cargo", "depmap", "profile.fit", "mermaid",  # no tool, no format
+                     "kütüphane", "arayüz", "lint", "K0", "K2", "önce ortak"):  # no layer, no concrete order
+            self.assertNotIn(hint.casefold(), section.casefold(), hint)
+        self.assertNotIn("mimari", section[section.index("Neyi önce yapacağını"):])  # E362/E363 use it before
+
+    def test_the_order_of_work_is_chosen_so_nothing_is_done_twice(self):  # E462, owner 2026-11-01; in E463's section
         """The owner, in their own analogy: sweep the counter before the floor, or the crumbs make you sweep the floor
         twice. The duty is general: choose an order in which a later step does not undo an earlier one, write why,
-        and write when a place had to be reopened. It names no layer, tool, class or concrete order."""
+        and write when a place had to be reopened. It names no layer, tool, class or concrete order. Since E463 it is
+        the order half of the priority paragraph of the owner's section, and its closing is the section's one."""
         prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
-        for phrase in ("Sıra muhakemesi (sahip, 2026-11-01)", "önce tezgâhı yaparsan",
+        section = self.owner_aim(prompt)
+        paragraph = section[section.index("Neyi önce yapacağını"):]
+        for phrase in ("önce tezgâhı yaparsan",
                        "birinin sonucu bir öncekini bozmayacak ve aynı işi yeniden yaptırmayacak",
                        "aynı yeri yeniden açmak zorunda kaldığında bunu ve nedenini de yaz",
-                       "Nasıl sıralayacağın senindir"):
-            self.assertIn(phrase, prompt)
-        start = prompt.index("Sıra muhakemesi")
-        paragraph = prompt[start:prompt.index("Nasıl sıralayacağın senindir", start)]
+                       "Yol, yöntem ve sıra senindir"):
+            self.assertIn(phrase, paragraph)
         for hint in ("mimari", "arayüz", "kütüphane", "lint", "K0", "K2", "Nx", "önce ortak"):
             self.assertNotIn(hint, paragraph)
 
-    def test_the_system_is_for_every_repository_and_its_lessons_are_claims(self):  # E460, owner 2026-11-01
+    FINISH_WORK = "**İşi bitirerek ilerle (sahip, 2026-11-01).**"  # E500
+
+    def test_a_problem_is_closed_at_its_root_before_the_next_and_no_pr_is_left_open(self):  # E500, owner 2026-11-01
+        """The owner: on the target, never move to the next problem before this one is solved at its root; when the
+        tokens run out, go on from where it stopped; never leave a PR open; work in commits. One section, its own
+        title, after the Founder's duties and before what it may not do, in the prompt's wrapping. Unfinished work
+        lives on a work branch (never the brain's main nor the target's brain/integration), a cut session leaves the
+        next step in its last commit, and the session after a cut first resumes and closes what was left open; a
+        rejection still comes first, and the one-job-per-session rule stands."""
+        raw = (FOUNDER / "prompt.md").read_text(encoding="utf-8").replace("\r\n", "\n")
+        prompt = " ".join(raw.split())
+        self.assertEqual(prompt.count(self.FINISH_WORK), 1)
+        blocks = raw.split("\n\n")
+        at = next(i for i, block in enumerate(blocks) if block.startswith(self.FINISH_WORK))
+        self.assertTrue(blocks[at - 1].startswith("**Görevlerin (operatör, 2026-10-29).**"))
+        self.assertTrue(blocks[at + 1].startswith("**Yapamazsın:**"))
+        for line in blocks[at].split("\n"):
+            self.assertLessEqual(len(line), 120, line)
+        section = " ".join(blocks[at].split())
+        for phrase in ("bir problemi kökten çözmeden diğerine geçmesin",
+                       "kanıtı hakemden geçtiğinde biter; bitmeden sıradakine geçmezsin",
+                       "her oturumda yine tek iş yaparsın",
+                       "beyinde `wip/<konu>`, hedefte `brain/` altındaki dalın",
+                       "yarım iş beynin `main`'ine ve hedefin `brain/integration`'ına girmez",
+                       "çalışma dalının son commit mesajına sıradaki adımı yaz",
+                       "hakemin bir reddi varsa onu giderdikten sonra",
+                       "açtığın her PR oturum bitmeden ya birleşir ya kapanır",
+                       "yeni bir işe başlamadan kapanır",
+                       "Biten işin çalışma dalını sil"):
+            self.assertIn(phrase, section)
+        self.assertIn("Ret varsa bu oturumun ilk işi o nedeni düzeltmektir", prompt)  # the rejection rule is unchanged
+        self.assertNotIn("force", section.casefold())  # a work branch is pushed forward, never rewritten
+
+    def test_the_system_is_for_every_repository_and_its_lessons_are_claims(self):  # E460, owner 2026-11-01; E463
         """The owner: Snowball is a general application for every kind of repository, not tailored to this target; it
         knows and closes its own gaps, understands the given repository fully, gives its agents the repository's map
         with their task, and tests whether what it learned is right. The duty is general: it names no tool, adaptor,
-        ecosystem or format, and how stays the Founder's."""
+        ecosystem or format, and how stays the Founder's. Since E463 it is part of the owner's section."""
         prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
-        for phrase in ("Her repo için, en ileri düzeyde (sahip, 2026-11-01)", "Bu hedef senin ilk sınavındır, son değil",
+        section = self.owner_aim(prompt)
+        for phrase in ("her çeşit repoya göre tasarlanmış kapsayıcı bir uygulama olmalı",
+                       "Bu hedef senin ilk sınavındır, son değil",
                        "hiç görmediğin bir repoda da doğru çalışacak kadar genel olmalı",
                        "hedefin koddan üretilmiş güncel haritasını ve işin ilgili kısmını görevle birlikte ver",
-                       "Öğrendiğin her şey bir iddiadır", "Nasıl yapacağın senindir"):
-            self.assertIn(phrase, prompt)
-        start = prompt.index("Her repo için, en ileri düzeyde")
-        paragraph = prompt[start:prompt.index("Nasıl yapacağın senindir", start)]
+                       "Öğrendiğin her şey bir iddiadır"):
+            self.assertIn(phrase, section)
         for hint in ("Nx", "Rust", "Zig", "cargo", "depmap", "profile.fit", "mermaid", "adaptör"):
-            self.assertNotIn(hint, paragraph)
+            self.assertNotIn(hint, section)
 
-    def test_the_founder_owns_the_whole_target_even_a_domain_it_does_not_know(self):  # E364, owner 2026-10-31
+    def test_the_founder_owns_the_whole_target_even_a_domain_it_does_not_know(self):  # E364, owner 2026-10-31; E463
         """The owner: in a domain it does not know at all, with no muscles for it, the system must understand it,
         learn and apply it, solve what it meets and become expert in it, by itself. The duty is general: it names no
         language, tool, mechanism, curriculum or timing, it does not answer the Founder's own earlier closure, and
-        it does not point at the seed pages that are held (E304: the owner's decision, never a hint)."""
+        it does not point at the seed pages that are held (E304: the owner's decision, never a hint). Since E463 its
+        body stands word for word in the owner's section, after the coverage duty it leans on; the sealed generality
+        exam (sha256 e901b772...) measures that body."""
         prompt = " ".join((FOUNDER / "prompt.md").read_text(encoding="utf-8").split())
-        for phrase in ("Bilmediğin alan (sahip, 2026-10-31)", "sıradaki aşamanın ihtiyacıyla sınırlı değildir",
+        section = self.owner_aim(prompt)
+        body = ("Hedefin bütün kodu, içerdiği her dil, ekosistem ve yapıyla senin alanındır; sıradaki aşamanın "
+                "ihtiyacıyla sınırlı değildir. Kapsamını ölçtüğünde işleyemediğin her parça, hiç bilmediğin ve hiçbir "
+                "aletinin işleyemediği bir alan olsa da, senin işindir: onu kendin anla, öğren ve uygula, "
+                "karşılaştığın problemleri anlayıp çöz, o alanda uzmanlaş.")
+        for phrase in (body, "sıradaki aşamanın ihtiyacıyla sınırlı değildir",
                        "hiçbir aletinin işleyemediği bir alan olsa da", "o alanda uzmanlaş",
-                       "Neyi, ne zaman, hangi sırayla ve nasıl öğreneceğin senindir"):
-            self.assertIn(phrase, prompt)
+                       "neyi, ne zaman, hangi sırayla ve nasıl öğreneceğine ve yapacağına sen karar verirsin"):
+            self.assertIn(phrase, section)
+        self.assertLess(prompt.index("**kapsamını ölç**"), prompt.index(body))
         for hint in ("Rust", "Zig", "cargo", "Cargo", "clippy", "rustfmt", "build.rs",  # no domain, no tool
                      "kas büyüt", "kasın", "müfredat",  # no mechanism, no curriculum
                      "f284", "f360", "kapalı sayılmaz",  # not the answer to its own closure

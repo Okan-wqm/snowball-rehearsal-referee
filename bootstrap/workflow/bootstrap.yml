@@ -74,6 +74,10 @@ jobs:
           cp -r referee/bootstrap referee/vectors referee/seats snap/
           cp referee/bootstrap.json referee/control.json referee/policy.json snap/
           cp referee/setup/summary.json snap/setup/
+          # The stage lock and the counter it names, once the operator wrote them (tohum/25a 1 and 9): pull reads the
+          # stage it opened (asama-0/10a "Kilidin açılışı"); before the import neither is there.
+          if [ -e referee/setup/stage.json ]; then cp referee/setup/stage.json snap/setup/; fi
+          if [ -e referee/setup/imports.jsonl ]; then cp referee/setup/imports.jsonl snap/setup/; fi
       - name: Kill switch and operator files
         run: python3 -m snowball_bootstrap control --root snap
       - id: cfg

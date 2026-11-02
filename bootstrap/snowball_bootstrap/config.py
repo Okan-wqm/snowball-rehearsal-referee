@@ -229,23 +229,52 @@ SPDX_ID_RE = re.compile(r"^[A-Za-z0-9.+-]{1,64}\Z")
 PIN_RE = re.compile(r"^[a-z0-9][a-z0-9-]*==[A-Za-z0-9.+!-]+\Z")
 
 
+STAGE_BUDGET_RE = re.compile(r"^asama_(0|[1-9][0-9]?)\Z")  # `stage_budgets.asama_<k>` (`18a`)
+
+
 @dataclass(frozen=True)
 class Policy:
     monthly_cap_usd_micros: int
-    stage0_rival_usd_micros: int
+    stage_rival_usd_micros: dict[int, int]  # stage -> `stage_budgets.asama_<k>.rival_usd`, the stages that name one
     rival_min_attempts: int
     repeat_reject_limit: int
     license_allowlist: frozenset[str]
     license_exceptions: dict[str, str]
 
+    def rival_usd_micros(self, stage: int) -> int:
+        """The open stage's rival brake (`29b`, `26e`, E492): ``stage_budgets.asama_<stage>.rival_usd``. Stage 0's must
+        be there whenever the file loads; a later stage's is read only once its lock is open, so a policy without it
+        stops that stage's runs (`26c`: an operator file fails closed) and `stage-open` opens no lock on it."""
+        if stage not in self.stage_rival_usd_micros:
+            raise ConfigError(f"policy.json.constitutional.stage_budgets.asama_{stage}.rival_usd is missing: the open "
+                              "stage's rival brake (`29b`, `26e`)")
+        return self.stage_rival_usd_micros[stage]
+
+
+def _stage_rival_budgets(budgets: dict[str, Any], where: str) -> dict[int, int]:
+    """Every ``asama_<k>.rival_usd`` the operator wrote, in micro-USD; Stage 0's is required (`asama-0/12`). A later
+    stage's block may name other keys only (`asama-1/10` lists the Founder's too); a ``rival_usd`` that is there must be
+    a positive whole number of USD, whichever stage is open, as a malformed operator value stops the run."""
+    _req(budgets, "asama_0", dict, where)
+    found: dict[int, int] = {}
+    for key, block in budgets.items():
+        match = STAGE_BUDGET_RE.match(key)
+        if match and isinstance(block, dict) and (key == "asama_0" or "rival_usd" in block):
+            found[int(match.group(1))] = _pos_int(block, "rival_usd", f"{where}.{key}") * 1_000_000
+    return found
+
 
 def load_policy(root: Path) -> Policy:
-    data = _load(root / "policy.json")
+    return policy_of(_load(root / "policy.json"))
+
+
+def policy_of(data: Any) -> Policy:
+    """`policy.json`'s content, parsed (`load_policy` reads it from a checkout, `stage-open` from a commit)."""
     const = _req(data, "constitutional", dict, "policy.json")
     cw = "policy.json.constitutional"
     params = _req(const, "stage_params", dict, cw)
     budgets = _req(const, "stage_budgets", dict, cw)
-    stage0 = _req(budgets, "asama_0", dict, f"{cw}.stage_budgets")
+    rival_budgets = _stage_rival_budgets(budgets, f"{cw}.stage_budgets")
     allow = _req(const, "license_allowlist", list, cw)
     if not allow or not all(isinstance(a, str) and SPDX_ID_RE.match(a) for a in allow):
         raise ConfigError(f"{cw}.license_allowlist must be a non-empty list of SPDX identifiers")
@@ -257,7 +286,7 @@ def load_policy(root: Path) -> Policy:
                               "{{expression, evidence}} keyed by normalised name==version")
     return Policy(
         monthly_cap_usd_micros=_pos_int(const, "monthly_cap_usd", cw) * 1_000_000,
-        stage0_rival_usd_micros=_pos_int(stage0, "rival_usd", f"{cw}.stage_budgets.asama_0") * 1_000_000,
+        stage_rival_usd_micros=rival_budgets,
         rival_min_attempts=_pos_int(params, "rival_min_attempts", f"{cw}.stage_params"),
         repeat_reject_limit=_pos_int(params, "repeat_reject_limit", f"{cw}.stage_params"),
         license_allowlist=frozenset(allow),
@@ -376,7 +405,11 @@ def _epoch(row: Any, where: str) -> SeedEpoch:
 
 
 def load_summary(root: Path) -> Summary:
-    data = _load(root / "setup" / "summary.json")
+    return summary_of(_load(root / "setup" / "summary.json"))
+
+
+def summary_of(data: Any) -> Summary:
+    """`setup/summary.json`'s content, parsed (`load_summary` reads it from a checkout, `stage-open` from a commit)."""
     where = "setup/summary.json"
     seed_commit = _req(data, "seed_commit", str, where)
     if not SHA_RE.match(seed_commit):

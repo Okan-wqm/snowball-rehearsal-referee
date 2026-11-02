@@ -495,5 +495,7 @@ def files_in(referee: dict[str, bytes]) -> dict[str, bytes]:
 
 def due(table: stages.StageTable, done: set[int] | tuple[int, ...] | list[int]) -> bool:
     """Whether a code push is held to the rules: the micro-feature whose module is the loop workflow is finished (by
-    the head's declaration or the last accepted commit's: one cannot be undeclared, E292)."""
-    return any(f.module == MODULE and f.mf in set(done) for f in table.mfs)
+    the head's declaration or the last accepted commit's: one cannot be undeclared, E292), or a stage the lock left
+    behind had it (all its micro-features are finished, `stages.StageTable.before`)."""
+    return (any(f.module == MODULE and f.mf in set(done) for f in table.mfs)
+            or any(f.module == MODULE for earlier in table.before for f in earlier.mfs))

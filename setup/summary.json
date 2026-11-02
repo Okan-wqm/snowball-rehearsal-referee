@@ -49,6 +49,12 @@
       "commit": "35c88381c40f4859be7bd69dcaaf5706166b4c86",
       "seed_sha256": null,
       "spec_tohum_sha256": "b7ad41ae8fcfa2c7d4896bc7a24affddc996e36bc01c49e0f32ad83a89168585"
+    },
+    {
+      "bootstrap_sha256": "27fbf85d6b42e0439e0f36767ed349699d180b7afdccb6ec61f8562d20e13357",
+      "commit": "7f8ef62bdb2790a1c494a1be05030b289b8fa6cb",
+      "seed_sha256": null,
+      "spec_tohum_sha256": "e3e34c4a7a109b60e8d648f158d5f049614ff38341e033bbabd709aea85b7d77"
     }
   ],
   "honesty_exception": {
@@ -72,7 +78,7 @@
       "id": "copy",
       "repo": "Okan-wqm/snowball-rehearsal-copy",
       "kind": "copy",
-      "base_sha": "c6e23d0f8aa5ee9af6bee7f5b801f8aa3cc7850b",
+      "base_sha": "4f479013a42f4b750e0784cc2500bd17d932af1a",
       "identifiers": [
         "aquaculture_platform",
         "aquaculture",

@@ -452,7 +452,7 @@ class CmdRivalGaps(unittest.TestCase):
         self.assertIn(f'=== {fence} seed page "spec/tohum/04-kod.md" ===', stdin)
         self.assertEqual(stdin, rival.build_context("code", meta["base"], meta["head"], meta["changed"],
                                                     (self.pulled / "diff.patch").read_text(encoding="utf-8"),
-                                                    cli._pages((self.pulled / "brain.tar").read_bytes(), "code"),
+                                                    cli._pages((self.pulled / "brain.tar").read_bytes(), "code", 0),
                                                     fence=fence))
 
     @posix_only

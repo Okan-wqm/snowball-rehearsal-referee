@@ -1,0 +1,8 @@
+{
+  "stage": 1,
+  "batch": "P2",
+  "mfs": [
+    {"mf": 1, "tests": [53], "groups": [], "module": "security/derive.py", "calls": []},
+    {"mf": 2, "tests": [22], "groups": [], "module": "agent/dispatch.py", "calls": []}
+  ]
+}

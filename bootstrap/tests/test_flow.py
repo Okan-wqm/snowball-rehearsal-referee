@@ -22,8 +22,8 @@ from snowball_bootstrap.decide import decide
 from snowball_bootstrap.importer import ImportErrorStop, run_import
 from snowball_bootstrap.treehash import TreeError, tree_hash
 
-from helpers import (LOOP_YML, commit, install_fake_claude, ledger_bytes, ledger_rows, make_repo, module_less_red,
-                     ok_result, posix_only, sh, submit)
+from helpers import (GIT_IDENTITY, LOOP_YML, bare_repo, commit, install_fake_claude, ledger_bytes, ledger_rows, main_of,
+                     make_repo, module_less_red, ok_result, posix_only, sh, submit, tree_files)
 
 SEED_FILES = {"spec/tohum/00-cekirdek.md": "# core\n", "spec/asama-0/00-ozet.md": "# stage 0\n"}
 STAGE0 = stages.load(0)
@@ -644,36 +644,44 @@ class Flow(unittest.TestCase):
         fake_sigstore = work / "fake-python"
         fake_sigstore.write_text("#!/bin/sh\nexit 0\n")
         fake_sigstore.chmod(fake_sigstore.stat().st_mode | stat.S_IEXEC)
-        referee = work / "referee-checkout"
-        (referee / "setup").mkdir(parents=True)
-        (referee / "policy.json").write_text("{}")
-        (referee / "bootstrap").mkdir()
-        (referee / ".github" / "workflows").mkdir(parents=True)
-        (referee / ".github" / "workflows" / "bootstrap.yml").write_text("old")
-        toy = work / "toy"
-        toy.mkdir()
-        log = run_import(work / "result.json", work / "bundle.json", "id", str(fake_sigstore), self.brain,
-                         referee, toy)
+        # The operator's two repositories, as their remotes: the import builds on their main and pushes (E470).
+        identity = mock.patch.dict(os.environ, GIT_IDENTITY)  # its commits are the operator's
+        identity.start()
+        self.addCleanup(identity.stop)
+        referee = bare_repo(work / "referee.git", {
+            "setup/summary.json": "{}", "policy.json": "{}", "bootstrap/cli.py": "seed",
+            "control.json": '{"kill_switch": true}',  # `25a` 1: imported with the kill switch on
+            ".github/workflows/bootstrap.yml": "old"})
+        toy = bare_repo(work / "toy.git")
+        log = run_import(work / "result.json", work / "bundle.json", "id", str(fake_sigstore), str(self.brain),
+                         str(referee), str(toy))
         self.assertEqual(log["referee_tree_sha256"], result["exit"]["referee_tree_sha256"])
-        self.assertTrue((referee / "ledger" / "chain.py").exists())
-        self.assertTrue((referee / ".github" / "workflows" / "loop.yml").exists())
-        self.assertFalse((referee / ".github" / "workflows" / "bootstrap.yml").exists())
-        self.assertFalse((referee / "bootstrap").exists())
-        self.assertEqual((referee / "policy.json").read_text(), "{}")
-        self.assertTrue((toy / "app.py").exists())
+        files = tree_files(referee)
+        self.assertIn("ledger/chain.py", files)
+        self.assertIn(".github/workflows/loop.yml", files)
+        # The push judge stays (E100, `25a` 1): the bootstrap referee and its workflow are untouched.
+        self.assertEqual(files[".github/workflows/bootstrap.yml"], b"old")
+        self.assertEqual(files["bootstrap/cli.py"], b"seed")
+        self.assertEqual(files["policy.json"], b"{}")
+        self.assertEqual(json.loads(files["setup/imports.jsonl"])["result_sha256"],
+                         hashlib.sha256((work / "result.json").read_bytes()).hexdigest())
+        self.assertIn("app.py", tree_files(toy))
+        heads = main_of(referee), main_of(toy)
 
         # A signed hash that does not match the commit's referee tree stops the import.
         tampered = json.loads(json.dumps(result))
         tampered["exit"]["referee_tree_sha256"] = "0" * 64
         (work / "tampered.json").write_text(json.dumps(tampered))
         with self.assertRaises(ImportErrorStop):
-            run_import(work / "tampered.json", work / "bundle.json", "id", str(fake_sigstore), self.brain,
-                       referee, toy)
+            run_import(work / "tampered.json", work / "bundle.json", "id", str(fake_sigstore), str(self.brain),
+                       str(referee), str(toy))
 
         # A failing signature check stops the import.
         fake_sigstore.write_text("#!/bin/sh\necho bad >&2\nexit 1\n")
         with self.assertRaises(ImportErrorStop):
-            run_import(work / "result.json", work / "bundle.json", "id", str(fake_sigstore), self.brain, referee, toy)
+            run_import(work / "result.json", work / "bundle.json", "id", str(fake_sigstore), str(self.brain),
+                       str(referee), str(toy))
+        self.assertEqual((main_of(referee), main_of(toy)), heads)
 
     def test_rejection_memory_shows_whether_the_founder_uses_what_it_was_told(self):
         commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0 v4\n"}, "spec")

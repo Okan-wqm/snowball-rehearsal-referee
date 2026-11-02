@@ -151,10 +151,12 @@ def tree_paths(repo: Path, head: str) -> list[str]:
     return [p for _m, _s, p in _entries(repo, head)]
 
 
-def archive(repo: Path, head: str, dirs: tuple[str, ...] = ()) -> bytes:
-    """Deterministic tar of the regular files at ``head``, read blob by blob; only those under ``dirs`` if given."""
+def archive(repo: Path, head: str, dirs: tuple[str, ...] = (), skip=None, under: str = "") -> bytes:
+    """Deterministic tar of the regular files at ``head`` (any tree-ish), read blob by blob; only those under ``dirs`` if
+    given, none ``skip`` names, each path behind ``under`` (the import hashes a composed tree's part as `26c`'s
+    ``referee/``)."""
     entries = [(m, s, p) for m, s, p in _entries(repo, head) if m in ("100644", "100755")
-               and (not dirs or any(p.startswith(d + "/") for d in dirs))]
+               and (not dirs or any(p.startswith(d + "/") for d in dirs)) and not (skip and skip(p))]
     batch = "".join(f"{s}\n" for _m, s, _p in entries).encode()
     out = git(repo, "cat-file", "--batch", stdin=batch)
     buf = io.BytesIO()
@@ -168,7 +170,7 @@ def archive(repo: Path, head: str, dirs: tuple[str, ...] = ()) -> bytes:
             start = header_end + 1
             content = out[start:start + int(size)]
             pos = start + int(size) + 1
-            info = tarfile.TarInfo(path)
+            info = tarfile.TarInfo(under + path)
             info.size = len(content)
             info.mode = 0o755 if mode == "100755" else 0o644
             info.mtime = 0

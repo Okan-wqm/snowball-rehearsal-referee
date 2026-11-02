@@ -1,0 +1,15 @@
+{
+  "stage": 1,
+  "batch": "P1",
+  "mfs": [
+    {"mf": 1, "tests": [51], "groups": [], "module": "runner/organs.py", "calls": []},
+    {"mf": 2, "tests": [8], "groups": [], "module": "snapshot/make.py", "calls": []},
+    {"mf": 3, "tests": [2, 4], "groups": [], "module": "cases/build.py", "calls": []},
+    {"mf": 4, "tests": [1, 6, 7, 12, 28], "groups": ["match", "cp_lower", "mcnemar"], "module": "harness/score.py",
+     "calls": []},
+    {"mf": 5, "tests": [9, 11], "groups": [], "module": "harness/offline.py", "calls": []},
+    {"mf": 6, "tests": [24], "groups": [], "module": "drift/check.py", "calls": []},
+    {"mf": 7, "tests": [41], "groups": [], "module": "gozcu/evaluate.py", "calls": []},
+    {"mf": 8, "tests": [52], "groups": [], "module": "policy/operating.py", "calls": []}
+  ]
+}

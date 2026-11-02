@@ -19,6 +19,9 @@ shows them (E08); ``open_claims`` are refutations no reproducer proved on the he
 their reproducers showed on later heads, never a proof there (E07, E260).
 ``rejected_exit_request`` is the sha256 of the last rejected exit request's bytes: the same file left in place is
 ignored in later code pushes (`asama-0/10`, `26c`, E97).
+``spend_stage`` is there only past a lock (`for_stage`): the stage whose rival spend ``stage_spend_usd_micros`` counts.
+A stage's brake counts from the lock that opened it (`29b`, `26e`, `asama-1/10`; E492); Stage 0's state never has the
+key, so it is the one it always was.
 
 A state written by an older bootstrap is carried forward by ``migrate``, never thrown away (`tohum/25`).
 """
@@ -54,6 +57,7 @@ KEYS_V3 = KEYS_V2 | {"rejected_exit_request"}
 # `targets/` may change, until the operator reverts its transfer or a later stage opens (`asama-0/10a`, `asama-0/11`,
 # E333; `cli.exit_freeze`).
 KEYS = KEYS_V3 | {"exit_accepted_sha"}
+SPEND_STAGE = "spend_stage"  # past a lock only: the stage whose rival spend the state counts (`for_stage`, E492)
 REFUTATION_KEYS = {"key", "claim", "evidence_refs", "reproducer", "first_head", "last_head"}
 CLAIM_KEYS = {"id", "claim", "evidence_refs", "reproducer", "observed", "first_head", "rewritten"}
 
@@ -151,8 +155,8 @@ def validate(state: Any) -> dict[str, Any]:
         raise ConfigError("previous state has an unexpected shape (schema "
                           f"{state.get('schema') if isinstance(state, dict) else type(state).__name__!r}); "
                           "see tohum/25 'Durum kaybolursa'")
-    if set(state) != KEYS:
-        missing, extra = sorted(KEYS - set(state)), sorted(set(state) - KEYS)
+    if not KEYS <= set(state) <= KEYS | {SPEND_STAGE}:
+        missing, extra = sorted(KEYS - set(state)), sorted(set(state) - KEYS - {SPEND_STAGE})
         raise ConfigError("previous state has an unexpected shape (missing: " + (", ".join(missing) or "none")
                           + "; unexpected: " + (", ".join(extra) or "none") + "): another version of the bootstrap "
                           "wrote it and no migration knows it; see tohum/25 'Durum kaybolursa'")
@@ -206,7 +210,19 @@ def validate(state: Any) -> dict[str, Any]:
         raise ConfigError("previous state: bad rejected_exit_request")
     if not _sha_or_none(state["exit_accepted_sha"]):
         raise ConfigError("previous state: bad exit_accepted_sha")
+    if SPEND_STAGE in state and not (_count(state[SPEND_STAGE]) and state[SPEND_STAGE] >= 1):
+        raise ConfigError(f"previous state: bad {SPEND_STAGE}")
     return state
+
+
+def for_stage(state: dict[str, Any], stage: int) -> dict[str, Any]:
+    """The state as the open ``stage`` counts its rival spend (`29b`, `26e`, `asama-1/10`; E492): a stage's brake counts
+    from the lock that opened it, so the first run past a lock starts the stage's spend at 0 and records the stage as
+    ``spend_stage``. A state that already counts this stage or a later one is returned as it is: a reverted lock does
+    not start a stage's spend again (closed side), and Stage 0's state, with no key, is the one it always was."""
+    if stage <= state.get(SPEND_STAGE, 0):
+        return state
+    return dict(state, stage_spend_usd_micros=0, **{SPEND_STAGE: stage})
 
 
 def rollover(state: dict[str, Any], month: str) -> dict[str, Any]:
