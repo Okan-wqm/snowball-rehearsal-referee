@@ -650,9 +650,10 @@ class LoopReportsPageTest(unittest.TestCase):
         catalog = json.loads((BOOT / "vectors" / "revert_drill" / "catalog.json").read_text(encoding="utf-8"))
         patches = [i["patch"] for i in catalog["instances"]]
         self.assertEqual(sorted(patches), ["rd-build.patch", "rd-lint.patch", "rd-test.patch"])
-        for name in patches:  # the page says their bytes are nowhere: it changes with the epoch that brings them
+        for name in patches:  # the live fixtures are the referee's second drill secret (E499), never a seed file
             self.assertEqual(list(ROOT.joinpath("seed").rglob(name)), [], name)
-        self.assertIn("Tohumun canlı prova fikstürleri, oyuncağa ekilecek kötü merge'ler, bu tohumda yoktur", page)
+        self.assertIn("Hakem reposunun ikinci prova sırrıdır", page)
+        self.assertIn("Hakem reposunda bir dosya değildir", page)
 
     def test_the_changelog_names_each_report_answered_or_declined(self):  # changelog_drops_seed_042_045
         entry = flat((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")[:9000])
@@ -687,6 +688,86 @@ class LoopReportsPageTest(unittest.TestCase):
             lines = " ".join(" ".join(pages[page].read_text(encoding="utf-8").splitlines()[first - 1:last]).split())
             for word in words:
                 self.assertIn(word, lines, ref)
+
+    @staticmethod
+    def entry():
+        """This epoch's changelog entry, flattened."""
+        page = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")
+        return changelog_entry(page, "2026-11-04, E499")
+
+    def answered_by(self, report, says):
+        """The 2026-11-04 entry names ``report`` and, in its answer, each page range of ``says``; every range holds its
+        words (E342's rule: an answer names the lines that say it, and the lines say what the answer says)."""
+        answer = self.entry()[self.entry().index(f"`{report}`"):]
+        answer = answer[:answer.find("`seed-", 1)] if "`seed-" in answer[1:] else answer
+        for (prefix, first, last), words in says.items():
+            ref = f"`{prefix}:{first}`" if first == last else f"`{prefix}:{first}-{last}`"
+            self.assertIn(ref, answer, f"{report}: {ref}")
+            lines = flat(" ".join(spec_page("tohum", prefix).splitlines()[first - 1:last]))
+            for phrase in words:
+                self.assertIn(phrase, lines, f"{report}: {ref}")
+
+    def test_seed_045_is_answered_by_lines_that_say_it(self):  # drill_fixture_ids_meaningful
+        """E499: seed-045's open part, where the live revert-drill fixtures are and in which form, is answered: the
+        referee's second drill secret, only in the env of `yaz`'s step that uses it; one line of base64 of canonical
+        JSON bound to the import line; opaque ids, equal causes, an in-place patch; the per-file rule; the producer."""
+        self.answered_by("seed-045-drill-live-inputs-unnamed", {
+            ("26f", 34, 38): ("ikinci prova sırrıdır", "yalnız `yaz`'ın onu kullanan adımının `env`'indedir",
+                              "`çek`, `getir`, `koş` ve `çağır` onu hiç taşımaz", "Hakem reposunda bir dosya değildir"),
+            ("26f", 39, 50): ("`{import_line_sha256, instances: [{id, cause, patch}]}`",
+                              "Sayacın son aktarım satırınınki değilse prova kapalıdır",
+                              "32 rastgele küçük onaltılık karakterdir ve nedeni anlatmaz",
+                              "her nedenin örnek sayısı eşittir", "kaydırmadan uygulanır", "güvenlik yolunda değildir"),
+            ("26f", 52, 58): ("hiçbir oyuncak adayı bir yamanın değiştirdiği dosyayı değiştirmez", "dosya başınadır",
+                              "`drill-fixtures`", "48 KB", "hiçbir yamanın içeriğini basmaz")})
+        self.assertIn("`seed-045-drill-live-inputs-unnamed` (tamamlandı) → ", self.entry())
+
+    def test_seed_047_is_answered_by_lines_that_say_it(self):  # regenesis_adds_a_bypass_actor
+        """E540, E541: seed-047. (a) After a red (B) the targets' `brain/` branches are archived as tags, deleted with
+        the two rulesets' enforcement off for the deletion only (never a bypass actor), and (B) runs from a first
+        genesis in a new ledger; the old "brain/state silinmez" path is gone from the pages and the runbook does the
+        same steps. (b) The loop reads the seed security ledger from `setup/security-ledger.jsonl` in its checkout."""
+        self.answered_by("seed-047-regenesis-and-genesis-inputs", {
+            ("25a", 25, 40): ("`refs/tags/arsiv/<aktarım>/<dal>`", "başarısız aktarım satırının `row_hash`'idir",
+                              "uygulamasını yalnız silme süresince kapatır", "bypass aktörü eklenmez",
+                              "`brain/revert/*`",
+                              "`state_rules_missing`", "yeni bir defterin ilk genesis'inden",
+                              "döngü başı olan bir hedefe genesis yazmaz", "`stage-open` son genesis'i okur"),
+            ("26d", 31, 34): ("defterin ilk genesis'inden koşar", "döngü bir defterde tek genesis yazar",
+                              "defterin son genesis satırıdır"),
+            ("07", 9, 10): ("yeniden keser", "ne senkron ne zorla itmedir"),
+            ("29o", 15, 17): ("hakem reposunda `setup/security-ledger.jsonl`",),
+            ("29s", 71, 74): ("İşin checkout'unda", "tohum güvenlik defteri `setup/security-ledger.jsonl`"),
+            ("26c", 45, 45): ("**setup/security-ledger.jsonl**", "tohum dönemi teslim eder",
+                              "`setup/`'ı `main`'den korur")})
+        for prefix in ("25a", "26d"):
+            self.assertNotIn("silinmez", spec_page("tohum", prefix), prefix)  # the kept-brain/state path is no flow
+        runbook = flat((ROOT / "seed" / "founder" / "ETKINLESTIRME.md").read_text(encoding="utf-8"))
+        for words in ("refs/tags/arsiv/$N/", "Bypass list'e kimse eklenmez", "Enforcement status Disabled",
+                      "gh api \"repos/$T/rules/branches/$B\""):
+            self.assertIn(words, runbook)
+        self.assertNotIn("Dallar kalırsa da", runbook)
+
+    def test_seed_048_is_answered_by_lines_that_say_it(self):  # copy_gate_row_carries_the_pass_pair
+        """E542, E543: seed-048. (a) The Founder's draft of the copy's genesis gate is the seed's: `yaz` judges it on
+        the toy, writes `events`/`copy_gate` once after the last genesis, the next `çek` reads it; its payload never
+        carries `stage-open`'s PASS pair, which `stagelock` counts PASS rows by. (b) The import writes the signed (A)
+        result as `setup/results/<result_sha256>.json` in its commit; `yaz` and `stage-open` read it from there."""
+        self.answered_by("seed-048-copy-gate-record-and-a-result-bytes", {
+            ("26f", 60, 67): ("`kind: copy_gate`", "`payload {conditions: [koşul etiketi]}`",
+                              "son genesis'ten sonra bir kez", "D1'de doğrulanmış defterinden okur",
+                              "hiçbir değeri taşımaz", "`stage` ile `verdict: \"PASS\"`'i birlikte taşımaz"),
+            ("29s", 22, 24): ("kopya kapısı satırından (`26f`)",),
+            ("26c", 38, 38): ("**setup/results/<result_sha256>.json**", "Sigstore paketi yok",
+                              "baytlarının sha256'sını onunla denetler", "kullanılamaz girdidir"),
+            ("25a", 15, 15): ("`setup/results/<result_sha256>.json` olarak yazar", "başka baytlar varsa durur"),
+            ("26d", 47, 47): ("(A) sonucu son aktarım satırının `setup/results/<result_sha256>.json`'udur",),
+            ("26d", 57, 59): ("(A) sonucu ve hakem ağacı `--referee` klonunun commit'inden okunur",
+                              "`setup/results/<result_sha256>.json`"),
+            ("29s", 71, 74): ("`owner_exception`'ını ondan alır",)})
+        from snowball_bootstrap import stagelock
+        source = Path(stagelock.__file__).read_text(encoding="utf-8")
+        self.assertIn('and row["payload"].get("verdict") == "PASS"', source)  # the pair `_pass_line` counts by
 
 
 class ReportAnswerPagesTest(unittest.TestCase):
@@ -1292,6 +1373,16 @@ class MutationShardTest(unittest.TestCase):
         self.assertIn("timeout-minutes: 60", job)
         self.assertLessEqual(-(-len(mutate.MUTANTS) // count), self.PER_SHARD,
                              f"{len(mutate.MUTANTS)} mutants in {count} shards: add shards to ci.yml")
+
+    def test_the_shards_leave_the_referee_room_on_the_account(self):  # mutation_shards_fill_the_account
+        """E525: the account runs at most 20 jobs at once, and a push to main started every mutation shard together, so on
+        2026-11-02 the referee's runs for the Founder's pushes queued behind them. The shards run at most 16 at a time:
+        the referee's jobs (cek, getir, the four kos parts, cagir, yaz; at most 4 run together) always find a slot."""
+        ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        job = re.search(r"(?ms)^  mutation:\n(.*?)(?=^  \S|\Z)", ci).group(1)
+        found = re.search(r"(?m)^      max-parallel: ([0-9]+)$", job)
+        self.assertIsNotNone(found, "the mutation job has no max-parallel")
+        self.assertLessEqual(int(found.group(1)), 16)
 
     def test_each_mutant_a_test_names_is_one(self):
         """E486 (the eighth skeptic: three tests named mutants that no longer were, sixteen more were found): the

@@ -26,8 +26,11 @@ referee's ``bootstrap/`` and ``.github/workflows/bootstrap.yml``: the push judge
 composed tree is checked again: each kept entry's object is ``main``'s, and the rest hashes to the signed tree. Only
 then does the counter get its row (`26c:39-40`), ``{ts, stage, batch?, brain_sha, referee_tree_sha256, result_sha256,
 toy_tree_sha256?}`` in that order, chained (`26`), one line of compact JSON ended by LF, appended to ``main``'s
-``setup/imports.jsonl`` (a plain file, mode 100644) in the same commit, the only entry that differs from the checked
-tree. At Stage 0's exit the toy repository's ``main`` gets a commit whose tree is the signed toy tree (`25a` 2); a batch
+``setup/imports.jsonl`` (a plain file, mode 100644) in the same commit; beside it, in the same commit, the signed result
+it verified, byte for byte, as ``setup/results/<result_sha256>.json`` (`26c`, E543: the loop's ``yaz`` and `stage-open`
+read it there; no Sigstore bundle, which nothing reads). A main that already holds those bytes there keeps them (a rerun
+of the same result), one holding other bytes stops. These are the only entries that differ from the checked tree. At
+Stage 0's exit the toy repository's ``main`` gets a commit whose tree is the signed toy tree (`25a` 2); a batch
 transfer leaves the toy as it is (`asama-1/13`). Only ``main`` of the referee repository is cloned and only ``main``
 of the toy's fetched (E494). Before anything is pushed, git's object check runs on exactly what each push sends: the
 objects the new commit reaches and the main the import read does not (``receive.fsckObjects`` in a repository of the
@@ -482,10 +485,21 @@ def _run(result_path: Path, bundle_path: Path, identity: str, sigstore_python: s
     old = gitio.file_at(bare, main, COUNTER) or b""
     blob = _git(bare, "hash-object", "-w", "--stdin", stdin=old + line).decode().strip()
     _git(bare, "update-index", "--add", "--cacheinfo", f"100644,{blob},{COUNTER}", index=index)
+    expected_changes = [COUNTER]
+    signed = stagelock.result_file(row["result_sha256"])  # E543: the signed result's bytes beside its row (`26c`)
+    held = [m for m, _s, p in kept_entries if p == signed]
+    if held and (held[0] != "100644" or gitio.file_at(bare, main, signed) != result_bytes):
+        raise ImportErrorStop(f"main's {signed} is not the signed result's bytes as a plain file (`26c`): nothing was "
+                              "written")
+    if not held:
+        result_blob = _git(bare, "hash-object", "-w", "--stdin", stdin=result_bytes).decode().strip()
+        _git(bare, "update-index", "--add", "--cacheinfo", f"100644,{result_blob},{signed}", index=index)
+        expected_changes.append(signed)
     tree = _git(bare, "write-tree", index=index).decode().strip()
     changed = gitio.git(bare, "diff-tree", "-r", "-z", "--name-only", composed, tree).split(b"\0")
-    if [c for c in changed if c] != [COUNTER.encode()]:
-        raise ImportErrorStop("the commit would change more than the counter after the checked tree: nothing was pushed")
+    if sorted(c for c in changed if c) != sorted(name.encode() for name in expected_changes):
+        raise ImportErrorStop("the commit would change more than the counter and the signed result after the checked "
+                              "tree: nothing was pushed")
     what = f"Aşama {stage}" + (f", parti {batch}" if batch else "")
     message = (f"Aktarım: {what}, beyin {sha} (`25a` 1, `26c`)\n\nsetup/imports.jsonl row_hash {row['row_hash']}\n")
     commit = _git(bare, "commit-tree", tree, "-p", main, stdin=message.encode("utf-8")).decode().strip()

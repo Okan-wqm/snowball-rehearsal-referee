@@ -234,8 +234,10 @@ class ImportBuildsOnMainTest(ImportCase):
         for rel, content in before.items():
             self.assertEqual(after.get(rel), content, rel)
         self.assertEqual(after[".github/workflows/loop.yml"], LOOP_YML.encode("utf-8"))
+        signed = stagelock.result_file(hashlib.sha256(self.result.read_bytes()).hexdigest())
         self.assertEqual(sorted(set(after) - set(before)),
-                         [".github/workflows/loop.yml", "gate/check.py", "ledger/chain.py", "setup/imports.jsonl"])
+                         [".github/workflows/loop.yml", "gate/check.py", "ledger/chain.py", "setup/imports.jsonl",
+                          signed])
         self.assertEqual(git_in(self.referee, "rev-parse", "refs/heads/main^").decode().strip(), old_main)
         self.assertEqual(tree_files(self.toy), {"README.md": b"toy\n", "app.py": b"import os\n"})
 
@@ -260,15 +262,17 @@ class ImportBuildsOnMainTest(ImportCase):
         self.assertEqual(after[".github/workflows/bootstrap.yml"], b"name: snowball-bootstrap\n")
 
     def test_the_commit_changes_only_the_counter_after_the_checked_tree(self):  # import_counter_only_change_unchecked
-        """`26c:39-40`: the counter's row is in the same commit, appended to main's file; nothing else in `setup/`. A
-        commit whose index took one more entry with the counter's (the eighth skeptic's A4) is refused."""
+        """`26c:39-40`: the counter's row is in the same commit, appended to main's file, and the signed result beside
+        it (E543); nothing else in `setup/`. A commit whose index took one more entry with the counter's (the eighth
+        skeptic's A4) is refused."""
         self.set_main({"setup/notes.txt": "operator's\n"})
         self.run_import()
         main = main_of(self.referee)
         changed = git_in(self.referee, "diff-tree", "-r", "--name-only", "--no-commit-id", main).decode().split()
         self.assertIn("setup/imports.jsonl", changed)
         self.assertEqual([c for c in changed if c.startswith(("setup/", "bootstrap/", "policy", "seats/"))],
-                         ["setup/imports.jsonl"])
+                         ["setup/imports.jsonl",
+                          stagelock.result_file(hashlib.sha256(self.result.read_bytes()).hexdigest())])
         self.assertEqual(tree_files(self.referee)["setup/notes.txt"], b"operator's\n")
         real = importer._git
 
@@ -279,7 +283,7 @@ class ImportBuildsOnMainTest(ImportCase):
                 real(cwd, "update-index", "--add", "--cacheinfo", f"100644,{blob},setup/notes.txt", index=kw["index"])
             return out
         with mock.patch.object(importer, "_git", side_effect=one_more):
-            self.refused("more than the counter")
+            self.refused("more than the counter and the signed result")
 
     def test_the_composed_tree_is_checked_before_anything_is_written(self):  # import_composed_unchecked import_composed_kept_unchecked import_composed_workflow_unchecked
         """A stray file, a kept file and the push judge changed in the composition (the eighth skeptic's A1: the
@@ -470,6 +474,31 @@ class ImportRowTest(ImportCase):
         rows = [json.loads(line) for line in self.imports().splitlines()]
         self.assertEqual(rows, [row, second])
         self.assertEqual((second["prev_hash"], second["row_hash"]), (row["row_hash"], row_hash(second)))
+
+    def test_the_signed_result_lies_beside_its_row(self):  # import_result_not_written import_result_other_bytes_kept import_result_mode_unchecked
+        """E543 (the Founder's report seed-048 (b)): the PASS row needs the (A) result's `exit.owner_exception`, and the
+        import kept only its hash. It writes the result it verified, byte for byte, as
+        `setup/results/<result_sha256>.json` in the commit of its row (`26c`), no bundle; a rerun of the same result
+        keeps the file it finds, and a main holding other bytes there, a link, or the same bytes as an executable is
+        refused before anything is written."""
+        row = self.run_import()
+        signed = stagelock.result_file(row["result_sha256"])
+        self.assertEqual(signed, f"setup/results/{row['result_sha256']}.json")
+        self.assertEqual(tree_files(self.referee)[signed], self.result.read_bytes())
+        self.assertNotIn("setup/results/" + row["result_sha256"] + ".json.sigstore.json", tree_files(self.referee))
+        self.run_import()
+        changed = git_in(self.referee, "diff-tree", "-r", "--name-only", "--no-commit-id",
+                         main_of(self.referee)).decode().split()
+        self.assertEqual([c for c in changed if c.startswith("setup/")], ["setup/imports.jsonl"])
+        self.assertEqual(tree_files(self.referee)[signed], self.result.read_bytes())
+        signed_bytes = self.result.read_bytes()
+        for label, held in (("other bytes", signed_bytes + b" "), ("a link", ("120000", signed_bytes)),
+                            ("an executable", ("100755", signed_bytes))):
+            with self.subTest(label):
+                self.set_main({signed: held})
+                self.refused("is not the signed result's bytes as a plain file")
+        self.set_main({signed: self.result.read_bytes()})
+        self.run_import()
 
     def test_a_counter_whose_chain_is_broken_is_not_appended_to(self):  # import_counter_unread
         _rows, data = chained([{"ts": "2026-10-30T12:00:00Z", "stage": 0}])
@@ -999,10 +1028,11 @@ class StageOpenCase(unittest.TestCase):
             {"ts": "2026-10-31T08:00:00Z", "stage": 0, "brain_sha": "c" * 40, "referee_tree_sha256": self.tree_sha,
              "result_sha256": hashlib.sha256(self.result.read_bytes()).hexdigest(), "toy_tree_sha256": "f" * 64},
             {"ts": "2026-10-31T08:30:00Z", "stage": 0}, *later])
-        self.commit_referee({"setup/imports.jsonl": data})
+        self.result_sha = self.import_rows[0]["result_sha256"]
+        self.commit_referee({"setup/imports.jsonl": data,
+                             stagelock.result_file(self.result_sha): self.result.read_bytes()})
         self.import_line = data.split(b"\n")[0]
         self.line_sha = hashlib.sha256(self.import_line).hexdigest()
-        self.result_sha = self.import_rows[0]["result_sha256"]
 
     def bound(self, **over):
         """What a genesis row's payload binds of the transfer line (`29o`): its hash, its referee tree, its result."""
@@ -1034,14 +1064,13 @@ class StageOpenCase(unittest.TestCase):
 
     def argv(self, **over):
         args = {"--referee": self.referee, "--toy": self.toy.path, "--copy": self.copy.path,
-                "--ref": "refs/heads/brain/state", "--identity": "loop-id", "--sigstore-python": "py",
-                "--result": self.result}
+                "--ref": "refs/heads/brain/state", "--identity": "loop-id", "--sigstore-python": "py"}
         args.update(over)
         return ["stage-open"] + [str(x) for pair in args.items() for x in pair]
 
     def open(self):
         return stagelock.open_stage(self.referee, self.toy.path, self.copy.path, "refs/heads/brain/state", "loop-id",
-                                    "py", self.result)
+                                    "py")
 
     def stage_file(self):
         return self.referee / "setup" / "stage.json"
@@ -1209,8 +1238,7 @@ class StageOpenRefusesTest(StageOpenCase):
             if committed:
                 self.commit_referee({"setup/stage.json": '{"stage": 1}\n'})
             with self.subTest(committed=committed), self.assertRaises(stagelock.LockStop) as caught:
-                stagelock.open_stage(sub, self.toy.path, self.copy.path, "refs/heads/brain/state", "loop-id", "py",
-                                     self.result)
+                stagelock.open_stage(sub, self.toy.path, self.copy.path, "refs/heads/brain/state", "loop-id", "py")
             self.assertIn("inside its checkout: give the checkout's top (E497)", str(caught.exception))
             self.assertFalse((sub / "setup").exists())
 
@@ -1313,15 +1341,17 @@ class StageOpenBindsTheTransferTest(StageOpenCase):
         self.write_signed(brain_sha="7" * 40)
         second = {"ts": "2026-10-31T12:00:00Z", "stage": 0, "brain_sha": "7" * 40, "referee_tree_sha256": self.tree_sha,
                   "result_sha256": hashlib.sha256(self.result.read_bytes()).hexdigest(), "toy_tree_sha256": "5" * 64}
-        self.commit_referee({"setup/imports.jsonl": chained(first + [second])[1]})
+        self.commit_referee({"setup/imports.jsonl": chained(first + [second])[1],
+                             stagelock.result_file(second["result_sha256"]): self.result.read_bytes()})
         self.refused("toy brain/state: the last genesis row names another transfer than the counter's last one")
 
 
 class StageOpenAfterARetransferTest(StageOpenCase):
-    """E411 (the third skeptic's deadlock): `25a` 3 keeps `brain/state` (no deletion, no rewrite), so the first genesis
-    row stays for good. After a red (B) the operator reverts the transfer, its counter line with it, and imports the
-    fixed SHA (`asama-0/10a` "Başarısızlık"); (B) runs again from a new genesis row that names the new line. The lock
-    binds each ledger's last genesis and counts only the rows after it."""
+    """E411 (the third skeptic's deadlock), E540: after a red (B) the operator archives and deletes the targets'
+    `brain/` branches, reverts the transfer, its counter line with it, and imports the fixed SHA (`25a`
+    "Başarısızlık"), so (B) runs from a new ledger's first genesis. A ledger that holds more than one genesis anyway
+    (the deadlock E411 found, when `brain/state` was kept) is read from its last one: the lock binds each ledger's last
+    genesis and counts only the rows after it (`26d`)."""
 
     def retransfer(self):
         """The fixed SHA's transfer is now the counter's only one; the first transfer's line hash is returned."""
@@ -1331,7 +1361,8 @@ class StageOpenAfterARetransferTest(StageOpenCase):
                                "referee_tree_sha256": self.tree_sha,
                                "result_sha256": hashlib.sha256(self.result.read_bytes()).hexdigest(),
                                "toy_tree_sha256": "f" * 64}])
-        self.commit_referee({"setup/imports.jsonl": data})
+        self.commit_referee({"setup/imports.jsonl": data,
+                             stagelock.result_file(rows[0]["result_sha256"]): self.result.read_bytes()})
         self.import_line = data.split(b"\n")[0]
         self.line_sha = hashlib.sha256(self.import_line).hexdigest()
         self.result_sha = rows[0]["result_sha256"]
@@ -1647,8 +1678,8 @@ class StageOpenReadsTheLogEntryTest(StageOpenCase):
 
 class StageOpenCarriesTheExceptionTest(StageOpenCase):
     """E379, `02` "Sahip istisnası": the PASS row carries the owner's exception by name, exactly as the signed (A)
-    result names it, so the condition carried to Stage 1's (A) is not lost; `--result` is that result (its hash is the
-    transfer row's `result_sha256`)."""
+    result names it, so the condition carried to Stage 1's (A) is not lost; that result is the one the import wrote in
+    the checkout's commit, `setup/results/<result_sha256>.json` (E543), its bytes hashing to its name."""
 
     def with_exception(self):
         self.write_signed(owner_exception=OWNER_EXCEPTION)
@@ -1672,11 +1703,15 @@ class StageOpenCarriesTheExceptionTest(StageOpenCase):
         self.toy = self.make_toy(self.toy_rows(payload={"owner_exception": dict(OWNER_EXCEPTION)}))
         self.refused("owner_exception")
 
-    def test_the_result_must_be_the_one_the_transfer_imported(self):  # stage_open_result_unbound
-        self.result.write_bytes(self.result.read_bytes() + b" ")
-        self.refused("result_sha256")
-        self.result.unlink()
-        self.refused("cannot be read")
+    def test_the_result_must_be_the_one_the_transfer_imported(self):  # stage_open_result_unbound stage_open_result_from_disk
+        """E543: the result is the commit's `setup/results/<result_sha256>.json`; other bytes there, a file missing
+        from the commit, or one only on disk open nothing."""
+        signed = stagelock.result_file(self.result_sha)
+        self.commit_referee({signed: self.result.read_bytes() + b" "})
+        self.refused("do not hash to its result_sha256")
+        self.commit_referee({signed: None})
+        write(self.referee, {signed: self.result.read_bytes()})  # on disk, not committed
+        self.refused(f"has no {signed}")
 
 
 class StageOpenNeedsTheRefereesRowTest(StageOpenCase):

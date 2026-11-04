@@ -83,7 +83,7 @@ def quiet_pilot(launch):
             return "stub"
 
         def observe(self, head):
-            return {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40, "reports_open": []}
+            return {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40, "reports_open": [], "reports_unanswered": []}
 
         def memory_alone(self, prior, head):  # a clone of the brain; `CostRowTest` reads a mirror
             return False

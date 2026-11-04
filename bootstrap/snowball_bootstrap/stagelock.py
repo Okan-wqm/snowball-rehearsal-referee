@@ -33,8 +33,9 @@ What `stage-open` binds, before it writes anything (`02` 5: only the PASS row op
 - the PASS row itself: the referee's own row, not a player's proposal (`26`, `13`: those carry ``proposed_by`` and
   ``trust: inferred``) (E388), written after the toy's merge and naming the transfer the counter's last line is (the
   trust root `10a` #pass writes includes the operator transfer) (E405), and the owner's exception exactly as the signed
-  (A) result the last transfer imported names it (`02` "Sahip istisnası": the PASS row carries it by name; `--result`,
-  bound by its ``result_sha256``) (E379).
+  (A) result the last transfer imported names it (`02` "Sahip istisnası": the PASS row carries it by name) (E379): the
+  import wrote that result's bytes beside its row as ``setup/results/<result_sha256>.json``, read from the commit and
+  bound by its name (`26c`, E543), so no second copy of it is given on the command line.
 - each root: the bundle the loop keeps beside it in the same `brain/state` commit (E414), its transparency log entry
   the root row's, whose entry hash is the root (`29j` ``entry_root_mismatch``, `vectors/root/rekor.json`), and Sigstore
   verifies the bundle against the digest ``sha256:<root>`` (`13`: Rekor carries only the hash) (E375).
@@ -95,6 +96,7 @@ from .stages import BATCH_RE
 SETUP = "setup"
 LOCK_FILE = "stage.json"
 COUNTER_FILE = "imports.jsonl"
+RESULTS_DIR = "results"  # the signed result each transfer imported, by its result_sha256 (`26c`, E543)
 LOCK_KEYS = ("stage", "pass_row_sha256", "toy_state_head", "copy_state_head", "import_line_sha256")
 OPENS = 1  # the stage the seed's lock opens: Stage 0 -> 1 (`03`)
 STATE_ROOT = ".brain/"  # `<state_root>` in `brain/state`, `01a`'s default; no other is read before a seed epoch (E417)
@@ -114,6 +116,12 @@ UUID = re.compile(r"^(?:[0-9a-f]{16})?([0-9a-f]{64})\Z")
 
 class LockStop(ConfigError):
     """The lock cannot be read, or `stage-open` must not write it; the message says why."""
+
+
+def result_file(result_sha256: str) -> str:
+    """Where a transfer's signed result lies in the referee repository (`26c`, E543): the import writes its bytes there
+    in the commit of its counter row; the loop's ``yaz`` and `stage-open` read it by the row's ``result_sha256``."""
+    return f"{SETUP}/{RESULTS_DIR}/{result_sha256}.json"
 
 
 def _unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -466,20 +474,24 @@ def _committed_is_transferred(referee: Path, head: str, transfer: dict[str, Any]
                        "names (its referee_tree_sha256; pull main after the import, E471)")
 
 
-def _signed_exit(result: Path, transfer: dict[str, Any]) -> dict[str, Any]:
-    """The ``exit`` block of the signed (A) result the transfer imported: its bytes are the row's ``result_sha256``."""
-    try:
-        data = result.read_bytes()
-    except OSError as exc:
-        raise LockStop(f"--result {result} cannot be read: {type(exc).__name__}") from exc
-    if hashlib.sha256(data).hexdigest() != transfer.get("result_sha256"):
-        raise LockStop("--result is not the signed result the counter's last transfer imported (its result_sha256)")
+def _signed_exit(referee: Path, head: str, transfer: dict[str, Any]) -> dict[str, Any]:
+    """The ``exit`` block of the signed (A) result the transfer imported, from the checkout's commit (E543): the import
+    wrote its bytes as ``setup/results/<result_sha256>.json`` in the commit of its row (`26c`), and they must hash to
+    that name, so a file edited or put there by hand opens nothing."""
+    name = transfer.get("result_sha256")
+    if not isinstance(name, str) or not HEX64.match(name):
+        raise LockStop(f"{SETUP}/{COUNTER_FILE}: the last transfer's result_sha256 is not a sha256 (`26c`)")
+    rel = result_file(name)
+    data = _committed(referee, head, rel)
+    if hashlib.sha256(data).hexdigest() != name:
+        raise LockStop(f"{rel} is not the signed result the counter's last transfer imported: its bytes do not hash to "
+                       "its result_sha256 (`26c`)")
     try:
         exit_block = json.loads(data.decode("utf-8")).get("exit")
     except (UnicodeDecodeError, ValueError, RecursionError, AttributeError) as exc:
-        raise LockStop(f"--result is not a result: {exc}") from exc
+        raise LockStop(f"{rel} is not a result: {exc}") from exc
     if not isinstance(exit_block, dict):
-        raise LockStop("--result has no exit block")
+        raise LockStop(f"{rel} has no exit block")
     return exit_block
 
 
@@ -544,10 +556,10 @@ def _committed_stage_brake(referee: Path, head: str, stage: int) -> None:
                        f"stage_budgets.asama_{stage}.rival_usd before the lock, `26e`)") from exc
 
 
-def open_stage(referee: Path, toy: Path, copy: Path, ref: str, identity: str, sigstore_python: str,
-               result: Path) -> dict[str, Any]:
+def open_stage(referee: Path, toy: Path, copy: Path, ref: str, identity: str, sigstore_python: str) -> dict[str, Any]:
     """Write ``setup/stage.json`` after Stage 0's PASS row; return what was written. Nothing is pushed. The counter, the
-    summary, the policy and the referee tree are the checkout's commit's, read from git (E471, E478, E492)."""
+    summary, the policy, the signed (A) result and the referee tree are the checkout's commit's, read from git (E471,
+    E478, E492, E543)."""
     path = referee / SETUP / LOCK_FILE
     head = _checkout_head(referee)
     if path.exists() or gitio.git(referee, "ls-tree", "--name-only", head, "--", f"{SETUP}/{LOCK_FILE}").strip():
@@ -558,7 +570,7 @@ def open_stage(referee: Path, toy: Path, copy: Path, ref: str, identity: str, si
         raise LockStop(f"{SETUP}/{COUNTER_FILE}: the last transfer is not Stage {OPENS - 1}'s accepted, transferable "
                        "exit (import it first)")
     import_line, transfer = line_sha256(transfers[-1][0]), transfers[-1][1]
-    exit_block = _signed_exit(result, transfer)
+    exit_block = _signed_exit(referee, head, transfer)
     _committed_is_transferred(referee, head, transfer)
     toy_target, copy_target = _targets(_committed_summary(referee, head))
     _committed_stage_brake(referee, head, OPENS)

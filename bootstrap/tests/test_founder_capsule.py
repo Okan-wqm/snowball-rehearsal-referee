@@ -818,7 +818,7 @@ class CycleRecordTest(unittest.TestCase):
     """E313 and the debate's N4: every cycle's line names what its outcome is attributed to, every launcher start is a
     row of its own, and the open brain reports with their age reach the report (N1: a report with no reader)."""
 
-    def cycle(self, verdict_rival=None, sess=None):
+    def cycle(self, verdict_rival=None, sess=None, observed=None):
         launch = load_launch()
         before, after = "a" * 40, "b" * 40
         report = []
@@ -852,6 +852,9 @@ class CycleRecordTest(unittest.TestCase):
 
             def write(self, text):
                 report.append(text)
+
+            def observe(self, head):
+                return observed or super().observe(head)
 
         pilot = Fake(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
         pilot.idle, pilot.seed = 0, before
@@ -944,18 +947,73 @@ class CycleRecordTest(unittest.TestCase):
         self.assertEqual(seen["seed-040"], "2026-10-31T20:00:00Z")  # the first sighting is kept
         pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
         with mock.patch.object(launch.Pilot, "open_reports", return_value=reports[:1]), \
+                mock.patch.object(launch.Pilot, "seed_changelogs", return_value=["`seed-040` → `29b:30`"]), \
                 mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
                 mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40):
             seen_now = pilot.observe("b" * 40)
-        self.assertEqual(seen_now, {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40, "reports_open": [("seed-040", 0)]})
+        self.assertEqual(seen_now, {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40,
+                                    "reports_open": [("seed-040", 0)], "reports_unanswered": []})
         self.assertIn("seed-040", json.loads((pilot.work / launch.REPORTS_SEEN).read_text(encoding="utf-8")))
         _, _, text = self.cycle()
         self.assertIn("- Açık raporlar (0, beyin `bbbbbbb`", text)
         self.assertIn("- Maliyet satırı (`kind: cost`): stub", text)
 
+    def test_unanswered_reports_listed_apart(self):  # unanswered_reports_unlisted, unanswered_by_prefix
+        """E527: an open report whose id no `spec/tohum/CHANGELOG*.md` of the brain's seed names was never answered
+        nor declined (E342: seed-040 waited unanswered on the critical path). It is listed apart in the pilot-log and
+        counted in the metrics; a changelog that cannot be read whole is unknown, never "unanswered"; nothing reaches
+        the capsule."""
+        launch = load_launch()
+        ages = [("seed-040-d1-inputs", 30), ("seed-041", 5), ("spec-011-profile", 2), ("seed-04", 1)]
+        logs = ["Yanıtlanan rapor: `spec-011-profile` → `26e:33-37`", "declined: `seed-041`: neden; seed-0401-x"]
+        self.assertEqual(launch.unanswered_reports(ages, logs), [("seed-040-d1-inputs", 30), ("seed-04", 1)])
+        self.assertEqual(launch.unanswered_reports(ages, logs + ["seed-040-d1-inputs → 29b:30"]), [("seed-04", 1)])
+        pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+        tree = [{"name": "CHANGELOG.md", "object": {"text": logs[0], "isTruncated": False}},
+                {"name": "CHANGELOG-4.md", "object": {"text": logs[1], "isTruncated": False}},
+                {"name": "00-giris.md", "object": {"text": "seed-04", "isTruncated": False}}]
+        reads = []
+
+        def blobs(expr):
+            reads.append(expr)
+            return tree
+        with mock.patch.object(pilot, "tree_blobs", side_effect=blobs):
+            self.assertEqual(pilot.seed_changelogs("b" * 40), logs)  # only the changelogs, every one of them
+        self.assertEqual(reads, ["b" * 40 + ":spec/tohum"])  # the seed the brain holds at that head
+        truncated = [dict(tree[0], object={"text": "x", "isTruncated": True})]
+        for broken in (truncated, [{"name": "CHANGELOG.md", "object": {"text": None}}], [], None):
+            with mock.patch.object(pilot, "tree_blobs", return_value=broken):
+                self.assertIsNone(pilot.seed_changelogs("b" * 40), broken)
+        reports = [{"file": f"{rid}.json", "id": rid, "state": "open"} for rid, _age in ages]
+        with mock.patch.object(launch.Pilot, "open_reports", return_value=reports), \
+                mock.patch.object(launch.Pilot, "seed_changelogs", return_value=logs), \
+                mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
+                mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40):
+            unanswered = pilot.observe("b" * 40)["reports_unanswered"]
+        self.assertEqual(sorted(unanswered), [("seed-04", 0), ("seed-040-d1-inputs", 0)])
+        with mock.patch.object(launch.Pilot, "open_reports", return_value=reports), \
+                mock.patch.object(launch.Pilot, "seed_changelogs", return_value=None), \
+                mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
+                mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40):
+            self.assertIsNone(pilot.observe("b" * 40)["reports_unanswered"])
+        observed = {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40,
+                    "reports_open": [("seed-040-d1-inputs", 30), ("seed-041", 5)],
+                    "reports_unanswered": [("seed-040-d1-inputs", 30)]}
+        pilot, m, text = self.cycle(observed=observed)
+        self.assertEqual((m["reports_open"], m["reports_unanswered"]), (2, 1))
+        self.assertIn("- CEVAPSIZ (operatör) (1; beyindeki tohumun hiçbir `spec/tohum/CHANGELOG*.md`'si adlandırmıyor, "
+                      "yanıt ya da `declined:` bekliyor): `seed-040-d1-inputs` 30 sa", text)
+        _, m, text = self.cycle(observed=dict(observed, reports_unanswered=None))
+        self.assertIsNone(m["reports_unanswered"])
+        self.assertIn("- CEVAPSIZ (operatör): okunamadı", text)
+        _, m, text = self.cycle()
+        self.assertEqual(m["reports_unanswered"], 0)
+        self.assertIn("- CEVAPSIZ (operatör) (0; ", text)
+        self.assertNotIn("reports_unanswered", " ".join(pilot.capsule_argv("s", "m", 1, 1)))
+
     def test_the_reads_are_get_only(self):
         source = (FOUNDER / "launch.py").read_text(encoding="utf-8")
-        for name in ("spec_tohum_tree", "open_reports"):
+        for name in ("spec_tohum_tree", "open_reports", "tree_blobs", "seed_changelogs"):
             body = source.split(f"def {name}(", 1)[1].split("\n    def ", 1)[0]
             self.assertNotIn("--method", body)
             self.assertNotIn("-X", body)
