@@ -484,10 +484,30 @@ class E11LearningSplit(unittest.TestCase):
             rival_doc = unresolved(reason) if reason else None
             res = run_decide(meta2("code", st_), green(), rival_doc, [], dict(CODE_JOBS, yeniden="skipped"))
             self.assertEqual(res["verdict"], "rejected", reason)
-            # Reviewed again by the next run unless another run could only fail the same way (E166, E12).
-            final = bool(reason) and reason.startswith(("budget", "request_rejected"))
+            # Reviewed again by the next run unless another run could only fail the same way (E166, E12); a brake
+            # stop is not judged at all, the poll passes it until the brake moves (E550).
+            final = bool(reason) and reason.startswith("request_rejected")
             self.assertEqual(res["state"]["last_evaluated_sha"], B if final else None, reason)
             self.assertEqual((res["state"]["reject_streaks"], res["state"]["repeat_events"]), (self.STREAKS, 1), reason)
+
+    def test_a_brake_stop_does_not_hide_a_reason_of_the_founders_own(self):  # brake_hides_founders_reason
+        """E550: `pull` judges a head with a reason of its own before the brake; the call's brake stop is the same
+        rule. A proven defect that still reproduces on this head is the Founder's, whatever the rival could spend:
+        the head is judged and counted for it, the stop is named in a warning only, and the poll has nothing to hold.
+        With no reason of the Founder's (the defect gone) the same stop leaves the head unjudged."""
+        entry = refutation_entry()
+        allowance = {"usd_micros": 77_443, "brake": "stage"}
+        for reproduced, judged in ((True, B), (False, None)):
+            st_ = state2(open_refutations=[entry])
+            res = run_decide(meta2("code", st_, state_repro=[entry["key"]], rival_allowance=allowance), green(),
+                             unresolved("budget", cost=278_448), [], CODE_JOBS,
+                             state_repro=[state_ran(entry["key"], "refutation", reproduced)])
+            self.assertEqual(res["verdict"], "rejected", reproduced)
+            self.assertIn("rival_budget:stage", res["warnings"], reproduced)
+            self.assertEqual(res["state"]["last_evaluated_sha"], judged, reproduced)
+            self.assertEqual(res["budget_stop"], None if judged else {"brake": "stage", "allowed_usd_micros": 77_443})
+            self.assertEqual(res["state"]["stage_spend_usd_micros"], 2000 + 278_448)
+        self.assertEqual(res["state"]["reject_streaks"], {})
 
     def test_budget_and_a_pull_error_leave_the_streaks_as_they_were_too(self):
         for pre in ("budget", "pull_error"):
@@ -713,11 +733,11 @@ class PollStops(unittest.TestCase):
     setUp = test_flow.Flow.setUp
     tearDown = test_flow.Flow.tearDown
 
-    def poll(self, prev_state, age_hours, head=C, event="schedule", failed_run=None):
+    def poll(self, prev_state, age_hours, head=C, event="schedule", failed_run=None, result=None):
         created = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=age_hours)
         archive = io.BytesIO()
         with zipfile.ZipFile(archive, "w") as zf:
-            zf.writestr("result.json", json.dumps({"state": prev_state}))
+            zf.writestr("result.json", json.dumps(dict(result or {}, state=prev_state)))
             zf.writestr("result.json.sigstore.json", "{}")
         gh = Path(self.tmp.name) / "poll_gh"
         gh.write_text("")
@@ -792,6 +812,63 @@ class PollStops(unittest.TestCase):
         self.assertEqual(self.poll(state2(), 0.1, failed_run=self.failed(C, jobs, hours_ago=1))[:2], (0, "false"))  # signed since
         self.assertEqual(self.poll(state2(), 30, event="workflow_dispatch", failed_run=self.failed(C, jobs))[:2],
                          (0, "false"))
+
+
+    def braked(self, brake, allowed, head=C):
+        return {"head": head, "budget_stop": {"brake": brake, "allowed_usd_micros": allowed}}
+
+    def edit(self, name, change):
+        path = self.referee / name
+        doc = json.loads(path.read_text())
+        change(doc)
+        path.write_text(json.dumps(doc))
+
+    def test_a_head_a_brake_stopped_waits_with_a_warning_until_that_brake_is_raised(self):
+        # poll_ignores_budget_stop dispatch_overrides_the_brake brake_never_lifts budget_stop_of_another_head
+        """E550 (E34, referee-049; `asama-0/12:19`, `29b`, `29e` "Bütçe durması"): the poll passes a head the rival's
+        stage brake stopped with a warning, also when the operator dispatches the run (the same allowance would stop it
+        again), and judges the same head by itself once the operator raises the brake. A new head is judged as ever."""
+        spent = state2(stage_spend_usd_micros=30_000_000)
+        rc, skip, shown = self.poll(spent, 30, result=self.braked("stage", 0))
+        self.assertEqual((rc, skip), (0, "true"))
+        self.assertIn("::warning title=Rival brake::", shown)
+        self.assertIn("stage brake", shown)
+        dispatched = self.poll(spent, 30, event="workflow_dispatch", result=self.braked("stage", 0))
+        self.assertEqual(dispatched[:2], (0, "true"))
+        self.assertEqual(self.poll(spent, 30, head="e" * 40, result=self.braked("stage", 0))[:2], (0, "false"))
+        self.assertEqual(self.poll(spent, 30, result=self.braked("stage", 0, head="e" * 40))[:2], (0, "false"))
+        self.assertEqual(self.poll(spent, 30, result={"head": C, "budget_stop": None})[:2], (0, "false"))
+        self.edit("policy.json", lambda doc: doc["constitutional"]["stage_budgets"]["asama_0"].update(rival_usd=1000))
+        self.assertEqual(self.poll(spent, 30, result=self.braked("stage", 0))[:2], (0, "false"))
+
+    def test_a_month_brake_lifts_when_the_month_turns(self):  # poll_month_not_rolled
+        """E550: `29b` 'aynı baş ay dönünce ... kendiliğinden yargılanır': the month's spend the poll compares is the
+        rolled-over one, as `fetch-state` hands `pull`."""
+        this_month = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m")
+        full = state2(month=this_month, month_spend_usd_micros=300_000_000)
+        self.assertEqual(self.poll(full, 30, result=self.braked("month", 0))[:2], (0, "true"))
+        last_month = state2(month="2000-01", month_spend_usd_micros=300_000_000)
+        self.assertEqual(self.poll(last_month, 30, result=self.braked("month", 0))[:2], (0, "false"))
+
+    def test_a_per_run_cap_stop_waits_for_the_cap_not_for_the_month(self):  # brake_compared_to_zero
+        """E550: a call the per-run cap stopped would be stopped again at the same cap, each time spending it: the
+        poll judges that head again only when one run may spend more than the stopped one could, so neither the hour
+        nor the month calls the rival again on it; a raised cap does."""
+        plenty = state2(month="2000-01")
+        self.assertEqual(self.poll(plenty, 30, result=self.braked("per_run", 3_000_000))[:2], (0, "true"))
+        self.assertEqual(self.poll(plenty, 30, result=self.braked("per_run", 2_999_999))[:2], (0, "false"))
+        self.edit("bootstrap.json", lambda doc: doc["rival"].update(per_run_cap_usd_micros=5_000_000))
+        self.assertEqual(self.poll(plenty, 30, result=self.braked("per_run", 3_000_000))[:2], (0, "false"))
+
+    def test_a_brake_the_poll_cannot_read_is_judged_by_pull(self):  # unreadable_brake_skips
+        """E550: skipping is safe for one hour but not forever: an operator file the poll cannot read sends the head to
+        `pull`, which reads it verified and stops visibly; a stop with no allowance on record reads as nothing."""
+        spent = state2(stage_spend_usd_micros=30_000_000)
+        self.assertEqual(self.poll(spent, 30, result=self.braked("stage", None))[:2], (0, "true"))
+        (self.referee / "policy.json").write_text("{")
+        rc, skip, shown = self.poll(spent, 30, result=self.braked("stage", 0))
+        self.assertEqual((rc, skip), (0, "false"))
+        self.assertIn("could not read the rival brake", shown)
 
 
 class GhApiRuns(unittest.TestCase):

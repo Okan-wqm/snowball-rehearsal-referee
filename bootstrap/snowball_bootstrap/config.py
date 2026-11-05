@@ -317,6 +317,7 @@ class Target:
     identifiers: tuple[str, ...]
     excluded_paths: tuple[str, ...]
     unit_candidates: tuple[str, ...]
+    safety_paths: tuple[str, ...] = ()  # the owner's physical safety paths, when the row names them (`05`, `26c`)
 
 
 @dataclass(frozen=True)
@@ -377,8 +378,7 @@ def target(row: Any, where: str) -> Target:
     if not isinstance(row, dict) or not TARGET_KEYS <= set(row) <= TARGET_KEYS | TARGET_OPTIONAL_KEYS:
         raise ConfigError(f"{where} must have exactly the keys {', '.join(sorted(TARGET_KEYS))}, and optionally "
                           f"{', '.join(sorted(TARGET_OPTIONAL_KEYS))} (`26c`)")
-    if "safety_paths" in row:
-        _texts(row, "safety_paths", where)
+    safety = _texts(row, "safety_paths", where) if "safety_paths" in row else ()
     if not isinstance(row["id"], str) or not row["id"].strip():
         raise ConfigError(f"{where}.id must be a non-empty string")
     if not isinstance(row["repo"], str) or not REPO_RE.match(row["repo"]):
@@ -388,7 +388,7 @@ def target(row: Any, where: str) -> Target:
     if row["base_sha"] is not None and not (isinstance(row["base_sha"], str) and SHA_RE.match(row["base_sha"])):
         raise ConfigError(f"{where}.base_sha must be a 40-character commit SHA, or null for a target with no commit")
     return Target(row["id"], row["repo"], row["kind"], row["base_sha"], _texts(row, "identifiers", where),
-                  _texts(row, "excluded_paths", where), _texts(row, "unit_candidates", where))
+                  _texts(row, "excluded_paths", where), _texts(row, "unit_candidates", where), safety)
 
 
 def _epoch(row: Any, where: str) -> SeedEpoch:

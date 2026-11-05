@@ -17,7 +17,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from . import canon, config, exitchecks, ghapi, gitio, ledgercheck, licenses, parts, stagelock, stages, state as st, wiring
+from . import (canon, config, drillfixtures, exitchecks, ghapi, gitio, ledgercheck, licenses, parts, stagelock, stages,
+               state as st, wiring)
 from .classify import (LEDGER_FILE, REPORTS_DIR, SEED_DIRS, classify, is_founder_record, is_seed_path,
                        spec_stage_dirs)
 from .container import DockerRunner
@@ -110,11 +111,38 @@ def tar_page(tar_bytes: bytes, prefix: str) -> tuple[str, str] | None:
     return None
 
 
-def remaining_budget(policy: config.Policy, prev: dict[str, Any], stage: int) -> int:
-    """What the rival may still spend: the month's cap and the open stage's brake (`29b`, `26e`, E492), the stage's
-    spend counted from its lock (``prev`` is `state.for_stage`'s)."""
-    return min(policy.monthly_cap_usd_micros - prev["month_spend_usd_micros"],
-               policy.rival_usd_micros(stage) - prev["stage_spend_usd_micros"])
+def brakes_left(policy: config.Policy, prev: dict[str, Any], stage: int) -> dict[str, int]:
+    """What is left of the month's cap and of the open stage's brake (`29b`, `26e`, E492), the stage's spend counted
+    from its lock (``prev`` is `state.for_stage`'s)."""
+    return {"month": policy.monthly_cap_usd_micros - prev["month_spend_usd_micros"],
+            "stage": policy.rival_usd_micros(stage) - prev["stage_spend_usd_micros"]}
+
+
+def rival_allowance(policy: config.Policy, per_run_cap: int, prev: dict[str, Any], stage: int) -> tuple[int, str]:
+    """What one rival run may spend and the brake that sets it, ``month``, ``stage`` or ``per_run`` (`29e` "Bütçe
+    durması", E550): `brakes_left` and the per-run cap (`bootstrap.json` `rival.per_run_cap_usd_micros`, the CLI's
+    `--max-budget-usd`). A tie is named in that order. `pull`, `rival` and `poll` read it here; `rival.run_rival`
+    clamps to the same per-run cap again as the CLI's own guard, never to another value."""
+    left = dict(brakes_left(policy, prev, stage), per_run=per_run_cap)
+    brake = min(left, key=lambda name: left[name])
+    return left[brake], brake
+
+
+def brake_raised(root: Path, boot: config.Bootstrap, prev: Any, stop: Any) -> bool:
+    """Whether a head a brake stopped (the newest result's ``budget_stop``) may be judged now: one run may spend more
+    on it than the stopped run could (at least nothing), so the same head is judged by itself when the month turns or
+    the operator raises a brake (`29e` "Bütçe durması", `asama-0/12`, E34, E550), and never again before. What cannot
+    be read here is True: `pull` reads the operator's files and the state verified and stops visibly on them."""
+    try:
+        stage = stagelock.open_table(root).stage
+        state = st.for_stage(st.rollover(prev, month_now()), stage)
+        now, _brake = rival_allowance(config.load_policy(root), boot.rival.per_run_cap_usd_micros, state, stage)
+        had = stop.get("allowed_usd_micros")
+        had = had if isinstance(had, int) and not isinstance(had, bool) else 0
+        return now > max(had, 0)
+    except Exception as exc:  # the poll only spares a run here: when it cannot read, judge as before
+        print(f"::warning::poll could not read the rival brake: {type(exc).__name__}")
+        return True
 
 
 # ---------------------------------------------------------------- commands
@@ -208,15 +236,17 @@ def cmd_poll(args: argparse.Namespace) -> int:
     now = datetime.datetime.now(datetime.timezone.utc)
     dispatched = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"  # the operator asked for this run
     try:
-        prev = read_json(prev_dir / "result.json")["state"]
-        seen = {prev["last_accepted_sha"], prev["last_evaluated_sha"]}
+        signed = read_json(prev_dir / "result.json")
+        prev = signed["state"]
+        braked = signed.get("budget_stop") if signed.get("head") == head else None  # E550
         failing = prev.get("outage_sha") == head
         parked = failing and int(prev.get("outage_count", 0)) >= OUTAGE_RETRY_LIMIT
         stopped = prev.get("outage_stop") if failing else None
         since = prev.get("outage_since")
         given_up = bool(parked and since and now - _when(since) >= datetime.timedelta(days=OUTAGE_GIVE_UP_DAYS))
+        seen = {prev["last_accepted_sha"], prev["last_evaluated_sha"]}
     except (KeyError, TypeError, ValueError, AttributeError, json.JSONDecodeError):
-        seen, parked, stopped, given_up = set(), False, None, False
+        seen, parked, stopped, given_up, braked = set(), False, None, False, None
     created = _when(art["created_at"])
     age = now - created
     reupload = age.days >= 7
@@ -226,6 +256,13 @@ def cmd_poll(args: argparse.Namespace) -> int:
               "the workflow by hand (workflow_dispatch) to try it again.")
         output(skip=True, reupload=reupload, head=head)
         return 1
+    if head not in seen and isinstance(braked, dict) and not brake_raised(root, boot, prev, braked):
+        # A dispatched run waits too: the same allowance would stop the same head again (E550).
+        print(f"::warning title=Rival brake::{head} is not judged: the rival's {braked.get('brake')} brake stopped it, "
+              "and it is judged by itself once one run may spend more on it: a month brake when the month turns, "
+              "any brake when the operator raises it (tohum/29e)")
+        output(skip=True, reupload=reupload, head=head)
+        return 0
     waiting = parked and age < datetime.timedelta(days=1) and not dispatched  # parked: one retry a day
     if waiting:
         print(f"::notice title=Commit parked::{head} failed {OUTAGE_RETRY_LIMIT} times for infrastructure "
@@ -637,10 +674,13 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     # A valid rival result whose reproducers never ran is reused for the same head, not asked for again (E20).
     pending = prev.get("pending_rival")
     reuse = needs_rival and isinstance(pending, dict) and pending.get("sha") == head
-    if needs_rival and not reuse and remaining_budget(policy, prev, table.stage) <= 0:
-        # Recorded once for this commit; re-evaluating it every poll would only churn signatures.
-        # The founder pushes again after the month or the stage budget changes.
-        pre.append("budget")
+    if needs_rival and not reuse:
+        # What the rival may spend on this head (E550): with nothing left, and no other reason to reject it, the head
+        # is not judged (`budget`), and `poll` passes it until the allowance grows (`brake_raised`).
+        allowed, brake = rival_allowance(policy, boot.rival.per_run_cap_usd_micros, prev, table.stage)
+        meta["rival_allowance"] = {"usd_micros": allowed, "brake": brake}
+        if allowed <= 0 and not pre:
+            pre.append("budget")
     meta.update(kind=kind, changed=own, pre_reasons=sorted(set(pre)), waived=waived)
     meta["run_tests"] = kind in ("code", "exit") and not pre
     meta["run_rival"] = needs_rival and not pre and not reuse
@@ -811,7 +851,8 @@ def cmd_rival(args: argparse.Namespace) -> int:
     outcome = RivalOutcome()
     try:
         run_rival(boot.rival, claude_bin=resolve_claude(args.claude), seat_prompt=seat, context=context,
-                  tree_root=tree, budget_usd_micros=remaining_budget(policy, meta["state"], stage),
+                  tree_root=tree,
+                  budget_usd_micros=rival_allowance(policy, boot.rival.per_run_cap_usd_micros, meta["state"], stage)[0],
                   max_prompt_chars=boot.limits.max_prompt_chars, out=outcome)
     finally:  # on every path, an interrupt too: what the run spent must reach `decide` (E13)
         result = outcome.as_dict()
@@ -961,6 +1002,17 @@ def cmd_stage_open(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_drill_fixtures(args: argparse.Namespace) -> int:
+    """`25a` 7, `26f` "Canlı prova fikstürleri": after the import and before the activation, the live revert-drill
+    fixtures of the counter's last transfer, written to ``--out`` alone; only counts, the value's sha256 and its size
+    are printed (E499)."""
+    done = drillfixtures.produce(Path(args.referee), Path(args.toy), args.toy_ref, Path(args.brain), Path(args.catalog),
+                                 Path(args.out), drillfixtures.DockerSandbox(args.node_image))
+    print(json.dumps(done, indent=2, sort_keys=True))
+    print("Write the file's content as the referee secret loop.yml names for the fixtures; record only value_sha256.")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="snowball_bootstrap")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1010,6 +1062,14 @@ def build_parser() -> argparse.ArgumentParser:
         ("--identity", dict(req, help="the loop workflow's signing identity (its yaz job anchors the roots; each "
                                       "root's bundle is read from brain/state, .brain/chain/<root>.sigstore.json)")),
         ("--sigstore-python", req))
+    add("drill-fixtures", cmd_drill_fixtures,
+        ("--referee", dict(req, help="the referee repository's local checkout, pulled after the import")),
+        ("--toy", dict(req, help="a local clone of the toy target")),
+        ("--toy-ref", {"default": "refs/remotes/origin/main", "help": "the toy's main in that clone"}),
+        ("--brain", dict(req, help="a local clone of the brain holding the transfer's brain_sha")),
+        ("--catalog", dict(req, help="the operator's private drafts, [{cause, patch}], outside any repository")),
+        ("--out", dict(req, help="where the value is written: a new file outside any repository")),
+        ("--node-image", dict(req, help="the Node image the toy's tools run in, name:tag@sha256:<digest>")))
     return parser
 
 

@@ -545,7 +545,7 @@ def commit(path: Path, files: dict[str, str | bytes | None], message: str) -> st
         if isinstance(content, bytes):
             target.write_bytes(content)
         else:
-            target.write_text(content)
+            target.write_text(content, encoding="utf-8")  # never the platform code page (cp1252 on CI)
     sh(path, "git", "add", "-A")
     sh(path, "git", "commit", "-q", "-m", message)
     return sh(path, "git", "rev-parse", "HEAD")

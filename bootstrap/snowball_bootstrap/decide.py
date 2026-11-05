@@ -72,8 +72,13 @@ OUTAGE_GIVE_UP_DAYS = 7  # a parked commit is retried once a day for this long, 
 RIVAL_SIDE_WARN = 3  # the rival's own failures in a row that warn the operator (E11)
 # A rival-side failure another run may not repeat leaves the commit unevaluated, so the next run reviews it again,
 # until RIVAL_SIDE_WARN failures in a row; the Founder is never left to push something it cannot fix (E166).
-# These two would only fail again: no budget left, or a request the API refuses as such (E12).
-RIVAL_SIDE_FINAL = ("budget", "request_rejected")
+# This one would only fail again: a request the API refuses as such (E12). A brake stop is no rival failure (E550).
+RIVAL_SIDE_FINAL = ("request_rejected",)
+# A head a brake stopped (`29e` "Bütçe durması", `asama-0/12`; E34, E550): the rival's allowance was spent (`pull`'s
+# `budget`) or its call reached it (the rival's `budget`). The head is not judged: no streak, no rival-side streak, no
+# outage, `last_evaluated_sha` stays; the result names the brake, and `poll` passes the same head with a warning until
+# the allowance grows past what the stopped run had (the month turns, the operator raises a brake).
+BUDGET = "budget"
 # Rejections that say nothing about the Founder's work: they leave its streaks exactly as they were (E11).
 NOT_THE_FOUNDERS = ("budget", "pull_error", "infra", "rival_missing")
 # What an unresolved rival run can say that the Founder can fix: a push too large to send or to review in the
@@ -112,6 +117,11 @@ def _carry_planted(exception: Any) -> bool:
     """Whether pull handed an owner's exception with its carried stage's plant beside it (a sha256 commitment)."""
     carry = exception.get("carry_commitment") if isinstance(exception, dict) else None
     return isinstance(carry, str) and len(carry) == 64 and all(c in "0123456789abcdef" for c in carry)
+
+
+def is_brake_stop(reason: dict[str, Any]) -> bool:
+    """A reason that says a brake stopped the head (E550): pull's ``budget`` or a rival call stopped at its brake."""
+    return reason["kind"] == BUDGET or (reason["kind"] == "rival_unresolved" and reason["ref"] == BUDGET)
 
 
 def counts_against_founder(reason: dict[str, Any]) -> bool:
@@ -366,6 +376,8 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
                     evaluate = False  # identity, quota, network, timeout or isolation: retry this commit later
                     outage = True
                     stop = next((w.split(":", 1)[1] for w in said if w.startswith("api_error:isolation_")), None)
+                elif BUDGET in said:  # the call reached the brake: its spend is booked above; no rival failure (E550)
+                    pass
                 else:
                     rival_side = not any(counts_against_founder(_reason("rival_unresolved", ref=w)) for w in said)
                     if (rival_side and not any(w.startswith(RIVAL_SIDE_FINAL) for w in said)
@@ -373,7 +385,6 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
                         evaluate = False  # review this commit again (E166)
                         warnings.append(f"rival_side_retry:{state['rival_side_streak'] + 1}")
                 warnings += [w for w in said if w.startswith("request_rejected")]
-
     # Reproducers: the rival's own (or the reused rival's) and the state's on code and exit heads (E07, E08).
     attempts = rival.get("attempts", []) if rival_valid else []
     with_repro = {i for i, a in enumerate(attempts) if "reproducer" in a}
@@ -473,6 +484,17 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
             exit_block["owner_exception"] = {"anchor": excepted, "stage": exception.get("stage"),
                                              "carry_to": exception.get("carry_to"), "reason": exception.get("reason"),
                                              "carry_commitment": exception.get("carry_commitment"), "measured": False}
+
+    # A brake stop is neither the Founder's nor the rival's: the head waits for its allowance, unless the run found a
+    # reason of the Founder's to reject it anyway (a reproducer, an exit condition): that head is judged for it, as
+    # `pull` judges a head with a reason of its own before the brake (E550).
+    budget_stop = None
+    allowance = meta.get("rival_allowance") or {}
+    if any(is_brake_stop(r) for r in reasons):
+        warnings.append(f"rival_budget:{allowance.get('brake')}")
+        if not any(counts_against_founder(r) for r in reasons):
+            evaluate = False
+            budget_stop = {"brake": allowance.get("brake"), "allowed_usd_micros": allowance.get("usd_micros")}
 
     accepted = not reasons and kind in ("spec", "code", "exit")
     if kind == "spec":
@@ -575,6 +597,7 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
         "module_less": module_less,
         "rival": rival,
         "rival_reused": reuse,  # the rival result of an earlier run of this head; its cost was booked then
+        "budget_stop": budget_stop,  # the brake that stopped an unjudged head and what that run could spend (E550)
         "reproducers": repro or [],
         "state_reproducers": state_results,
         "exit": exit_block,

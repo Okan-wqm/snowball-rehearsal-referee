@@ -4,7 +4,8 @@ content hashes are named.
 
 The expected outputs are recorded from the seed this branch was built on, without the activation tooling: main
 `6dcf8e8` (first `merge/train2` `d7706b8`; main's E390-E399 changed one `not_checked:spec` detail since, so the record
-moved with it, E477; main's E426 added `exam_faults` to the meta and the signed result, E488), not computed here: run
+moved with it, E477; main's E426 added `exam_faults` to the meta and the signed result, E488; E550 added the result's
+`budget_stop`, null unless a rival brake stopped the head), not computed here: run
 this file as a script on that tree's `seed/bootstrap` to record them again
 (``python tests/test_stage0_unchanged.py --record <file>``). Two histories are
 judged: after an accepted MF1 push (each shape, every exit rejected), and after all of Stage 0 was accepted, where

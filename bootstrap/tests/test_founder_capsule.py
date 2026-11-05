@@ -489,7 +489,7 @@ class VectorInputsTest(unittest.TestCase):
 
 
 class RefereeRetryTest(unittest.TestCase):  # E166: the loop never waits on the Founder for the rival's own failure
-    def run_cycle(self, evaluated_on):
+    def run_cycle(self, evaluated_on, braked=False):
         launch = load_launch()
         before, after = "a" * 40, "b" * 40
         report = []
@@ -502,6 +502,10 @@ class RefereeRetryTest(unittest.TestCase):  # E166: the loop never waits on the 
                 if not self.dispatches:
                     return None
                 done = self.dispatches >= evaluated_on
+                if braked:
+                    return {"head": after, "verdict": "rejected", "warnings": ["rival_budget:stage"],
+                            "budget_stop": {"brake": "stage", "allowed_usd_micros": 0},
+                            "state": {"last_evaluated_sha": None}}
                 return {"head": after, "verdict": "accepted" if done else "rejected",
                         "warnings": [] if done else [f"rival_side_retry:{self.dispatches}"],
                         "state": {"last_evaluated_sha": after if done else None}}
@@ -800,12 +804,21 @@ class RefereeRetryTest(unittest.TestCase):  # E166: the loop never waits on the 
         self.assertEqual(owner({"kind": "rival_missing", "ref": ""}), "rival")
         self.assertEqual(owner({"kind": "infra", "ref": "kos"}), "referee")
         self.assertEqual(owner({"kind": "budget", "ref": ""}), "referee")
+        # E550: a rival call stopped at its brake is the operator's brake too, not the rival's failure
+        self.assertEqual(owner({"kind": "rival_unresolved", "ref": "budget"}), "referee")  # brake_stop_read_as_rivals
+        self.assertEqual(owner({"kind": "rival_unresolved", "ref": "budget_x"}), "rival")
 
     def test_an_unevaluated_commit_goes_back_to_the_referee_before_the_next_session(self):
         dispatches, report, _ = self.run_cycle(evaluated_on=2)
         self.assertEqual(dispatches, 2)
         self.assertIn("1 kez yeniden incelendi", report)
         self.assertIn("**accepted**", report)
+
+    def test_a_head_a_brake_stopped_is_not_sent_again(self):  # brake_stop_retried_by_the_launcher
+        """E550: the referee's poll passes a head a brake stopped until the brake is raised, so the launcher's retries
+        (meant for the rival's own failures and outages) would only start runs that skip; it sends it once."""
+        dispatches, _report, _cap = self.run_cycle(evaluated_on=99, braked=True)
+        self.assertEqual(dispatches, 1)
 
     def test_an_evaluated_commit_is_not_sent_again_and_retries_are_capped(self):
         self.assertEqual(self.run_cycle(evaluated_on=1)[0], 1)
@@ -948,6 +961,7 @@ class CycleRecordTest(unittest.TestCase):
         pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
         with mock.patch.object(launch.Pilot, "open_reports", return_value=reports[:1]), \
                 mock.patch.object(launch.Pilot, "seed_changelogs", return_value=["`seed-040` → `29b:30`"]), \
+                mock.patch.object(launch.Pilot, "owed_reports", return_value=[]), \
                 mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
                 mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40):
             seen_now = pilot.observe("b" * 40)
@@ -966,8 +980,10 @@ class CycleRecordTest(unittest.TestCase):
         launch = load_launch()
         ages = [("seed-040-d1-inputs", 30), ("seed-041", 5), ("spec-011-profile", 2), ("seed-04", 1)]
         logs = ["Yanıtlanan rapor: `spec-011-profile` → `26e:33-37`", "declined: `seed-041`: neden; seed-0401-x"]
-        self.assertEqual(launch.unanswered_reports(ages, logs), [("seed-040-d1-inputs", 30), ("seed-04", 1)])
-        self.assertEqual(launch.unanswered_reports(ages, logs + ["seed-040-d1-inputs → 29b:30"]), [("seed-04", 1)])
+        unchanged = lambda rid: True  # noqa: E731  (UnchangedSinceNamingTest is the subject of the bytes)
+        self.assertEqual(launch.unanswered_reports(ages, logs, unchanged), [("seed-040-d1-inputs", 30), ("seed-04", 1)])
+        self.assertEqual(launch.unanswered_reports(ages, logs + ["seed-040-d1-inputs → 29b:30"], unchanged),
+                         [("seed-04", 1)])
         pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
         tree = [{"name": "CHANGELOG.md", "object": {"text": logs[0], "isTruncated": False}},
                 {"name": "CHANGELOG-4.md", "object": {"text": logs[1], "isTruncated": False}},
@@ -987,6 +1003,8 @@ class CycleRecordTest(unittest.TestCase):
         reports = [{"file": f"{rid}.json", "id": rid, "state": "open"} for rid, _age in ages]
         with mock.patch.object(launch.Pilot, "open_reports", return_value=reports), \
                 mock.patch.object(launch.Pilot, "seed_changelogs", return_value=logs), \
+                mock.patch.object(launch.Pilot, "owed_reports", lambda self, head, reps, ages, texts:
+                                  launch.unanswered_reports(ages, texts, unchanged)), \
                 mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
                 mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40):
             unanswered = pilot.observe("b" * 40)["reports_unanswered"]
@@ -1011,12 +1029,96 @@ class CycleRecordTest(unittest.TestCase):
         self.assertIn("- CEVAPSIZ (operatör) (0; ", text)
         self.assertNotIn("reports_unanswered", " ".join(pilot.capsule_argv("s", "m", 1, 1)))
 
+    def test_a_named_report_changed_since_the_naming_is_owed_again(self):  # unanswered_without_history
+        """E552 through `owed_reports`: the changelogs name seed-040 and its file changed after the epoch that names
+        it."""
+        launch = load_launch()
+        repo = Path(tempfile.mkdtemp()) / "brain"
+        make_repo(repo, {"reports/seed-040.json": '{"id": "seed-040", "state": "open", "v": 1}\n',
+                         "spec/tohum/CHANGELOG.md": "# log\n"})
+        commit(repo, {"spec/tohum/CHANGELOG.md": "# log\n- seed-040 → `29b:30`\n"}, "epoch")
+        pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+        pilot.brain_remote = str(repo)
+        reports = [{"file": "seed-040.json", "id": "seed-040", "state": "open"}]
+        logs = ["- seed-040 → `29b:30`"]
+        head = sh(repo, "git", "rev-parse", "HEAD")
+        self.assertEqual(pilot.owed_reports(head, reports, [("seed-040", 3)], logs), [])
+        head = commit(repo, {"reports/seed-040.json": '{"id": "seed-040", "state": "open", "v": 2}\n'}, "update")
+        self.assertEqual(pilot.owed_reports(head, reports, [("seed-040", 3)], logs), [("seed-040", 3)])
+        pilot.brain_remote = str(repo / "nowhere")  # the history cannot be read: unknown, never "owed"
+        self.assertIsNone(pilot.owed_reports(head, reports, [("seed-040", 3)], logs))
+        self.assertEqual(pilot.owed_reports(head, reports, [("seed-041", 3)], logs), [("seed-041", 3)])  # no clone
+
     def test_the_reads_are_get_only(self):
         source = (FOUNDER / "launch.py").read_text(encoding="utf-8")
         for name in ("spec_tohum_tree", "open_reports", "tree_blobs", "seed_changelogs"):
             body = source.split(f"def {name}(", 1)[1].split("\n    def ", 1)[0]
             self.assertNotIn("--method", body)
             self.assertNotIn("-X", body)
+
+
+class UnchangedSinceNamingTest(unittest.TestCase):
+    """E552 (E527's rule): an open report is operator-owed when no changelog names it, or its bytes differ from its
+    bytes at the LATEST epoch commit that names it. The reference is git history (a blob's id), never a commit time
+    (E316)."""
+
+    LOG = "spec/tohum/CHANGELOG.md"
+
+    def setUp(self):
+        self.launch = load_launch()
+        self.repo = Path(tempfile.mkdtemp()) / "brain"
+
+    def report(self, name, version):
+        return {f"reports/{name}.json": json.dumps({"id": name, "state": "open", "v": version}) + "\n"}
+
+    def owed(self, head, ids):
+        files = {rid: f"{rid}.json" for rid in ids}
+        text = "\n".join(sh(self.repo, "git", "show", f"{head}:{p}") for p in
+                          sh(self.repo, "git", "ls-tree", "-r", "--name-only", head, "spec/tohum").splitlines())
+        return [rid for rid, _ in self.launch.unanswered_reports(
+            [(rid, 1) for rid in ids], [text],
+            lambda rid: self.launch.unchanged_since_naming(self.repo, rid, files[rid], head))]
+
+    def test_two_by_two_named_or_not_and_unchanged_or_changed_since_the_naming(self):  # named_once_forever
+        ids = ["seed-a", "seed-b", "seed-c", "seed-d"]
+        make_repo(self.repo, {**{k: v for rid in ids for k, v in self.report(rid, 1).items()}, self.LOG: "# log\n"})
+        commit(self.repo, {self.LOG: "# log\n- seed-a → `1:1`\n- seed-b → `1:2`\n"}, "epoch")
+        head = commit(self.repo, {**self.report("seed-b", 2), **self.report("seed-d", 2)}, "the Founder's updates")
+        self.assertEqual(self.owed(head, ids), ["seed-b", "seed-c", "seed-d"])  # only seed-a is answered as it stands
+
+    def test_a_report_named_again_is_judged_against_the_latest_naming(self):  # first_naming_used_as_reference
+        make_repo(self.repo, {**self.report("seed-e", 1), self.LOG: "# log\n"})
+        commit(self.repo, {self.LOG: "# log\n- seed-e → `1:1`\n"}, "epoch 1")
+        commit(self.repo, self.report("seed-e", 2), "update")
+        head = commit(self.repo, {self.LOG: "# log\n- seed-e → `1:1`\n- seed-e (update) → `1:2`\n"}, "epoch 2")
+        self.assertEqual(self.owed(head, ["seed-e"]), [])  # answered again after the change
+        head = commit(self.repo, self.report("seed-e", 3), "update again")
+        self.assertEqual(self.owed(head, ["seed-e"]), ["seed-e"])
+
+    def test_a_row_moved_between_changelogs_is_not_a_naming(self):  # presence_not_addition
+        """The compaction of a full changelog moves rows verbatim: it answers nothing the Founder wrote since."""
+        make_repo(self.repo, {**self.report("seed-f", 1), self.LOG: "# log\n"})
+        commit(self.repo, {self.LOG: "# log\n- seed-f → `1:1`\nrow two\n"}, "epoch 1")
+        commit(self.repo, self.report("seed-f", 2), "update")
+        moved = "spec/tohum/CHANGELOG-1.md"
+        head = commit(self.repo, {self.LOG: "# log\nrow two\n", moved: "- seed-f → `1:1`\n"}, "compaction")
+        self.assertEqual(self.owed(head, ["seed-f"]), ["seed-f"])
+        head = commit(self.repo, {self.LOG: "# log\nrow two\n- seed-f (update) → `1:2`\n"}, "epoch 2")
+        self.assertEqual(self.owed(head, ["seed-f"]), [])
+
+    def test_ids_are_whole_and_a_report_that_did_not_exist_yet_was_not_answered(self):
+        make_repo(self.repo, {**self.report("seed-1", 1), **self.report("seed-10", 1), self.LOG: "# log\n"})
+        commit(self.repo, {self.LOG: "# log\n- seed-10 → `1:1`\n- seed-g → `1:2`\n"}, "epoch")
+        head = commit(self.repo, self.report("seed-g", 1), "the report comes after its answer")
+        self.assertEqual(self.owed(head, ["seed-1", "seed-10", "seed-g"]), ["seed-1", "seed-g"])
+        self.assertEqual(self.launch.naming_epochs(self.repo, "seed-1", head), [])  # seed-10's row is not seed-1's
+        self.assertEqual(self.launch.naming_epochs(self.repo, "seed-10", head),
+                         [sh(self.repo, "git", "rev-parse", "HEAD~1")])
+
+    def test_ids_with_regex_characters_are_read_literally(self):
+        make_repo(self.repo, {**self.report("seed.x", 1), self.LOG: "# log\n"})
+        head = commit(self.repo, {self.LOG: "# log\n- seedax → `1:1`\n"}, "epoch")
+        self.assertEqual(self.launch.naming_epochs(self.repo, "seed.x", head), [])
 
 
 class CostRowTest(unittest.TestCase):

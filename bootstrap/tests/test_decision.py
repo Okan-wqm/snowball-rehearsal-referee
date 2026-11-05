@@ -291,6 +291,35 @@ class RunnerFaults(unittest.TestCase):
             self.assertEqual((res["state"]["reject_streaks"], res["learning"]["not_learning"]), ({}, []))
             st_ = res["state"]
 
+    def test_a_brake_stop_leaves_the_head_unjudged_and_names_the_brake(self):
+        # budget_stop_consumes_the_head pull_budget_not_a_stop rival_budget_not_a_stop rival_budget_read_as_rivals
+        # budget_stop_unnamed
+        """E550 (E34, referee-049): `asama-0/12:19` and `29b` say a head the rival brake stops is not consumed and is
+        judged by itself when the policy changes; the referee moved `last_evaluated_sha` to it, so it never was. Both
+        ways in: pull's `budget` (nothing left) and a call the CLI stopped at its `--max-budget-usd`. Neither touches a
+        streak, the rival-side streak or the outage count; the spend of the call is booked; the result names the brake
+        and what the stopped run could spend, which `poll` compares with before it judges the head again."""
+        streaks = {"test_failed:T13": 2}
+        allowance = {"usd_micros": 0, "brake": "stage"}
+        pre = run_decide(meta_("code", state0(reject_streaks=dict(streaks), rival_side_streak=1),
+                               pre_reasons=["budget"], run_tests=False, run_rival=False, rival_allowance=allowance),
+                         None, None, None, {})
+        call = run_decide(meta_("code", state0(reject_streaks=dict(streaks), rival_side_streak=1),
+                                rival_allowance={"usd_micros": 77_443, "brake": "stage"}),
+                          green_run(), unresolved("budget", cost=278_448), None, CODE_JOBS)
+        for res, allowed in ((pre, 0), (call, 77_443)):
+            state = res["state"]
+            self.assertEqual(res["verdict"], "rejected")
+            self.assertEqual(state["last_evaluated_sha"], None)  # the head is not consumed
+            self.assertEqual((state["reject_streaks"], state["rival_side_streak"], state["outage_count"]),
+                             (streaks, 1, 0))
+            self.assertEqual(res["budget_stop"], {"brake": "stage", "allowed_usd_micros": allowed})
+            self.assertIn("rival_budget:stage", res["warnings"])
+            self.assertNotIn("rival_side_retry:2", res["warnings"])
+        self.assertEqual(call["state"]["stage_spend_usd_micros"], 2000 + 278_448)  # what the call spent is booked
+        judged = run_decide(meta_("code", state0()), green_run(), not_refuted(), None, CODE_JOBS)
+        self.assertEqual(judged["budget_stop"], None)
+
     def test_the_run_of_a_real_but_unresolved_outage_week_never_reaches_not_learning(self):
         """A timeout books the per-run cap; ten of them empty a 30 USD stage budget. The budget then stops the
         run, and what follows must still not count against the Founder."""
@@ -538,10 +567,28 @@ class StateRules(unittest.TestCase):
 
     def test_remaining_budget_is_the_smaller_of_month_and_stage(self):  # L01 L02 L03 L05
         policy = Policy(300_000_000, {0: 30_000_000}, 2, 3, frozenset({"MIT"}), {})
-        for month, stage, left in ((0, 0, 30_000_000), (299_500_000, 0, 500_000), (0, 29_000_000, 1_000_000),
-                                   (300_000_000, 0, 0), (0, 30_000_000, 0)):
+        for month, stage, left, brake in ((0, 0, 30_000_000, "stage"), (299_500_000, 0, 500_000, "month"),
+                                          (0, 29_000_000, 1_000_000, "stage"), (300_000_000, 0, 0, "month"),
+                                          (0, 30_000_000, 0, "stage")):
             prev = state0(month_spend_usd_micros=month, stage_spend_usd_micros=stage)
-            self.assertEqual(cli.remaining_budget(policy, prev, 0), left, (month, stage))
+            self.assertEqual(cli.rival_allowance(policy, 50_000_000, prev, 0), (left, brake), (month, stage))
+
+    def test_the_allowance_names_the_brake_that_sets_it(self):  # allowance_ignores_per_run_cap
+        """E550 (E34): one rival run may spend the least of what the month and the stage have left and the per-run
+        cap, and the result names which brake that is, so the reader of a stop knows which operator value holds it
+        (referee-049 could not tell the stage brake from the per-run cap). A tie is named month, stage, per_run."""
+        policy = Policy(300_000_000, {0: 30_000_000}, 2, 3, frozenset({"MIT"}), {})
+        allow = cli.rival_allowance
+        self.assertEqual(allow(policy, 3_000_000, state0(month_spend_usd_micros=0, stage_spend_usd_micros=0), 0),
+                         (3_000_000, "per_run"))
+        self.assertEqual(allow(policy, 3_000_000, state0(month_spend_usd_micros=0, stage_spend_usd_micros=29_922_557),
+                               0), (77_443, "stage"))
+        self.assertEqual(allow(policy, 3_000_000, state0(month_spend_usd_micros=301_000_000, stage_spend_usd_micros=0),
+                               0), (-1_000_000, "month"))
+        self.assertEqual(allow(policy, 30_000_000, state0(month_spend_usd_micros=270_000_000,
+                                                          stage_spend_usd_micros=0), 0), (30_000_000, "month"))
+        self.assertEqual(allow(policy, 30_000_000, state0(month_spend_usd_micros=0, stage_spend_usd_micros=0), 0),
+                         (30_000_000, "stage"))
 
 
 class SmallGates(unittest.TestCase):

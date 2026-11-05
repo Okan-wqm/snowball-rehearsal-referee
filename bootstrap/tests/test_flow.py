@@ -101,7 +101,7 @@ class Flow(unittest.TestCase):
         passing failures leave it to the next run (E166: the owner asked for a loop that never waits on the
         Founder for something it cannot fix). None of them is an outage."""
         commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0, revised" + chr(10)}, "spec only")
-        evaluated = {"max_turns", "prompt_too_large", "budget"}
+        evaluated = {"max_turns", "prompt_too_large"}  # a brake stop is neither (E550)
         for reason in ("model_mismatch", "refusal", "max_turns", "budget", "no_verdict:end_turn",
                        "malformed_verdict:x", "secret_in_verdict:aws_access_key", "prompt_too_large"):
             self.state["last_evaluated_sha"] = None  # the same head, polled again for the next reason
@@ -729,16 +729,41 @@ class Flow(unittest.TestCase):
         self.assertEqual(result["verdict"], "accepted", result["reasons"])
         self.assertEqual((result["state"]["reject_streaks"], result["state"]["repeat_events"]), ({}, 2))
 
-    def test_exhausted_budget_is_recorded_once_without_calling_the_rival(self):
+    def test_exhausted_budget_stops_the_head_without_consuming_it_until_the_brake_is_raised(self):
+        """E550 (E34; referee-049's second observation, a5e4562): with the stage brake spent the head is not judged
+        and the rival is not called, as before, but the head is no longer consumed (`asama-0/12:19`, `29b`): the
+        same head is pulled again, and once the operator raises the brake it goes to the rival."""
         self.state["stage_spend_usd_micros"] = 30_000_000
         commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0 v3\n"}, "spec")
         meta = self.pull()
         self.assertEqual(meta["pre_reasons"], ["budget"])
+        self.assertEqual(meta["rival_allowance"], {"usd_micros": 0, "brake": "stage"})
         self.assertFalse(meta["run_rival"])
         result = self.finish(meta, jobs={"cagir": "skipped"})
         self.assertEqual(result["verdict"], "rejected")
-        self.assertEqual(result["state"]["last_evaluated_sha"], meta["head"])
-        self.assertEqual(self.pull()["kind"], "none")
+        self.assertEqual(result["state"]["last_evaluated_sha"], None)
+        self.assertEqual(result["budget_stop"], {"brake": "stage", "allowed_usd_micros": 0})
+        again = self.pull()
+        self.assertEqual((again["head"], again["pre_reasons"]), (meta["head"], ["budget"]))
+        policy = json.loads((self.referee / "policy.json").read_text())
+        policy["constitutional"]["stage_budgets"]["asama_0"]["rival_usd"] = 1000
+        (self.referee / "policy.json").write_text(json.dumps(policy))
+        raised = self.pull()
+        self.assertEqual((raised["head"], raised["pre_reasons"], raised["run_rival"]), (meta["head"], [], True))
+        self.assertEqual(raised["rival_allowance"], {"usd_micros": 3_000_000, "brake": "per_run"})
+
+    def test_a_head_rejected_for_its_own_reason_is_judged_without_the_brake(self):  # pull_budget_hides_other_reasons
+        """E550: the brake stops only a head whose judgement waits for the rival alone; a code push already rejected
+        before any job (here code under a Stage 0 spec that is not frozen) is judged and consumed for that reason,
+        and `budget` is not added beside it."""
+        self.state["stage_spend_usd_micros"] = 30_000_000
+        commit(self.brain, {"referee/a.py": "x = 1\n"}, "code before the freeze")
+        meta = self.pull()
+        self.assertEqual(meta["kind"], "code")
+        self.assertTrue(meta["pre_reasons"])
+        self.assertNotIn("budget", meta["pre_reasons"])
+        result = self.finish(meta)
+        self.assertEqual((result["state"]["last_evaluated_sha"], result["budget_stop"]), (meta["head"], None))
 
     def test_history_rewrite_and_seed_edit_are_rejected(self):
         commit(self.brain, {"spec/tohum/00-cekirdek.md": "# changed core\n"}, "edit seed")

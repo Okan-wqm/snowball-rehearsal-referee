@@ -2478,7 +2478,7 @@ class StageOnePullTest(unittest.TestCase):
 # ---------------------------------------------------------------- Stage 1's rival brake and pages (E492, E493)
 
 class StageOneRivalBrakeTest(unittest.TestCase):
-    """E492 (E373's second item): past the lock the rival's stage brake is the open stage's, `asama-1/10`'s 15 USD as
+    """E492 (E373's second item): past the lock the rival's stage brake is the open stage's, `asama-1/10`'s brake as
     `stage_budgets.asama_1.rival_usd` (`29b`, `26e`, `18a`), and the stage's spend counts from the lock that opened it."""
 
     def test_the_policy_names_a_brake_per_stage_stage_0s_required(self):  # stage1_brake_is_stage0s
