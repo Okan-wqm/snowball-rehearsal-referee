@@ -31,6 +31,11 @@ The pages a table copies are the stage pages the seed rival reads beside a code 
 rows and their tests, so the rival measures the push against the micro-features the referee judges it by. Stage 0's
 table copies `asama-0/14` and `09`; past the lock the batch tables copy `asama-1/13` and `asama-0/09`, and Stage 1's own
 micro-features, judged by the same pushes, are `asama-1/06`'s.
+
+Beside the tables lies the seed's carry record of an owner's exception whose carry is the seed's (`config.Exceptable`
+``seed_record``; `02` "Sahip istisnası", E562): `stages/carry-spec.json` names what Stage 1's (A) must measure of the
+excepted #spec, and the summary's ``spec_commitment`` is the sha256 of its canonical bytes (`carry_record_sha256`, the
+one place that computes it), so the exception binds the record the operator saw and a later record does not match.
 """
 
 from __future__ import annotations
@@ -42,6 +47,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
+from . import canon
 from .config import ConfigError
 from .treehash import path_problem
 
@@ -62,6 +68,9 @@ STAGE_PAGES: dict[int, tuple[str, ...]] = {0: ("asama-0/09-", "asama-0/14-"),
 # rule; it stays until that table is reopened (`26e`).
 STDLIB_KEPT: dict[int, frozenset[str]] = {0: frozenset({"profile"})}
 BATCH_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}\Z")  # a batch's name as a request and a counter row carry it
+CARRY_SCHEMA = "snowball-carry/1"
+CARRY_KEYS = frozenset({"schema", "anchor", "stage", "carry_to", "excepted_row", "items", "measured_over", "judged_at",
+                        "owes", "no_second_exception"})
 
 
 @dataclass(frozen=True)
@@ -215,3 +224,32 @@ def load(stage: int = 0, directory: Path | None = None, done: Iterable[str] = ()
         return StageTable(stage, (), before)
     table = _read(stage, directory, order[len(done)])
     return StageTable(table.stage, table.mfs, before, table.batch)
+
+
+def carry_name(anchor: str) -> str:
+    return f"carry-{anchor}.json"
+
+
+def carry_record(anchor: str, directory: Path | None = None) -> dict[str, Any]:
+    """The seed's carry record of #``anchor`` (E562): exactly its keys, its schema and anchor, in its one written form
+    (`canon.dump`), so the bytes the operator hashed are the record read. A record that breaks this is a seed defect:
+    the run stops (the operator's to fix, never the Founder's rejection). Read as the stage tables are (`_read`): a
+    checkout's line endings (core.autocrlf, E567) are not its form, and the commitment hashes canonical bytes anyway."""
+    path = (directory or STAGES_DIR) / carry_name(anchor)
+    try:
+        text = path.read_text(encoding="utf-8")  # universal newlines: CRLF is read as LF, the form is checked after
+        data = json.loads(text)
+    except (OSError, UnicodeDecodeError, ValueError, RecursionError) as exc:
+        raise ConfigError(f"carry record {path.name} cannot be read: {type(exc).__name__}") from exc
+    if not isinstance(data, dict) or set(data) != CARRY_KEYS or data.get("schema") != CARRY_SCHEMA \
+            or data.get("anchor") != anchor:
+        raise ConfigError(f"{path.name} must have exactly: {', '.join(sorted(CARRY_KEYS))}, schema {CARRY_SCHEMA} and "
+                          f"anchor {anchor}")
+    if text != canon.dump(data):
+        raise ConfigError(f"{path.name} is not in its one written form (canon.dump)")
+    return data
+
+
+def carry_record_sha256(anchor: str, directory: Path | None = None) -> str:
+    """sha256 of the carry record's RFC 8785 bytes: the commitment beside the owner's exception of #``anchor``."""
+    return canon.sha256_hex(canon.canonical(carry_record(anchor, directory)))

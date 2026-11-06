@@ -20,12 +20,13 @@ import io
 import json
 import re
 import shlex
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-from snowball_bootstrap import cli, config, decide as decide_module, ledgercheck, wiring
+from snowball_bootstrap import canon, cli, config, decide as decide_module, ledgercheck, stagelock, stages, wiring
 from snowball_bootstrap.config import ConfigError, load_summary
 
 import test_exit_checks
@@ -39,6 +40,9 @@ ROOT = Path(__file__).resolve().parents[3]
 EXCEPTION = {"stage": 0, "carry_to": 1, "reason": "E287: the plant was not made before the Founder started"}
 CARRY = "c" * 64  # sha256(canonical(key)) of the plant the carried stage measures (`25` 10c)
 HANDED = dict(EXCEPTION, carry_commitment=CARRY)  # as pull hands it to decide
+SPEC_EXCEPTION = {"stage": 0, "carry_to": 1, "reason": "E286, E561: #spec's mechanical items have no machine form"}
+SPEC_CARRY = stages.carry_record_sha256("spec")  # the seed's carry record of #spec (E562)
+SPEC_HANDED = dict(SPEC_EXCEPTION, carry_commitment=SPEC_CARRY)
 
 
 # ---------------------------------------------------------------- #kurucu-defteri: closing an accepted row (E280)
@@ -300,12 +304,18 @@ class EveryJobStartsWithTheControlStep(unittest.TestCase):
             self.assertIn(f"`{key}`", rule, key)
 
 
-# ---------------------------------------------------------------- #durustluk: the owner's exception (E287, E294)
+# ---------------------------------------------------------------- the owner's exceptions (E287, E294, E561-E563)
+
+
+def named(anchor, exception, carry):
+    """One element of the signed result's ``exit.owner_exception`` array (E563)."""
+    return {"anchor": anchor, "stage": exception["stage"], "carry_to": exception["carry_to"],
+            "reason": exception["reason"], "carry_commitment": carry, "measured": False}
 
 
 class OwnerExceptionRead(unittest.TestCase):
-    """`26c`, `02` "Sahip istisnası": one anchor, one stage, one carry target; a commitment beside it is the plant the
-    carried stage measures (made before that stage starts)."""
+    """`26c`, `02` "Sahip istisnası": one anchor, one stage, one carry target; a commitment beside it is what the
+    carried stage measures (#durustluk's plant, #spec's seed carry record). One table, one reading rule."""
 
     BASE = {"seed_commit": "a" * 40, "seed_tree_sha256": "b" * 64}
 
@@ -321,18 +331,40 @@ class OwnerExceptionRead(unittest.TestCase):
         self.assertEqual((self.load(self.BASE).honesty_commitment, self.load(self.BASE).honesty_exception), (None, None))
         self.assertEqual(self.load(dict(self.BASE, honesty_commitment="c" * 64)).honesty_commitment, "c" * 64)
         self.assertEqual(self.load(dict(self.BASE, honesty_exception=EXCEPTION)).honesty_exception,
-                         config.HonestyException(0, 1, EXCEPTION["reason"]))
+                         config.OwnerException(0, 1, EXCEPTION["reason"]))
         both = self.load(dict(self.BASE, honesty_commitment="c" * 64, honesty_exception=EXCEPTION))
         self.assertEqual((both.honesty_commitment, both.honesty_exception.carry_to), ("c" * 64, 1))
-        for bad in ({"honesty_commitment": "C" * 64}, {"honesty_commitment": "c" * 63}, {"honesty_commitment": None},
-                    {"honesty_exception": dict(EXCEPTION, anchor="durustluk")},
-                    {"honesty_exception": {k: v for k, v in EXCEPTION.items() if k != "reason"}},
-                    {"honesty_exception": dict(EXCEPTION, stage=1, carry_to=2)},
-                    {"honesty_exception": dict(EXCEPTION, stage=False)}, {"honesty_exception": dict(EXCEPTION, carry_to=2)},
-                    {"honesty_exception": dict(EXCEPTION, stage=True)}, {"honesty_exception": dict(EXCEPTION, carry_to=True)},
-                    {"honesty_exception": dict(EXCEPTION, reason=" ")}, {"honesty_exception": [EXCEPTION]}):
-            with self.subTest(bad=bad), self.assertRaises(ConfigError):
-                self.load(dict(self.BASE, **bad))
+        for fields in config.OWNER_EXCEPTIONS.values():  # the same rule for every anchor of the table
+            exc, com = fields.exception, fields.commitment
+            for bad in ({com: "C" * 64}, {com: "c" * 63}, {com: None},
+                        {exc: dict(EXCEPTION, anchor="durustluk")},
+                        {exc: {k: v for k, v in EXCEPTION.items() if k != "reason"}},
+                        {exc: dict(EXCEPTION, stage=1, carry_to=2)}, {exc: dict(EXCEPTION, stage=False)},
+                        {exc: dict(EXCEPTION, carry_to=2)}, {exc: dict(EXCEPTION, stage=True)},
+                        {exc: dict(EXCEPTION, carry_to=True)}, {exc: dict(EXCEPTION, reason=" ")}, {exc: [EXCEPTION]}):
+                with self.subTest(bad=bad), self.assertRaises(ConfigError):
+                    self.load(dict(self.BASE, **{exc: EXCEPTION, com: "c" * 64, **bad}))
+
+    def test_the_spec_exception_is_the_tables_second_row(self):
+        """E561: #spec's exception is read by the same rule as #durustluk's, under its own two fields; its commitment
+        commits to the seed's carry record, so without the exception it is refused, while #durustluk's commitment
+        is the plant and stands alone (`25` 10c)."""
+        # spec_commitment_alone_accepted owner_exception_table_unsorted spec_exception_ignored
+        self.assertEqual(list(config.OWNER_EXCEPTIONS), sorted(config.OWNER_EXCEPTIONS))
+        self.assertEqual({a: (f.exception, f.commitment, f.seed_record) for a, f in config.OWNER_EXCEPTIONS.items()},
+                         {"durustluk": ("honesty_exception", "honesty_commitment", False),
+                          "spec": ("spec_exception", "spec_commitment", True)})
+        self.assertEqual(decide_module.OWNER_EXCEPTABLE, ("durustluk", "spec"))
+        summary = self.load(dict(self.BASE, spec_exception=SPEC_EXCEPTION, spec_commitment=SPEC_CARRY,
+                                 honesty_exception=EXCEPTION))
+        self.assertEqual(summary.spec_exception, config.OwnerException(0, 1, SPEC_EXCEPTION["reason"]))
+        self.assertEqual(list(summary.owner_exceptions()),
+                         [("durustluk", summary.honesty_exception, None), ("spec", summary.spec_exception, SPEC_CARRY)])
+        self.assertEqual(self.load(dict(self.BASE, spec_exception=SPEC_EXCEPTION)).spec_commitment, None)
+        self.assertEqual(list(self.load(self.BASE).owner_exceptions()), [])
+        with self.assertRaisesRegex(ConfigError, "spec_commitment without spec_exception"):
+            self.load(dict(self.BASE, spec_commitment=SPEC_CARRY))
+        self.assertEqual(self.load(dict(self.BASE, honesty_commitment=CARRY)).honesty_exception, None)
 
 
 class OwnerExceptionAtTheExit(unittest.TestCase):
@@ -345,9 +377,7 @@ class OwnerExceptionAtTheExit(unittest.TestCase):
         # owner_exception_ignored owner_exception_takes_any_anchor owner_exception_not_signed owner_exception_carry_unsigned
         res = self.run_(self.meta(self.state(), self.ok(), honesty_exception=HANDED))
         self.assertEqual(res["exit"]["missing"], ["not_checked:spec"])
-        self.assertEqual(res["exit"]["owner_exception"], {"anchor": "durustluk", "stage": 0, "carry_to": 1,
-                                                          "reason": EXCEPTION["reason"], "carry_commitment": CARRY,
-                                                          "measured": False})
+        self.assertEqual(res["exit"]["owner_exception"], [named("durustluk", EXCEPTION, CARRY)])  # an array of one
         failed = dict(self.ok(), genellik={"status": "failed", "reasons": ["target_name_in_referee:x"], "why": ""})
         res = self.run_(self.meta(self.state(), failed, honesty_exception=HANDED))
         self.assertEqual(res["exit"]["missing"], ["target_name_in_referee:x", "not_checked:spec"])
@@ -362,13 +392,55 @@ class OwnerExceptionAtTheExit(unittest.TestCase):
             self.assertEqual((res["verdict"], res["exit"]["missing"]), ("rejected", ["not_checked:durustluk"]))
             res = self.run_(self.meta(self.state(), self.ok(), honesty_exception=HANDED))
         self.assertEqual((res["verdict"], res["exit"]["transferable"]), ("accepted", True))
-        self.assertEqual(res["exit"]["owner_exception"]["anchor"], "durustluk")
+        self.assertEqual([e["anchor"] for e in res["exit"]["owner_exception"]], ["durustluk"])
+
+    def test_both_exceptions_open_stage_zeros_exit_and_the_result_names_both_by_anchor(self):
+        """E561, E563: with #durustluk's plant and #spec's record beside the owner's two exceptions, everything else
+        measured, Stage 0's (A) is transferable "with the owner's exceptions" (`02`), and the signed result names
+        both, as an array sorted by anchor, each never a pass."""
+        # spec_exception_ignored owner_exception_single_object owner_exception_unsorted one_exception_lifts_both
+        res = self.run_(self.meta(self.state(), self.ok(), honesty_exception=HANDED, spec_exception=SPEC_HANDED))
+        self.assertEqual((res["verdict"], res["exit"]["transferable"], res["exit"]["missing"]), ("accepted", True, []))
+        self.assertEqual(res["exit"]["owner_exception"],
+                         [named("durustluk", EXCEPTION, CARRY), named("spec", SPEC_EXCEPTION, SPEC_CARRY)])
+        res = self.run_(self.meta(self.state(), self.ok(), spec_exception=SPEC_HANDED))  # one never lifts the other
+        self.assertEqual(res["exit"]["missing"], ["not_checked:durustluk"])
+        self.assertEqual(res["exit"]["owner_exception"], [named("spec", SPEC_EXCEPTION, SPEC_CARRY)])
+
+    def test_the_spec_exception_takes_nothing_off_without_the_seeds_carry_record(self):
+        """E562: #spec's carry is the seed's record (`stages/carry-spec.json`): a commitment that is not its sha256
+        (none, another sha256, upper case, short) leaves #spec not_checked, not the Founder's, saying why, while the
+        exception of #durustluk beside it still holds. A record that changed since the commitment matches no more."""
+        # spec_lifted_without_record_match carry_unplanted_names_the_other one_exception_lifts_both
+        for carry in (None, "c" * 64, SPEC_CARRY.upper(), SPEC_CARRY[:63], 64, [SPEC_CARRY]):
+            with self.subTest(carry=carry):
+                res = self.run_(self.meta(self.state(), self.ok(), honesty_exception=HANDED,
+                                          spec_exception=dict(SPEC_EXCEPTION, carry_commitment=carry)))
+                self.assertEqual((res["verdict"], res["exit"]["missing"]), ("rejected", ["not_checked:spec"]))
+                self.assertEqual(res["exit"]["owner_exception"], [named("durustluk", EXCEPTION, CARRY)])
+                reason = next(r for r in res["reasons"] if r["ref"] == "not_checked:spec")
+                self.assertIn("no spec_commitment beside it equal to the sha256 of the seed's carry record",
+                              reason["detail"])
+                self.assertIn("E286", reason["detail"])
+                self.assertFalse(decide_module.counts_against_founder(reason))
+        res = self.run_(self.meta(self.state(), self.ok(), honesty_exception=HANDED))
+        reason = next(r for r in res["reasons"] if r["ref"] == "not_checked:spec")
+        self.assertNotIn("spec_commitment", reason["detail"])  # no exception: only the open row says why
+        with tempfile.TemporaryDirectory() as tmp:
+            shutil.copytree(stages.STAGES_DIR, tmp, dirs_exist_ok=True)  # the tables as they are
+            record = stages.carry_record("spec")
+            record["items"] = record["items"][:-1]
+            (Path(tmp) / "carry-spec.json").write_text(canon.dump(record), encoding="utf-8", newline="")
+            with mock.patch.object(stages, "STAGES_DIR", Path(tmp)):
+                res = self.run_(self.meta(self.state(), self.ok(), honesty_exception=HANDED,
+                                          spec_exception=SPEC_HANDED))
+        self.assertEqual(res["exit"]["missing"], ["not_checked:spec"])
 
     def test_without_the_carried_stages_plant_it_takes_nothing_off(self):
         """E297: the exception carries #durustluk to Stage 1, which measures it on a plant made before it starts. With
         no commitment beside the exception, Stage 1 would open unplanted and its exit, with no second exception, could
         never close: Stage 0's stays closed instead, as not_checked (not the Founder's), saying why."""
-        # owner_exception_without_its_carry carry_unplanted_unsaid
+        # owner_exception_without_its_carry carry_unplanted_unsaid carry_commitment_unchecked
         only = {"durustluk": decide_module.EXIT_NOT_CHECKED["durustluk"]}
         with mock.patch.object(decide_module, "EXIT_NOT_CHECKED", only):
             for carry in (None, "C" * 64, "c" * 63, 64, ["c" * 64]):
@@ -390,38 +462,104 @@ class OwnerExceptionAtTheExit(unittest.TestCase):
 
 class OwnerExceptionFlow(test_exit_checks.ExitFlow):
     def test_pull_hands_the_exception_to_the_exit_and_to_nothing_else(self):
-        # owner_exception_not_handed owner_exception_carry_not_handed
-        self.write_summary(honesty_exception=EXCEPTION, honesty_commitment=CARRY)
+        # owner_exception_not_handed owner_exception_carry_not_handed pull_hands_every_exception_as_honesty
+        self.write_summary(honesty_exception=EXCEPTION, honesty_commitment=CARRY, spec_exception=SPEC_EXCEPTION,
+                           spec_commitment=SPEC_CARRY)
         self.freeze_stage0()
         commit(self.brain, {"referee/ledger/chain.py": "x = 1\n",
                             "snowball-tests.json": test_exit_checks.test_flow.all_tests_manifest([1])}, "code")
-        self.assertIsNone(self.pull()["honesty_exception"])
+        code = self.pull()
+        self.assertIsNone(code["honesty_exception"])
+        self.assertNotIn("spec_exception", code)  # a push that is no exit request: meta as it always was
         self.state["last_evaluated_sha"] = None
         self.accept({"referee/ledger/chain.py": "x = 2\n"})
         meta = self.ask_exit()
-        self.assertEqual(meta["honesty_exception"], HANDED)
+        self.assertEqual((meta["honesty_exception"], meta["spec_exception"]), (HANDED, SPEC_HANDED))
         result = self.finish(meta, run=self.green_run(meta), jobs=EXIT_JOBS)
-        self.assertNotIn("not_checked:durustluk", result["exit"]["missing"])
-        self.assertEqual((result["exit"]["owner_exception"]["measured"],
-                          result["exit"]["owner_exception"]["carry_commitment"]), (False, CARRY))
+        self.assertEqual({"not_checked:durustluk", "not_checked:spec"} & set(result["exit"]["missing"]), set())
+        self.assertEqual(result["exit"]["owner_exception"],
+                         [named("durustluk", EXCEPTION, CARRY), named("spec", SPEC_EXCEPTION, SPEC_CARRY)])
 
     def test_an_exception_without_the_commitment_reaches_the_exit_and_keeps_it_closed(self):
-        self.write_summary(honesty_exception=EXCEPTION)
+        self.write_summary(honesty_exception=EXCEPTION, spec_exception=SPEC_EXCEPTION)
         self.freeze_stage0()
         self.accept({"referee/ledger/chain.py": "x = 1\n"})
         meta = self.ask_exit()
         self.assertEqual(meta["honesty_exception"], dict(EXCEPTION, carry_commitment=None))
+        self.assertEqual(meta["spec_exception"], dict(SPEC_EXCEPTION, carry_commitment=None))
         result = self.finish(meta, run=self.green_run(meta), jobs=EXIT_JOBS)
-        self.assertIn("not_checked:durustluk", result["exit"]["missing"])
+        self.assertLessEqual({"not_checked:durustluk", "not_checked:spec"}, set(result["exit"]["missing"]))
         self.assertNotIn("owner_exception", result["exit"])
 
     def test_a_target_name_in_the_reason_is_withheld(self):  # owner_exception_reason_published
-        self.write_summary(targets=[TARGET], honesty_exception=dict(EXCEPTION, reason="E287, as Zorbalix asked"))
+        self.write_summary(targets=[TARGET], honesty_exception=dict(EXCEPTION, reason="E287, as Zorbalix asked"),
+                           spec_exception=dict(SPEC_EXCEPTION, reason="E286, Zorbalix's spec"))
         self.freeze_stage0()
         self.accept({"referee/ledger/chain.py": "x = 1\n"})
         meta = self.ask_exit()
-        self.assertRegex(meta["honesty_exception"]["reason"], r"^sha256:[0-9a-f]{16}$")
+        for key in ("honesty_exception", "spec_exception"):
+            self.assertRegex(meta[key]["reason"], r"^sha256:[0-9a-f]{16}$")
         self.assertNotIn("zorbalix", json.dumps(self.finish(meta, jobs=EXIT_JOBS)).casefold())
+
+
+class SpecCarryRecord(unittest.TestCase):
+    """E562: what Stage 1's (A) must measure of the excepted #spec is the seed's record, `stages/carry-spec.json`:
+    exactly the mechanical items `asama-0/10`'s #spec row names, over the frozen `spec/asama-0`, judged at Stage 1's
+    (A) by the bootstrap referee; the summary's spec_commitment is the sha256 of its canonical bytes."""
+
+    PINNED = "256e2d1089eabcfee346a5cd34d86a7d62599cc88e709630f30e92be928d635e"
+
+    def test_the_record_is_the_rows_items_and_its_hash_is_pinned(self):
+        # carry_record_item_dropped carry_record_quote_reworded
+        row = next(line for line in (ROOT / "spec" / "asama-0" / "10-cikis-testi.md").read_text(encoding="utf-8")
+                   .splitlines() if line.startswith("| #lint #spec #okuyucu |"))
+        paren = row.split("mekanik maddelerini (", 1)[1].split(") `spec/asama-0`'a uygular", 1)[0]
+        record = stages.carry_record("spec")
+        self.assertEqual([i["quote"] for i in record["items"]], re.split(r", |; ", paren))
+        self.assertEqual(len({i["id"] for i in record["items"]}), 5)
+        self.assertEqual(record["excepted_row"], "asama-0/10 " + row.split("|")[1].strip())
+        self.assertEqual((record["anchor"], record["stage"], record["carry_to"]), ("spec", 0, stagelock.OPENS))
+        self.assertTrue(record["measured_over"].startswith("spec/asama-0, frozen"))
+        self.assertEqual({k: record["judged_at"][k] for k in ("stage", "exit", "must_be")},
+                         {"stage": stagelock.OPENS, "exit": "A", "must_be": "ok"})
+        self.assertIs(record["no_second_exception"], True)
+        self.assertEqual({o["register"] for o in record["owes"]}, {"E286"})
+        self.assertEqual(stages.carry_record_sha256("spec"), self.PINNED)  # an edit is a new commitment
+        self.assertEqual(SPEC_CARRY, canon.sha256_hex(canon.canonical(record)))
+
+    def test_the_stages_directory_holds_the_tables_and_the_seeds_carry_records(self):
+        records = [stages.carry_name(a) for a, f in config.OWNER_EXCEPTIONS.items() if f.seed_record]
+        self.assertEqual(records, ["carry-spec.json"])
+        tables = ["stage0.json"] + [stages.table_name(1, b) for b in stages.BATCHES[1]]
+        self.assertEqual(sorted(p.name for p in stages.STAGES_DIR.glob("*.json")), sorted(records + tables))
+
+    def test_a_record_out_of_its_one_form_stops_the_run(self):
+        # carry_record_form_unchecked carry_record_keys_unchecked carry_record_anchor_unchecked
+        good = stages.carry_record("spec")
+        for name, text in (("compact", json.dumps(good)), ("indent", canon.dump(good).replace("\n  ", "\n   ")),
+                           ("extra", canon.dump(dict(good, extra=1))), ("anchor", canon.dump(dict(good, anchor="x"))),
+                           ("schema", canon.dump(dict(good, schema="snowball-carry/2"))),
+                           ("list", canon.dump([good])), ("missing", None)):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                if text is not None:
+                    (Path(tmp) / "carry-spec.json").write_bytes(text.encode("utf-8"))
+                with self.assertRaises(ConfigError):
+                    stages.carry_record_sha256("spec", Path(tmp))
+        for name, ending in (("lf", "\n"), ("crlf", "\r\n"), ("cr", "\r")):
+            with self.subTest(ending=name), tempfile.TemporaryDirectory() as tmp:
+                (Path(tmp) / "carry-spec.json").write_bytes(canon.dump(good).replace("\n", ending).encode("utf-8"))
+                self.assertEqual(stages.carry_record_sha256("spec", Path(tmp)), self.PINNED)
+
+    def test_a_windows_checkout_of_the_record_is_the_same_record(self):
+        """E567: with core.autocrlf (Git for Windows' default, CI's windows runners) the checked-out record has CRLF;
+        it is still the record, its form and its commitment unchanged."""
+        # carry_record_crlf_refused
+        lf = (stages.STAGES_DIR / "carry-spec.json").read_bytes().replace(b"\r\n", b"\n")
+        self.assertNotIn(b"\r", lf)
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "carry-spec.json").write_bytes(lf.replace(b"\n", b"\r\n"))
+            self.assertEqual(stages.carry_record("spec", Path(tmp)), stages.carry_record("spec"))
+            self.assertEqual(stages.carry_record_sha256("spec", Path(tmp)), self.PINNED)
 
 
 # ---------------------------------------------------------------- E293: Stage 0 starts with its setup

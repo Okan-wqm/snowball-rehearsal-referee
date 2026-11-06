@@ -1516,7 +1516,9 @@ class ImageAndEntrypointTest(unittest.TestCase):
         first = next(i for i, block in enumerate(blocks) if block.startswith(self.OWNER_AIM))
         end = next(i for i in range(first + 1, len(blocks)) if blocks[i].startswith("**"))
         self.assertTrue(blocks[first - 1].startswith("**Gerçek hedefte sına ve eksiğini kendin bul.**"))
-        self.assertTrue(blocks[end].startswith("**Anlaşmazlık kanıtla çözülür"))
+        # E560: the operator's exit order bounds the section's priority clause and stands right after it, outside it
+        self.assertTrue(blocks[end].startswith("**Çıkış sırası (operatör, 2026-11-06).**"))
+        self.assertTrue(blocks[end + 1].startswith("**Anlaşmazlık kanıtla çözülür"))
         self.assertEqual(" ".join(" ".join(blocks[first:end]).split()), section.strip())  # its paragraphs, no more
         for line in "\n".join(blocks[first:end]).split("\n"):
             self.assertLessEqual(len(line), 120, line)

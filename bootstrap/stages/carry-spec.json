@@ -1,0 +1,48 @@
+{
+  "anchor": "spec",
+  "carry_to": 1,
+  "excepted_row": "asama-0/10 #lint #spec #okuyucu",
+  "items": [
+    {
+      "id": "sections",
+      "quote": "bölümler"
+    },
+    {
+      "id": "threshold_keys",
+      "quote": "eşiklerin anahtarı"
+    },
+    {
+      "id": "kimlik_lines",
+      "quote": "`#kimlik` satırları"
+    },
+    {
+      "id": "target_specific_name",
+      "quote": "hedefe özgü ad"
+    },
+    {
+      "id": "readers_of_0_13",
+      "quote": "§0.13'ün adlandırdığı her dosyanın `tohum/27` ya da `27a`'da okuyucusu"
+    }
+  ],
+  "judged_at": {
+    "by": "the bootstrap referee: the seed's spec check",
+    "exit": "A",
+    "must_be": "ok",
+    "register": "E565",
+    "stage": 1
+  },
+  "measured_over": "spec/asama-0, frozen at the hash Stage 0's (A) pinned (#lock)",
+  "no_second_exception": true,
+  "owes": [
+    {
+      "register": "E286",
+      "what": "a machine definition of a section and of a threshold's key"
+    },
+    {
+      "register": "E286",
+      "what": "the files asama-0/13 names, named in a form a machine reads"
+    }
+  ],
+  "schema": "snowball-carry/1",
+  "stage": 0
+}

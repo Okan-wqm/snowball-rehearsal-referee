@@ -1310,6 +1310,42 @@ class VectorInterfacePagesTest(unittest.TestCase):
                     self.assertNotIn(atom, pages, case["id"])
 
 
+class ExitOrderPromptTest(unittest.TestCase):
+    """E560 (exit panel, 2026-11-06): with every micro-feature done the Founder kept its exit request back to harden
+    its referee first, and no rule put the request in the order. The rule is one paragraph of the Founder's prompt, a
+    priority with an evidence burden and nothing about how to work; no seed page or the prompt's menu repeats it."""
+
+    PROMPT = ROOT / "seed" / "founder" / "prompt.md"
+    TITLE = "**Çıkış sırası (operatör, 2026-11-06).**"
+    RULE = (TITLE + " Bir aşamanın ya da partinin mikro özellikleri bittiğinde sıradaki iş çıkış isteğidir: "
+            "koşulların tutup tutmadığını senin görüşün değil, isteğe verilen hakem kararı söyler. Başka bir iş "
+            "istekten ancak `referee/` altındaki kodunun yanlış karar verdiği gerçek bir girdiyi (girdi, beklenen, "
+            "gözlenen) gösteriyorsa önce gelir; bir şeyin ölçülmemiş ya da sınanmamış olması bu kanıt değildir.")
+
+    def test_the_prompt_states_the_exit_order_once_with_its_evidence_burden(self):  # prompt_exit_waits_on_a_risk_claim
+        prompt = self.PROMPT.read_text(encoding="utf-8")
+        self.assertEqual(paragraph(prompt, self.TITLE), self.RULE)
+        blocks = [flat(b) for b in re.split(r"\n\s*\n", prompt)]
+        before = blocks[blocks.index(self.RULE) - 1]  # right after the priority paragraph it bounds
+        self.assertTrue(before.startswith("Neyi önce yapacağını değer ve risk belirler"), before[:80])
+        self.assertTrue(before.endswith("ve nasıl öğreneceğine ve yapacağına sen karar verirsin."), before[-80:])
+        body = self.RULE[len(self.TITLE):]
+        self.assertEqual(re.findall(r"\d", body), [])  # no count, no module, no row id: a rule, not a hint
+        for word in ("mutant", "ertele", "f986", "şimdilik", "kapsam dışı", ".py"):
+            self.assertNotIn(word, body.lower())
+        key = "sıradaki iş çıkış isteğidir"
+        homes = [p for base in (ROOT / "spec", ROOT / "seed" / "founder") for p in sorted(base.rglob("*.md"))
+                 if key in flat(p.read_text(encoding="utf-8")) and not p.name.startswith("CHANGELOG")]
+        self.assertEqual(homes, [self.PROMPT])  # one source
+        page = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")
+        entry = changelog_entry(page, "2026-11-06, E560")
+        self.assertIn('`seed/founder/prompt.md` "Çıkış sırası"', entry)
+        self.assertIn("`seed-046-pass-row-unnamed`'in sonraki düzenlemesi bir ilerleme notudur", entry)
+        row = next(line for line in (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
+                   if line.startswith("| E560 |"))
+        self.assertIn("prompt_exit_waits_on_a_risk_claim", row)
+
+
 class DocWithChangeTest(unittest.TestCase):
     """The owner's rule (2026-10-30): a change to the seed's behaviour lands with its document. CI runs
     `local/doc_with_change.py` over every push to `main`; this pins what it lets through."""

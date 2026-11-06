@@ -9,6 +9,7 @@ names the mutants it kills (`local/mutate.py`).
 """
 
 import base64
+import copy
 import hashlib
 import json
 import os
@@ -914,8 +915,10 @@ TOY_TARGET = {"id": "toy-t", "repo": "owner/toy", "kind": "toy", "base_sha": Non
 COPY_BASE = "ab" * 20
 COPY_TARGET = {"id": "copy-t", "repo": "owner/copy", "kind": "copy", "base_sha": COPY_BASE, "identifiers": ["acme"],
                "excluded_paths": [], "unit_candidates": ["app"]}
-OWNER_EXCEPTION = {"anchor": "durustluk", "stage": 0, "carry_to": 1, "reason": "E287", "carry_commitment": "c" * 64,
-                   "measured": False}
+OWNER_EXCEPTION = [{"anchor": "durustluk", "stage": 0, "carry_to": 1, "reason": "E287", "carry_commitment": "c" * 64,
+                    "measured": False},  # the signed result's array by anchor (E563)
+                   {"anchor": "spec", "stage": 0, "carry_to": 1, "reason": "E286", "carry_commitment": "d" * 64,
+                    "measured": False}]
 
 
 class Target:
@@ -1687,20 +1690,28 @@ class StageOpenCarriesTheExceptionTest(StageOpenCase):
         self.copy = self.make_copy()
 
     def test_the_pass_row_carries_the_signed_exception_exactly(self):  # stage_open_owner_exception_unchecked SK_exception_anchor_only
+        """E563: the whole array, each element, their order and their count; an object for an array is not it."""
         self.with_exception()
         self.toy = self.make_toy()
         self.refused("owner_exception")
-        for change in ({"anchor": "kok"}, {"carry_to": None}, {"carry_commitment": None}, {"measured": True},
-                       {"measured": 0}, {"reason": "other"}, {"stage": DROP}, {"extra": 1}):
-            with self.subTest(change=change):
-                self.toy = self.make_toy(self.toy_rows(payload={"owner_exception": edited(OWNER_EXCEPTION, change)}))
+        for at in range(len(OWNER_EXCEPTION)):
+            for change in ({"anchor": "kok"}, {"carry_to": None}, {"carry_commitment": None}, {"measured": True},
+                           {"measured": 0}, {"reason": "other"}, {"stage": DROP}, {"extra": 1}):
+                with self.subTest(at=at, change=change):
+                    carried = [edited(e, change) if i == at else dict(e) for i, e in enumerate(OWNER_EXCEPTION)]
+                    self.toy = self.make_toy(self.toy_rows(payload={"owner_exception": carried}))
+                    self.refused("owner_exception")
+        for carried in (OWNER_EXCEPTION[::-1], OWNER_EXCEPTION[:1], OWNER_EXCEPTION[1:], OWNER_EXCEPTION[0], [],
+                        OWNER_EXCEPTION + OWNER_EXCEPTION[:1]):
+            with self.subTest(carried=carried):
+                self.toy = self.make_toy(self.toy_rows(payload={"owner_exception": copy.deepcopy(carried)}))
                 self.refused("owner_exception")
-        self.toy = self.make_toy(self.toy_rows(payload={"owner_exception": dict(OWNER_EXCEPTION)}))
+        self.toy = self.make_toy(self.toy_rows(payload={"owner_exception": copy.deepcopy(OWNER_EXCEPTION)}))
         self.open()
         self.assertTrue(self.stage_file().exists())
 
     def test_no_exception_is_carried_that_the_signed_result_does_not_name(self):  # stage_open_exception_one_sided
-        self.toy = self.make_toy(self.toy_rows(payload={"owner_exception": dict(OWNER_EXCEPTION)}))
+        self.toy = self.make_toy(self.toy_rows(payload={"owner_exception": copy.deepcopy(OWNER_EXCEPTION)}))
         self.refused("owner_exception")
 
     def test_the_result_must_be_the_one_the_transfer_imported(self):  # stage_open_result_unbound stage_open_result_from_disk
@@ -1872,7 +1883,7 @@ class PassRowPageTest(unittest.TestCase):
                       "satırı", "PASS satırı başka bir aktarımı adlandırıyorsa kilit açılmaz", "`hashedrekord`",
                       "`{algorithm: sha256, value: <kök>}`", "`sha256:<kök>`", "`pass_row_sha256`",
                       "`{anchor, stage, carry_to, reason, carry_commitment, measured}`",
-                      f"`{decide_module.OWNER_EXCEPTABLE}`",
+                      *(f"`{anchor}`" for anchor in decide_module.OWNER_EXCEPTABLE), "dizi, `anchor`'a göre sıralı",
                       # E411-E416: the facts the third skeptic found missing
                       "`kind: genesis`", "Defterin ilk satırı o hedefin genesis'idir", "defterin son genesis satırıdır",
                       "yalnız ondan sonrakileri sayar", "`<state_root>` `01a`'nın adlandırdığı dizindir: hedefin `brain/state` "
@@ -2068,7 +2079,7 @@ class StageOneTableTest(unittest.TestCase):
         order = page_batches()
         self.assertEqual(order[:2], ["P1", "P2"])
         self.assertEqual(list(stages.BATCHES[1]), order[:len(stages.BATCHES[1])])
-        files = sorted(p.name for p in stages.STAGES_DIR.glob("*.json"))
+        files = sorted(p.name for p in stages.STAGES_DIR.glob("stage*.json"))  # the carry records: test_exit_decisions
         self.assertEqual(files, ["stage0.json"] + [stages.table_name(1, b) for b in stages.BATCHES[1]])
         data = json.loads((stages.STAGES_DIR / "stage1-P1.json").read_text(encoding="utf-8"))
         self.assertEqual((data["stage"], data["batch"]), (1, "P1"))
@@ -2620,7 +2631,9 @@ class BatchExitDecisionTest(unittest.TestCase):
         meta.update(manifest={"tests": [], "done_mf": list(done), "lockfiles": []},
                     exit_request=dict({"stage": 1, "sha": meta["base"], "spec_sha256": "e" * 64, "batch": "P1"},
                                       **request),
-                    honesty_exception={"stage": 0, "carry_to": 1, "reason": "E287", "carry_commitment": "c" * 64})
+                    honesty_exception={"stage": 0, "carry_to": 1, "reason": "E287", "carry_commitment": "c" * 64},
+                    spec_exception={"stage": 0, "carry_to": 1, "reason": "E286",
+                                    "carry_commitment": stages.carry_record_sha256("spec")})
         return meta
 
     def run_(self, meta, table=None):
@@ -2630,7 +2643,7 @@ class BatchExitDecisionTest(unittest.TestCase):
 
     def test_the_open_batchs_request_is_transferable_and_names_its_batch(self):  # batch_exit_takes_the_stage_conditions batch_exit_unnamed
         """The narrow form: the batch's own micro-features, the tests, vectors and rival, the archive's checks of the
-        tree; the stage's own conditions (#spec, #durustluk) and the owner's exception are the stage exit's."""
+        tree; the stage's own conditions (#spec, #durustluk) and the owner's exceptions are the stage exit's."""
         res = self.run_(self.meta())
         self.assertEqual((res["verdict"], res["exit"]["transferable"], res["exit"]["missing"]), ("accepted", True, []))
         self.assertEqual((res["exit"]["stage"], res["exit"]["batch"]), (1, "P1"))
@@ -2652,15 +2665,15 @@ class BatchExitDecisionTest(unittest.TestCase):
 
     def test_the_exits_form_is_the_open_tables_not_the_requests(self):  # batch_form_from_the_request
         """E402: under Stage 0's table every request is Stage 0's exit, one that carries `batch` too: the stage's own
-        conditions and the owner's exception stay, nothing names a batch. Under the lock the open batch's form holds
+        conditions and the owner's exceptions stay, nothing names a batch. Under the lock the open batch's form holds
         whatever the request says (`pull` refuses a request that is not the open batch's)."""
         for request in ({}, {"batch": DROP}, {"stage": 0, "batch": "P1"}):
             with self.subTest(table="stage0", request=request):
                 meta = self.meta()
                 meta["exit_request"] = edited(meta["exit_request"], request)
                 res = self.run_(meta, table=stages.load(0))
-                self.assertIn("not_checked:spec", res["exit"]["missing"])
-                self.assertEqual(res["exit"]["owner_exception"]["anchor"], "durustluk")
+                self.assertIn("not_all_micro_features_done", res["exit"]["missing"])  # Stage 0's 18
+                self.assertEqual([e["anchor"] for e in res["exit"]["owner_exception"]], ["durustluk", "spec"])
                 self.assertEqual({"stage", "batch"} & set(res["exit"]), set())
             with self.subTest(table="stage1-P1", request=request):
                 res = self.run_(meta, table=stages.load(1))

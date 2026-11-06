@@ -421,12 +421,38 @@ class DeliveryGuardTest(unittest.TestCase):
             deliver.with_epoch(deliver.dumps(out), row, None)
         with self.assertRaisesRegex(deliver.Refused, "not in the format"):
             deliver.with_epoch(raw.replace("\n", "\r\n"), row, None)
-        for edit, why in (({"seed_commit": {}}, "one key"), ({"targets": {"toy": {}}}, "no target 'toy'"),
+        for edit, why in (({"seed_commit": {}}, "and/or"), ({"fields": []}, "and/or"),
+                          ({"targets": {"toy": {}}}, "no target 'toy'"),
                           ({"targets": {"copy": {"kind": {"from": 1, "to": 2}}}}, "no field 'kind'"),
                           ({"targets": {"copy": {"unit_candidates": {"from": ["y"], "to": []}}}}, "is \\['x'\\]"),
                           ({"targets": {"copy": {"unit_candidates": {"to": []}}}}, "exactly from and to")):
             with self.assertRaisesRegex(deliver.Refused, why):
                 deliver.with_epoch(raw, row, edit)
+
+    def test_the_summary_edit_sets_a_top_level_field_naming_what_it_replaces(self):
+        """E564: an owner's exception and its commitment come with the seed epoch whose seed reads them (`26c`): the
+        edit names each key's present value (null: not there yet), so a stale edit refuses instead of overwriting."""
+        # epoch_field_from_unchecked epoch_field_edits_the_tools_rows
+        raw = dumps({"seed_commit": "a", "honesty_commitment": "c" * 64,
+                     "targets": [{"id": "copy", "unit_candidates": ["x"]}]}).decode()
+        row = {"commit": "d" * 40}
+        exception = {"stage": 0, "carry_to": 1, "reason": "E286, E561"}
+        edit = {"fields": {"spec_exception": {"from": None, "to": exception},
+                           "spec_commitment": {"from": None, "to": "e" * 64},
+                           "honesty_commitment": {"from": "c" * 64, "to": "f" * 64}},
+                "targets": {"copy": {"unit_candidates": {"from": ["x"], "to": ["y"]}}}}
+        out = json.loads(deliver.with_epoch(raw, row, edit))
+        self.assertEqual(out, {"seed_commit": "a", "honesty_commitment": "f" * 64, "seed_epochs": [row],
+                               "targets": [{"id": "copy", "unit_candidates": ["y"]}],
+                               "spec_exception": exception, "spec_commitment": "e" * 64})
+        for fields, why in (({"spec_commitment": {"from": "e" * 64, "to": "1" * 64}}, "is None, not"),
+                            ({"honesty_commitment": {"from": None, "to": "1" * 64}}, "is 'c+', not None"),
+                            ({"spec_commitment": {"from": None, "to": None}}, "to is not null"),
+                            ({"spec_commitment": {"to": "1" * 64}}, "exactly from and to"),
+                            ({"seed_epochs": {"from": None, "to": []}}, "this tool's row"),
+                            ({"targets": {"from": None, "to": []}}, "its own edits")):
+            with self.subTest(fields=fields), self.assertRaisesRegex(deliver.Refused, why):
+                deliver.with_epoch(raw, row, {"fields": fields})
         control = dumps({"kill_switch": False, "budget_state": "ok"}).decode()
         self.assertEqual(deliver.with_kill_switch(control, True), control.replace("false", "true"))
         with self.assertRaisesRegex(deliver.Refused, "no boolean kill_switch"):

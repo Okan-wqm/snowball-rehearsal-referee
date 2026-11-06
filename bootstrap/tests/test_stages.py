@@ -109,7 +109,7 @@ class LoaderRefusesTest(unittest.TestCase):
     def test_no_table_the_seed_carries_hides_a_standard_library_module_but_the_kept_one(self):
         """E507: every table in `stages/` loads under the rule, and Stage 0's `profile` is its only exception."""
         hidden = set()
-        for path in sorted(stages.STAGES_DIR.glob("*.json")):
+        for path in sorted(stages.STAGES_DIR.glob("stage*.json")):  # the tables; a carry record has no mfs (E562)
             for item in json.loads(path.read_text(encoding="utf-8"))["mfs"]:
                 name = stages.hidden_stdlib(item["module"])
                 if name:

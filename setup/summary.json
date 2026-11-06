@@ -73,6 +73,12 @@
       "commit": "a8040819dbc8aff6e8ffec37e7273a15a8cf365c",
       "seed_sha256": null,
       "spec_tohum_sha256": "bbcaa1e0310bdcf6d160923d68f811df99bb285c02a8e267137ae5b41ce458e4"
+    },
+    {
+      "bootstrap_sha256": "6389d8714db9d647e108c9a2c1b13b37c59a1bacf4e09b56bf73e2007f6bf235",
+      "commit": "71de29ee7e2a677d59952335997a2816f667f216",
+      "seed_sha256": null,
+      "spec_tohum_sha256": "07005313ba4d90f4ede1ae4e41d800ef8c5c9778db88fd5dc87e7ac6c10f4c97"
     }
   ],
   "honesty_exception": {
@@ -175,5 +181,11 @@
       ]
     }
   ],
-  "honesty_commitment": "c6cf6478007150e51887db91ea62ca965f9675f084ba11c724bcc6e539f4b3a1"
+  "honesty_commitment": "c6cf6478007150e51887db91ea62ca965f9675f084ba11c724bcc6e539f4b3a1",
+  "spec_commitment": "256e2d1089eabcfee346a5cd34d86a7d62599cc88e709630f30e92be928d635e",
+  "spec_exception": {
+    "stage": 0,
+    "carry_to": 1,
+    "reason": "E286, E561: #spec'in mekanik maddelerinin makine tanımı yok; sahibin kararı 2026-11-06: Aşama 1'in (A)'sına taşınır (stages/carry-spec.json)"
+  }
 }

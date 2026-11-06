@@ -60,8 +60,8 @@ sessiz, the narrowest choice each time (register E371, E375-E379, E388, E411, E4
   round 9). The copy's rows it carries: ``payload.copy_genesis_row_hash`` and ``payload.copy_merge_row_hashes`` (one or
   more), each a ``row_hash`` (`26`) of the copy's last genesis and of merge rows after it. The transfer:
   ``payload.import_line_sha256`` is the counter's last transfer line's, as the last genesis rows'. The owner's
-  exception: ``payload.owner_exception`` is the signed result's ``exit.owner_exception``, canonically the same, and is
-  absent when that is.
+  exceptions: ``payload.owner_exception`` is the signed result's ``exit.owner_exception`` (an array by anchor, E563),
+  canonically the same, and is absent when that is.
 - Every `profile.json` of a target's commit is one plain JSON object (no byte order mark, no key twice); one that is not
   stops, as skipped it could hide one naming another ``state_root`` (E472).
 - A chained file (`26`): every line ends with LF and has no CR, is one JSON object with no key twice, and its
@@ -496,8 +496,9 @@ def _signed_exit(referee: Path, head: str, transfer: dict[str, Any]) -> dict[str
 
 
 def _carries_the_exception(payload: dict[str, Any], exit_block: dict[str, Any]) -> None:
-    """`02` "Sahip istisnası": the PASS row carries the owner's exception by name, as the signed (A) result names it
-    (``{anchor, stage, carry_to, reason, carry_commitment, measured: false}``), so the carried condition is not lost."""
+    """`02` "Sahip istisnası": the PASS row carries the owner's exceptions by name, as the signed (A) result names them
+    (an array by anchor of ``{anchor, stage, carry_to, reason, carry_commitment, measured: false}``, E563), so no
+    carried condition is lost. Canonical equality holds the whole array: each element, their order and their count."""
     if ("owner_exception" in payload) != ("owner_exception" in exit_block):
         raise LockStop("the PASS row's owner_exception is not the signed result's: one names an owner's exception, the "
                        "other none (`02` 'Sahip istisnası')")
@@ -507,9 +508,9 @@ def _carries_the_exception(payload: dict[str, Any], exit_block: dict[str, Any]) 
         except ValueError:
             same = False
         if not same:
-            raise LockStop("the PASS row does not carry the owner's exception as the signed result names it "
-                           "(payload.owner_exception, exit.owner_exception: anchor, stage, carry_to, reason, "
-                           "carry_commitment, measured; `02`)")
+            raise LockStop("the PASS row does not carry the owner's exceptions as the signed result names them "
+                           "(payload.owner_exception, exit.owner_exception: an array by anchor of {anchor, stage, "
+                           "carry_to, reason, carry_commitment, measured}; `02`)")
 
 
 def _checkout_head(referee: Path) -> str:

@@ -7,8 +7,8 @@ Files, all in the referee repository and written only by the operator (`tohum/25
   exits and confirmed exam faults (`29`, `29b`, `29e`).
 - ``policy.json``: the constitutional policy (only the keys this bootstrap reads are checked).
 - ``setup/summary.json``: the setup summary (seed commit and seed tree hash), the seed epochs delivered since, the
-  Stage 0 targets, the honesty commitment and the owner's exception to #durustluk beside it (`26c`, every key
-  checked).
+  Stage 0 targets, the honesty commitment and the owner's exceptions to #durustluk and #spec with their commitments
+  (`26c`, every key checked).
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}\Z")
 HEX64_RE = re.compile(r"^[0-9a-f]{64}\Z")
@@ -321,15 +321,33 @@ class Target:
 
 
 @dataclass(frozen=True)
-class HonestyException:
-    """The owner's named exception to Stage 0's #durustluk (`02` "Sahip istisnası", `26c`; E287, E294): the plant the
-    honesty rehearsal measures was not made before the Founder started (`25` 10c), so the condition can be neither
-    measured nor passed there. One anchor, one stage, one carry target: Stage 0's exit names it, and Stage 1's (A) must
-    measure #durustluk, with no second exception. The ``honesty_commitment`` beside it is the plant Stage 1 measures;
-    without one the exception takes nothing off the exit (`decide`, E297): Stage 1 could not measure it either."""
+class OwnerException:
+    """The owner's named exception to one of Stage 0's exit conditions (`02` "Sahip istisnası", `26c`): the condition
+    can be neither measured nor passed there, so Stage 0's exit names it and Stage 1's (A) must measure it, with no
+    second exception. One anchor, one stage, one carry target. #durustluk's plant was not made before the Founder
+    started (`25` 10c; E287, E294); #spec's mechanical check has no machine definition (E286, E561). The commitment
+    beside it is what Stage 1 measures; without the right one the exception takes nothing off the exit (`decide`,
+    E297, E562): Stage 1 could not be held to it either."""
     stage: int
     carry_to: int
     reason: str
+
+
+@dataclass(frozen=True)
+class Exceptable:
+    """An exit condition the owner may except, by its two `setup/summary.json` fields (`26c`). ``seed_record``: the
+    carry is the seed's own record `stages/carry-<anchor>.json` and the commitment is its sha256 (`stages`), so a
+    commitment without the exception commits to nothing and is refused; otherwise the commitment is the operator's
+    plant and stands alone (`25` 10c)."""
+    exception: str
+    commitment: str
+    seed_record: bool
+
+
+# The one table of the owner's exceptions (`02` "Sahip istisnası"), sorted by anchor: the order the signed result
+# names them in (E563). The field names are the `Summary` attributes and the keys pull hands `decide`.
+OWNER_EXCEPTIONS = {"durustluk": Exceptable("honesty_exception", "honesty_commitment", seed_record=False),
+                    "spec": Exceptable("spec_exception", "spec_commitment", seed_record=True)}
 
 
 @dataclass(frozen=True)
@@ -339,12 +357,21 @@ class Summary:
     epochs: tuple[SeedEpoch, ...] = ()
     targets: tuple[Target, ...] | None = None  # None: the summary has no targets[] yet (E99, E284)
     honesty_commitment: str | None = None  # sha256(canonical(key)) of the plant (`25` 10c)
-    honesty_exception: HonestyException | None = None  # with a commitment beside it, the plant is the carried stage's
+    honesty_exception: OwnerException | None = None  # with a commitment beside it, the plant is the carried stage's
+    spec_commitment: str | None = None  # sha256(canonical(record)) of the seed's `stages/carry-spec.json` (E562)
+    spec_exception: OwnerException | None = None  # takes #spec off only beside that record's hash (`decide`)
 
     @property
     def epoch(self) -> SeedEpoch | None:
         """The last seed epoch, the one the brain's seed must equal; None while only the setup seed exists."""
         return self.epochs[-1] if self.epochs else None
+
+    def owner_exceptions(self) -> Iterator[tuple[str, OwnerException, str | None]]:
+        """The owner's exceptions the summary names, as (anchor, exception, the commitment beside it), by anchor."""
+        for anchor, fields in OWNER_EXCEPTIONS.items():
+            exception = getattr(self, fields.exception)
+            if exception is not None:
+                yield anchor, exception, getattr(self, fields.commitment)
 
 
 EPOCH_KEYS = frozenset({"commit", "spec_tohum_sha256", "seed_sha256", "bootstrap_sha256"})
@@ -353,7 +380,7 @@ TARGET_KEYS = frozenset({"id", "repo", "kind", "base_sha", "identifiers", "exclu
 # `profile.derive` derives, so this referee checks their form and nothing else reads them here.
 TARGET_OPTIONAL_KEYS = frozenset({"safety_paths"})
 TARGET_KINDS = ("toy", "copy")
-HONESTY_EXCEPTION_KEYS = frozenset({"stage", "carry_to", "reason"})
+OWNER_EXCEPTION_KEYS = frozenset({"stage", "carry_to", "reason"})
 
 
 def names_the_copy(targets: tuple[Target, ...] | None) -> bool:
@@ -430,30 +457,33 @@ def summary_of(data: Any) -> Summary:
         targets = tuple(target(row, f"{where}.targets[{i}]") for i, row in enumerate(data["targets"]))
         if len({t.id for t in targets}) != len(targets):
             raise ConfigError(f"{where}.targets: two targets have the same id")
-    commitment = None
-    if "honesty_commitment" in data:  # `25` 10c: sha256(canonical(key)), the key itself never in open text
-        commitment = data["honesty_commitment"]
-        if not isinstance(commitment, str) or not HEX64_RE.match(commitment):
-            raise ConfigError(f"{where}.honesty_commitment must be 64 lower-case hex characters")
-    # Beside the exception, a commitment is the carried stage's plant, measured there (`02` "Sahip istisnası").
-    exception = _honesty_exception(data["honesty_exception"], f"{where}.honesty_exception") \
-        if "honesty_exception" in data else None
-    return Summary(seed_commit=seed_commit, seed_tree_sha256=seed_tree, epochs=epochs, targets=targets,
-                   honesty_commitment=commitment, honesty_exception=exception)
+    owned: dict[str, Any] = {}
+    for anchor, fields in OWNER_EXCEPTIONS.items():  # `02` "Sahip istisnası": one table, one reading (E561)
+        if fields.commitment in data:  # a sha256: the honesty key itself is never in open text (`25` 10c)
+            commitment = data[fields.commitment]
+            if not isinstance(commitment, str) or not HEX64_RE.match(commitment):
+                raise ConfigError(f"{where}.{fields.commitment} must be 64 lower-case hex characters")
+            owned[fields.commitment] = commitment
+        if fields.exception in data:  # beside it, the commitment is what the carried stage measures
+            owned[fields.exception] = _owner_exception(data[fields.exception], f"{where}.{fields.exception}")
+        elif fields.seed_record and fields.commitment in owned:
+            raise ConfigError(f"{where}.{fields.commitment} without {fields.exception}: it commits to the seed's carry "
+                              f"record of #{anchor}, which only the owner's exception carries (`02`)")
+    return Summary(seed_commit=seed_commit, seed_tree_sha256=seed_tree, epochs=epochs, targets=targets, **owned)
 
 
-def _honesty_exception(row: Any, where: str) -> HonestyException:
-    """The owner's exception, read strictly: exactly `26c`'s keys; the rehearsal is Stage 0's (`asama-0/10`), so the
+def _owner_exception(row: Any, where: str) -> OwnerException:
+    """An owner's exception, read strictly: exactly `26c`'s keys; the condition is Stage 0's (`asama-0/10`), so the
     exception is Stage 0's and carries to Stage 1; the reason names why (the register row) in a non-empty text."""
-    if not isinstance(row, dict) or set(row) != HONESTY_EXCEPTION_KEYS:
-        raise ConfigError(f"{where} must have exactly the keys {', '.join(sorted(HONESTY_EXCEPTION_KEYS))} (`26c`)")
+    if not isinstance(row, dict) or set(row) != OWNER_EXCEPTION_KEYS:
+        raise ConfigError(f"{where} must have exactly the keys {', '.join(sorted(OWNER_EXCEPTION_KEYS))} (`26c`)")
     if type(row["stage"]) is not int or row["stage"] != 0:
-        raise ConfigError(f"{where}.stage must be 0: the honesty rehearsal is Stage 0's (`asama-0/10`)")
+        raise ConfigError(f"{where}.stage must be 0: the excepted condition is Stage 0's (`asama-0/10`)")
     if type(row["carry_to"]) is not int or row["carry_to"] != row["stage"] + 1:
         raise ConfigError(f"{where}.carry_to must be {row['stage'] + 1}: the next stage measures it (`02`)")
     if not isinstance(row["reason"], str) or not row["reason"].strip():
-        raise ConfigError(f"{where}.reason must name why the plant was not made (a non-empty text)")
-    return HonestyException(row["stage"], row["carry_to"], row["reason"])
+        raise ConfigError(f"{where}.reason must name why the condition cannot be measured (a non-empty text)")
+    return OwnerException(row["stage"], row["carry_to"], row["reason"])
 
 
 def start_missing(summary: Summary) -> list[str]:

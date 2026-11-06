@@ -14,7 +14,7 @@ import datetime
 import hashlib
 from typing import Any
 
-from . import exitchecks, ledgercheck, secretscan, stages
+from . import config, exitchecks, ledgercheck, secretscan, stages
 from .reproduce import reproducer_key
 from .rival import REPRODUCER_FIELDS
 from .state import MAX_OPEN_CLAIMS, MAX_OPEN_REFUTATIONS
@@ -102,21 +102,31 @@ EXIT_NOT_CHECKED = {
                  "they run on are not kept, and a report that disputes a vector has no rule yet (E53; the reports' reader is E93)",
 }
 NOT_CHECKED = "not_checked:"
-# The one exit condition the owner may except by name (`02` "Sahip istisnası", E287, E294): its measurement needs a
-# plant made before the Founder started, which a pilot can miss for good. The exception comes from
-# `setup/summary.json` (`config.HonestyException`) through pull; the signed result names it and it is never a pass.
-# It takes the condition off only with the carried stage's plant beside it, the summary's honesty_commitment (E297):
-# without one that stage could not measure it either, and with no second exception it would never close.
-OWNER_EXCEPTABLE = "durustluk"
-CARRY_UNPLANTED = ("the owner's exception (setup/summary.json honesty_exception) has no honesty_commitment beside it, "
-                   "the plant of the stage it carries #durustluk to: that stage could not measure it either, and there "
-                   "is no second exception (tohum/02 'Sahip istisnası', 25 10c)")
+# The exit conditions the owner may except by name (`02` "Sahip istisnası"; `config.OWNER_EXCEPTIONS`, one table):
+# #durustluk, whose measurement needs a plant made before the Founder started, which a pilot can miss for good (E287,
+# E294), and #spec, whose mechanical check has no machine definition (E286, E561). Each exception comes from
+# `setup/summary.json` through pull; the signed result names it and it is never a pass. It takes its condition off
+# only with what the carried stage measures beside it (E297, E562): #durustluk's plant (honesty_commitment), #spec's
+# seed carry record (spec_commitment, the sha256 of `stages/carry-spec.json`). Without it that stage could not be held
+# to the condition either, and with no second exception it would never close.
+OWNER_EXCEPTABLE = tuple(config.OWNER_EXCEPTIONS)
+CARRY_UNPLANTED = {
+    "durustluk": "the owner's exception (setup/summary.json honesty_exception) has no honesty_commitment beside it, "
+                 "the plant of the stage it carries #durustluk to: that stage could not measure it either, and there "
+                 "is no second exception (tohum/02 'Sahip istisnası', 25 10c)",
+    "spec": "the owner's exception (setup/summary.json spec_exception) has no spec_commitment beside it equal to the "
+            "sha256 of the seed's carry record (stages/carry-spec.json), what Stage 1's (A) must measure of #spec: "
+            "that stage would not be held to it, and there is no second exception (tohum/02 'Sahip istisnası', E562)",
+}
 
 
-def _carry_planted(exception: Any) -> bool:
-    """Whether pull handed an owner's exception with its carried stage's plant beside it (a sha256 commitment)."""
+def _carry_planted(anchor: str, exception: Any) -> bool:
+    """Whether pull handed an owner's exception with what its carried stage measures beside it: a sha256 commitment,
+    and, when the carry is the seed's record (`config.Exceptable.seed_record`), that record's own sha256."""
     carry = exception.get("carry_commitment") if isinstance(exception, dict) else None
-    return isinstance(carry, str) and len(carry) == 64 and all(c in "0123456789abcdef" for c in carry)
+    if not (isinstance(carry, str) and len(carry) == 64 and all(c in "0123456789abcdef" for c in carry)):
+        return False
+    return not config.OWNER_EXCEPTIONS[anchor].seed_record or carry == stages.carry_record_sha256(anchor)
 
 
 def is_brake_stop(reason: dict[str, Any]) -> bool:
@@ -137,12 +147,12 @@ def counts_against_founder(reason: dict[str, Any]) -> bool:
     return True
 
 
-def _exit_conditions(found: Any, toy: Any, excepted: str | None = None,
+def _exit_conditions(found: Any, toy: Any, excepted: frozenset[str] = frozenset(),
                      stage_exit: bool = True) -> tuple[list[str], dict[str, str]]:
     """The exit's conditions from pull's checks and from what the seed cannot check, with the detail of each: a
     failed check's reasons are the Founder's; an absent, malformed or undecided result is not_checked, never a pass
-    (#agac's result is whole only with the toy subtree's hash the signed result carries). ``excepted`` is the anchor
-    the owner's exception takes off the list (`OWNER_EXCEPTABLE` or None). A batch's exit (``stage_exit`` false) has
+    (#agac's result is whole only with the toy subtree's hash the signed result carries). ``excepted`` are the
+    anchors the owner's exceptions take off the list (of `OWNER_EXCEPTABLE`). A batch's exit (``stage_exit`` false) has
     the archive's checks of the tree it transfers, not the stage's own conditions the seed cannot check (#spec of the
     stage spec, #durustluk of the stage exit; E378)."""
     found = found if isinstance(found, dict) else {}
@@ -165,7 +175,7 @@ def _exit_conditions(found: Any, toy: Any, excepted: str | None = None,
         missing.append(ref)
         detail[ref] = why or "pull gave no result for this condition"
     for anchor, why in EXIT_NOT_CHECKED.items() if stage_exit else ():
-        if anchor == excepted:
+        if anchor in excepted:
             continue
         ref = NOT_CHECKED + anchor
         if ref not in missing:
@@ -469,21 +479,25 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
         # tests, vectors and rival, and the archive's checks of the tree it transfers; the stage's own conditions and
         # the owner's exception of the stage exit are not a batch's (E378).
         stage_exit = not table.stage
-        exception = meta.get("honesty_exception") if stage_exit else None  # the owner's, from the summary (E287)
-        excepted = OWNER_EXCEPTABLE if _carry_planted(exception) else None  # never without the carry's plant (E297)
+        handed = {anchor: meta.get(config.OWNER_EXCEPTIONS[anchor].exception)  # the owner's, from the summary
+                  for anchor in OWNER_EXCEPTABLE} if stage_exit else {}
+        excepted = frozenset(a for a, exc in handed.items() if _carry_planted(a, exc))  # never without its carry
         checked, detail = _exit_conditions(meta.get("exit_checks"), meta.get("toy_tree_sha256"), excepted,
                                            stage_exit=stage_exit)  # E162
-        if isinstance(exception, dict) and not excepted:
-            ref = NOT_CHECKED + OWNER_EXCEPTABLE
-            detail[ref] = "; ".join(w for w in (CARRY_UNPLANTED, detail.get(ref)) if w)
+        for anchor, exception in handed.items():  # one exception never takes another's condition off
+            if isinstance(exception, dict) and anchor not in excepted:
+                ref = NOT_CHECKED + anchor
+                detail[ref] = "; ".join(w for w in (CARRY_UNPLANTED[anchor], detail.get(ref)) if w)
         missing += checked
         for m in missing:
             reasons.append(_reason("exit_condition", ref=m, detail=detail.get(m, "")))
         exit_block["checks"] = copy.deepcopy(meta.get("exit_checks") or {})
         if excepted:  # named in every exit result, the transferable one too: an exception, never a pass (`02`)
-            exit_block["owner_exception"] = {"anchor": excepted, "stage": exception.get("stage"),
-                                             "carry_to": exception.get("carry_to"), "reason": exception.get("reason"),
-                                             "carry_commitment": exception.get("carry_commitment"), "measured": False}
+            # An array by anchor, whatever its length (E563): one shape for every reader of the signed result.
+            exit_block["owner_exception"] = [
+                {"anchor": anchor, "stage": handed[anchor].get("stage"), "carry_to": handed[anchor].get("carry_to"),
+                 "reason": handed[anchor].get("reason"), "carry_commitment": handed[anchor].get("carry_commitment"),
+                 "measured": False} for anchor in OWNER_EXCEPTABLE if anchor in excepted]
 
     # A brake stop is neither the Founder's nor the rival's: the head waits for its allowance, unless the run found a
     # reason of the Founder's to reject it anyway (a reproducer, an exit condition): that head is judged for it, as

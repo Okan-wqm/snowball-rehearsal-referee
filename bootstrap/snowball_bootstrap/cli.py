@@ -657,11 +657,12 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
         # The exit's other reasons may quote the Founder's paths too; none says a target's name in clear (E290).
         names = exitchecks.target_names(summary_cfg.targets)
         pre = [exitchecks.withheld_reason(r, names) for r in pre]
-        exception = summary_cfg.honesty_exception  # the owner's, named in the signed result (`02`, E287, E294)
-        if exception is not None:  # with the commitment beside it, the carried stage's plant, or None (E297)
-            meta["honesty_exception"] = {"stage": exception.stage, "carry_to": exception.carry_to,
-                                         "reason": exitchecks.withheld(exception.reason, names),
-                                         "carry_commitment": summary_cfg.honesty_commitment}
+        # The owner's exceptions, named in the signed result (`02`, E287, E294, E561), each under its summary key, with
+        # the commitment beside it (what the carried stage measures) or None (E297, E562); none leaves meta as it is.
+        for anchor, exception, carry in summary_cfg.owner_exceptions():
+            meta[config.OWNER_EXCEPTIONS[anchor].exception] = {
+                "stage": exception.stage, "carry_to": exception.carry_to,
+                "reason": exitchecks.withheld(exception.reason, names), "carry_commitment": carry}
 
     if kind == "spec":
         for d in spec_stage_dirs(own):
