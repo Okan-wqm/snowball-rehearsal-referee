@@ -14,7 +14,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from snowball_bootstrap import cli, config, rival, stages, vectors, wiring
+from snowball_bootstrap import cli, config, exitchecks, rival, stages, vectors, wiring
 
 from helpers import kos_part_count, workflow_job
 
@@ -591,7 +591,7 @@ class LoopInputsPageTest(unittest.TestCase):
     def test_29p_points_here_and_the_changelog_names_the_report(self):  # changelog_drops_seed_041
         self.assertIn("Döngünün beyin reposu, hedefleri ve Sigstore'u (kontrol adımının klonundan kurulan pinli küme) "
                       "`29s`'tedir.", flat(spec_page("tohum", "29p")))
-        entry = flat((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")[:6000])
+        entry = e490_entry()  # moved to `CHANGELOG-5.md` by the 80-line cap (seed-049's epoch)
         named = re.search(r"`seed-041-loop-run-inputs-unnamed` → `29s:(\d+)-(\d+)` \(beyin\), `29s:(\d+)-(\d+)` "
                           r"\(hedefler\), `29s:(\d+)-(\d+)` \(Sigstore\)", entry)
         self.assertIsNotNone(named, "the changelog does not name seed-041's answer")
@@ -656,7 +656,7 @@ class LoopReportsPageTest(unittest.TestCase):
         self.assertIn("Hakem reposunda bir dosya değildir", page)
 
     def test_the_changelog_names_each_report_answered_or_declined(self):  # changelog_drops_seed_042_045
-        entry = flat((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")[:9000])
+        entry = e490_entry()  # moved to `CHANGELOG-5.md` by the 80-line cap (seed-049's epoch)
         for answered in ("`seed-042-d4-canary-inputs-unnamed` → `29s:", "`seed-043-sentinel-end-row-unnamed` → `26f:",
                          "`seed-045-drill-live-inputs-unnamed` → `26f:"):
             self.assertIn(answered, entry)
@@ -667,7 +667,7 @@ class LoopReportsPageTest(unittest.TestCase):
         """E503: the Founder's seed-046 (the PASS row's part, kind and payload, its writer, the conditions it judges,
         a flaky sentinel end, a failed drill, #kapsama-kaydi's field) came after this epoch's commit was cut; every
         question has a seed line, and each line the answer names says what the answer says it does."""
-        entry = flat((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")[:9000])
+        entry = e490_entry()  # moved to `CHANGELOG-5.md` by the 80-line cap (seed-049's epoch)
         self.assertIn("`seed-046-pass-row-unnamed` → `26d:36-47`", entry)
         pages = {"26d": ROOT / "spec" / "tohum" / "26d-semalar-pass-satiri.md",
                  "26f": ROOT / "spec" / "tohum" / "26f-semalar-nobetci-ve-prova.md",
@@ -732,7 +732,7 @@ class LoopReportsPageTest(unittest.TestCase):
                       "kaydındaki `declined: seed-044-revert-facts-producers` satırı; `29j:53-60`); `asama-0/10a:26` "
                       "`#geri-alma` Aşama 0'da değişmedi.", declined)
         self.assertEqual(re.findall(r"`29j:\d+(?:-\d+)?`", declined), ["`29j:53-60`"])
-        earlier = changelog_entry(page, "2026-11-01, E490")
+        earlier = e490_entry()
         self.assertIn("declined: `seed-044-revert-facts-producers`: `29j:53-60`", earlier)
         self.assertIn("#geri-alma", flat(" ".join(
             (ROOT / "spec" / "asama-0" / "10a-cikis-canli-dongu.md").read_text(encoding="utf-8").splitlines()[25:26])))
@@ -1024,6 +1024,11 @@ def bullet(page, opening):
 def changelog_entry(page, first_words):
     """The flattened changelog entry (a ``- 2.2 (`` bullet) that starts with ``first_words``."""
     return bullet(page, "- 2.2 (" + first_words)
+
+
+def e490_entry():
+    """The 2026-11-01 E490-E499 entry, flattened: the 80-line cap moved it from `CHANGELOG.md` to `CHANGELOG-5.md`."""
+    return changelog_entry((ROOT / "spec" / "tohum" / "CHANGELOG-5.md").read_text(encoding="utf-8"), "2026-11-01, E490")
 
 
 class OwnerDecisionPagesTest(unittest.TestCase):
@@ -1344,6 +1349,119 @@ class ExitOrderPromptTest(unittest.TestCase):
         row = next(line for line in (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
                    if line.startswith("| E560 |"))
         self.assertIn("prompt_exit_waits_on_a_risk_claim", row)
+
+
+class GeneralityReadingTest(unittest.TestCase):
+    """seed-049 (E569-E573; integrity and spec panel, two rounds): the Founder's first Stage 0 exit request was refused
+    for #genellik with a reason no page named, by a text rule no page stated, against a list it cannot read. The rule
+    and both reasons are one section of `29e` ("Genellik okuması"), held here to the code; the list and its count stay
+    the operator's (a held-out sample: handing it over turns the check into a grep); the targets' ids and kinds reach
+    each session in `/work/logs/targets.json`, without their names. Frozen `asama-0/10` is not touched."""
+
+    TITLE = "**Genellik okuması**"
+    TARGET = {"id": "copy", "repo": "owner/copy", "kind": "copy", "base_sha": "c" * 40, "identifiers": ["Zorbalix"],
+              "excluded_paths": [], "unit_candidates": []}
+
+    def section(self):
+        return paragraph(spec_page("tohum", "29e"), self.TITLE)
+
+    def targets(self, *names):
+        return (config.target(dict(self.TARGET, identifiers=list(names or ["Zorbalix"])), "t"),)
+
+    def test_29e_names_both_reasons_exactly_as_the_check_emits_them(self):  # generality_reason_renamed
+        import inspect
+        emitted = re.findall(r'reasons\.append\(f"([a-z_]+):\{shown\}"\)', inspect.getsource(exitchecks.generality))
+        self.assertEqual(sorted(emitted), ["referee_file_not_text", "target_name_in_referee"])
+        self.assertEqual(sorted(re.findall(r"`([a-z_]+):<yol>`", self.section())), sorted(emitted))
+
+    def test_the_text_rule_on_29e_is_the_one_the_check_applies(self):
+        # generality_control_chars_not_text genellik_page_control_chars_not_text
+        section = self.section()
+        self.assertIn("Metin, katı UTF-8 olarak çözülen ve NUL (U+0000) taşımayan dosyadır; öbür denetim karakterleri "
+                      "metindir.", section)
+        for data in (b"x = 1\n", b"a\x01b\n", b"a\x7fb\n", b"a\x0cb\n", b"a\x1bb\r\n", b"\xef\xbb\xbfx\n", b""):
+            with self.subTest(data=data):  # text: the name is looked for in it, and none is there
+                self.assertEqual(exitchecks.generality({"referee/a.dat": data}, self.targets())["status"], "ok")
+        for data in (b"\xc0\xaf\n", b"\xed\xa0\x80\n", b"a\x00b\n", b"\xff\n", b"\xe2\x82\n"):
+            with self.subTest(data=data):  # overlong, a lone surrogate, a NUL, an invalid byte, a cut sequence
+                res = exitchecks.generality({"referee/a.dat": data}, self.targets())
+                self.assertEqual(res["reasons"], ["referee_file_not_text:referee/a.dat"])
+
+    def test_the_path_after_referee_is_looked_at_first_and_its_text_is_then_not_read(self):
+        # generality_path_prefix_searched
+        self.assertIn("Önce dosyanın yolu (`referee/`'den sonrası) aranır, yolunda ad olan dosyanın metni okunmaz; "
+                      "sonra metni.", self.section())
+        self.assertEqual(exitchecks.generality({"referee/a.py": b"x\n"}, self.targets("eree"))["status"], "ok")
+        res = exitchecks.generality({"referee/zorbalix.dat": b"\xff\n"}, self.targets())
+        self.assertEqual([r.split(":")[0] for r in res["reasons"]], ["target_name_in_referee"])
+        self.assertNotIn("zorbalix", json.dumps(res).casefold())
+        self.assertIn("`why` hedefi ve adı yalnız sırasıyla söyler (`targets[<i>].identifiers[<j>]`)", self.section())
+        self.assertIn("targets[0].identifiers[0]", res["why"])
+
+    def test_the_list_and_its_count_stay_the_operators(self):  # genellik_page_count_given
+        """(b): neither the names nor their count, only their kind and the rule; passing is no proof of generality.
+        The section names no transform the check does not see (an evasion list), states no count and gives no
+        advice; `26c` points to it and repeats nothing."""
+        section = self.section()
+        for words in ("operatörün verisi, kopya hedefi ayıran adlar; liste de sayısı da oturuma verilmez.",
+                      "Denetimden geçmek genelliğin kanıtı değildir: ölçüsü `21`'in ilkesidir.",
+                      "Denetim yalnız çıkış isteğinde", "kod push'unda hiçbir hedef adıyla karşılaştırma yoktur",
+                      "çıkış `not_checked:genellik` ile kapalı kalır"):
+            self.assertIn(words, section)
+        for word in ("base64", "kodlan", "parçalan", "hesaplan", "örneklem", "sahibin", "alanın"):
+            self.assertNotIn(word, section.lower())
+        self.assertEqual(re.findall(r"\b\d+ (?:ad|isim)", section), [])
+        line = spec_page("tohum", "26c").splitlines()[31]
+        self.assertIn("(`identifiers` genellik denetiminin ad listesidir, kuralı `29e` \"Genellik okuması\";", line)
+        self.assertNotIn("sayısı", line)
+        frozen = (ROOT / "spec" / "asama-0" / "10-cikis-testi.md").read_text(encoding="utf-8").splitlines()[21]
+        self.assertEqual(frozen, "| #genellik | `referee/` metninde `setup/summary.json` `targets[].identifiers`'tan "
+                                 "hiçbir ad yok |")
+        task = next(line for line in spec_page("tohum", "00b").splitlines()
+                    if line.startswith("| Aşama açma ve kapama"))
+        self.assertIn("`29e`", task)
+
+    def test_the_session_is_told_where_the_targets_ids_are_and_the_launcher_writes_there(self):
+        # prompt_targets_note_unnamed
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("founder_launch", ROOT / "seed" / "founder" / "launch.py")
+        launch = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(launch)
+        prompt = paragraph((ROOT / "seed" / "founder" / "prompt.md").read_text(encoding="utf-8"),
+                           "**Hedefler (gözlem).**")
+        self.assertIn(f"`/work/logs/{launch.TARGETS_NOTE}`'dadır (`[{{id, kind}}]`)", prompt)
+        self.assertIn("hedeflerin adları orada yoktur", prompt)
+        self.assertNotIn("identifiers", prompt)
+        item = flat(" ".join(spec_page("tohum", "24a").splitlines()[31:33]))
+        self.assertIn(f"`/work/logs/{launch.TARGETS_NOTE}`'dadır, adları orada yoktur", item)
+        rows = [dict(self.TARGET, id="toy", kind="toy", base_sha=None, identifiers=[]), self.TARGET]
+        self.assertEqual(launch.target_ids({"targets": rows}),
+                         [{"id": "toy", "kind": "toy"}, {"id": "copy", "kind": "copy"}])
+
+    def test_seed_049_is_answered_by_lines_that_say_it(self):  # changelog_drops_seed_049
+        page = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")
+        entry = changelog_entry(page, "2026-11-12, E569")
+        answer = entry[entry.index("`seed-049-genellik-text-rule-and-names-unreadable` → "):]
+        says = {("29e", 60, 62): ("NUL (U+0000) taşımayan dosyadır", "`referee_file_not_text:<yol>`",
+                                  "`target_name_in_referee:<yol>`"),
+                ("29e", 58, 60): ("NFKD, casefold", "Önce dosyanın yolu", "sonra metni"),
+                ("29e", 57, 58): ("liste de sayısı da oturuma verilmez",),
+                ("29e", 64, 65): ("Denetimden geçmek genelliğin kanıtı değildir",),
+                ("26c", 32, 32): ("`identifiers` genellik denetiminin ad listesidir",),
+                ("24a", 32, 33): ("`/work/logs/targets.json`'dadır", "`[{id, kind}]`"),
+                ("24a", 53, 53): ("targets/<hedef>/units.json",)}
+        for (prefix, first, last), words in says.items():
+            ref = f"`{prefix}:{first}`" if first == last else f"`{prefix}:{first}-{last}`"
+            self.assertIn(ref, answer, ref)
+            lines = flat(" ".join(spec_page("tohum", prefix).splitlines()[first - 1:last]))
+            for phrase in words:
+                self.assertIn(phrase, lines, ref)
+        self.assertIn("`targets/names.json`'u okuyan ya da reddeden denetim yoktur", answer)
+        self.assertNotIn("`copy`", entry)  # the id reaches the session from the summary, never from a seed page
+        row = next(line for line in (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
+                   if line.startswith("| E573 |"))
+        for name in ("generality_reason_renamed", "generality_control_chars_not_text", "changelog_drops_seed_049"):
+            self.assertIn(name, row)
 
 
 class DocWithChangeTest(unittest.TestCase):

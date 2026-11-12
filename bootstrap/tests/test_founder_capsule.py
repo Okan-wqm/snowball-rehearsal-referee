@@ -227,6 +227,29 @@ class PreviousSessionTest(unittest.TestCase):  # E360: how the last session ende
         self.assertEqual((note["ended"], note["limit_minutes"], note["ledger_rows_added"], note["pushed"]),
                          ("exit", 120.0, 4, True))
 
+    def test_how_the_session_ended_is_named_not_left_as_exit(self):  # session_end_usage_limit_as_exit session_end_brake_as_exit session_end_error_as_exit
+        """E568 (behaviour panel O3, E360's promise): a session the account's usage limit cut exits non-zero like any
+        failure, and the note said "exit"; the Founder then read the cut as its own fault (f659, f661, f934). The note
+        names usage_limit, timeout, brake, exit or error from the cycle's own record, one predicate with the wait."""
+        cases = [({"session_exit": 1, "api_error": "usage_limit_reached"}, "usage_limit"),
+                 ({"session_exit": 1, "api_error_status": 429}, "usage_limit"),
+                 ({"session_exit": -1}, "timeout"),
+                 ({"session_exit": 1, "subtype": "error_max_turns"}, "brake"),
+                 ({"session_exit": 0, "subtype": "error_max_budget_usd"}, "brake"),
+                 ({"session_exit": 0}, "exit"),
+                 ({"session_exit": 1}, "error")]
+        for fields, ended in cases:
+            with self.subTest(fields=fields):
+                row = dict({"stamp": "20261106T132200Z", "minutes": 71.4, "pushed": False, "ledger_new": {},
+                            "verdict": None, "session_timeout_s": 10800}, **fields)
+                self.pilot.metrics.write_text(json.dumps(row) + "\n", encoding="utf-8")
+                self.pilot.previous_session_note("20261031T210000Z", 10800)
+                self.assertEqual(self.note()["ended"], ended)
+        self.assertIsNotNone(self.launch.usage_limit_wait({"api_error": "usage_limit_reached"},
+                                                          self.launch.datetime.now(self.launch.timezone.utc)))
+        self.assertIsNone(self.launch.usage_limit_wait({"session_exit": 1},
+                                                       self.launch.datetime.now(self.launch.timezone.utc)))
+
     def test_the_restart_after_a_timeout_still_names_the_timeout(self):
         """A timed-out session stops the launcher, and every start appends its intervention row before cycle 1 (E313):
         the note reads the last cycle's row, never that start row (E360)."""
@@ -315,6 +338,61 @@ class PreviousSessionTest(unittest.TestCase):  # E360: how the last session ende
 
     def test_the_prompt_says_where_it_is(self):
         self.assertIn("/work/logs/previous-session.json", (FOUNDER / "prompt.md").read_text(encoding="utf-8"))
+
+
+class TargetsNoteTest(unittest.TestCase):  # seed-049, E571: the targets' ids and kinds, never their names (E290)
+    COPY = {"id": "copy", "repo": "owner/copy", "kind": "copy", "base_sha": "c" * 40, "identifiers": ["Zorbalix"],
+            "excluded_paths": [], "unit_candidates": ["packages/api"]}
+    TOY = {"id": "toy", "repo": "owner/toy", "kind": "toy", "base_sha": None, "identifiers": [], "excluded_paths": [],
+           "unit_candidates": []}
+
+    def setUp(self):
+        self.launch = load_launch()
+
+    def test_the_session_gets_each_targets_id_and_kind_in_order_and_nothing_else(self):
+        # targets_note_carries_the_names
+        ids = self.launch.target_ids({"seed_commit": "a" * 40, "targets": [self.TOY, self.COPY]})
+        self.assertEqual(ids, [{"id": "toy", "kind": "toy"}, {"id": "copy", "kind": "copy"}])
+        self.assertEqual(self.launch.target_ids({"seed_commit": "a" * 40}), [])  # no targets[] yet: none
+        work = Path(tempfile.mkdtemp())
+        pilot = self.launch.Pilot(work, "owner/brain", "owner/referee", "target")
+        pilot.targets = ids
+        pilot.targets_note("20261112T090000Z")
+        raw = (work / "logs" / "20261112T090000Z" / "targets.json").read_text(encoding="utf-8")
+        self.assertEqual(json.loads(raw), ids)
+        for word in ("zorbalix", "owner/", "packages", "c" * 40, "identifiers", "base_sha"):
+            self.assertNotIn(word, raw.casefold())
+
+    def test_an_id_holding_a_name_or_a_row_the_referee_refuses_stops_the_start(self):
+        # targets_note_named_id_taken targets_note_rows_unchecked
+        for tid in ("zorbalix-copy", "ZORBALIX", "copy-of-Zorbalix"):
+            with self.assertRaises(ValueError) as caught:
+                self.launch.target_ids({"targets": [self.TOY, dict(self.COPY, id=tid)]})
+            self.assertIn("targets[1].id holds a target's name (E290)", str(caught.exception))
+            self.assertNotIn("zorbalix", str(caught.exception).casefold())
+        with self.assertRaises(ValueError):  # a toy's id with the copy's name is the same leak
+            self.launch.target_ids({"targets": [dict(self.TOY, id="zorbalix"), self.COPY]})
+        for bad in ([dict(self.COPY, note="x")], [dict(self.COPY, kind="real")], [{"id": "copy", "kind": "copy"}],
+                    "copy", [dict(self.COPY, id="")]):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                self.launch.target_ids({"targets": bad})
+
+    def test_the_preflight_refuses_a_summary_whose_ids_would_carry_a_name(self):  # targets_preflight_refusal_dropped
+        work = Path(tempfile.mkdtemp())
+        (work / "snowball-founder.env").write_text("X=" + "y" * 60 + "\n", encoding="utf-8")
+        (work / "target").mkdir()
+        pilot = self.launch.Pilot(work, "owner/brain", "owner/referee", "target")
+        ok = subprocess.CompletedProcess([], 0, b"", b"")
+        summary = {"seed_commit": "a" * 40, "targets": [self.TOY, dict(self.COPY, id="zorbalix")]}
+        with mock.patch.object(self.launch, "run", return_value=ok), \
+                mock.patch.object(self.launch.Pilot, "summary", return_value=summary):
+            with self.assertRaises(SystemExit) as caught:
+                pilot.preflight()
+            self.assertIn("owner/referee setup/summary.json targets[1].id holds a target's name", str(caught.exception))
+            self.assertNotIn("zorbalix", str(caught.exception).casefold())
+            summary["targets"] = [self.TOY, self.COPY]
+            pilot.preflight()
+        self.assertEqual(pilot.targets, [{"id": "toy", "kind": "toy"}, {"id": "copy", "kind": "copy"}])
 
 
 class BuildContextTest(unittest.TestCase):
@@ -891,6 +969,13 @@ class CycleRecordTest(unittest.TestCase):
                                              "effort": "medium", "cli_version": "2.1.290"})
         self.assertEqual((m["cost_row"], m["reports_open"]), ("stub", 0))
         self.assertEqual(pilot.cost_calls, [(pilot.cost_calls[0][0], "b" * 40, "b" * 40)])  # after the referee's verdict
+
+    def test_each_session_folder_gets_the_targets_note(self):  # targets_note_not_written
+        """seed-049, E571: the cycle writes `targets.json` into the session's folder before the session starts."""
+        pilot, _, _ = self.cycle()
+        notes = sorted(pilot.logs.glob("*/targets.json"))
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(json.loads(notes[0].read_text(encoding="utf-8")), [])
 
     def test_no_rival_block_is_no_rival_configuration_and_a_timeout_is_named(self):
         _, m, _ = self.cycle(sess={"exit": -1, "minutes": 180.2, "timed_out": True})

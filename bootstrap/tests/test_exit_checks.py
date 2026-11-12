@@ -876,7 +876,7 @@ class Generality(unittest.TestCase):
 
 
 class GeneralityFlow(ExitFlow):
-    def test_the_names_are_looked_for_at_the_exit_and_never_published(self):
+    def test_the_names_are_looked_for_at_the_exit_and_never_published(self):  # generality_checked_on_code_push
         self.write_summary(targets=[TARGET])
         self.freeze_stage0()
         self.accept({"referee/ledger/chain.py": "# a client for zorbalix\nx = 1\n"})
