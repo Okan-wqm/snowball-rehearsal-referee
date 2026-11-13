@@ -3,5 +3,8 @@
   "budget_state": "ok",
   "waived_refutations": [
     "027465767d2d46dc"
+  ],
+  "reverted_exits": [
+    "8ebecdbeb77969f76de6a6b787c26c88bd5e14c0"
   ]
 }
