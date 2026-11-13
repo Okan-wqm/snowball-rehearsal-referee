@@ -692,7 +692,7 @@ class LoopReportsPageTest(unittest.TestCase):
     @staticmethod
     def entry():
         """This epoch's changelog entry, flattened."""
-        page = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")
+        page = (ROOT / "spec" / "tohum" / "CHANGELOG-5.md").read_text(encoding="utf-8")  # moved by the cap (E577)
         return changelog_entry(page, "2026-11-04, E499")
 
     def answered_by(self, report, says):
@@ -1438,14 +1438,16 @@ class GeneralityReadingTest(unittest.TestCase):
         spec.loader.exec_module(launch)
         prompt = paragraph((ROOT / "seed" / "founder" / "prompt.md").read_text(encoding="utf-8"),
                            "**Hedefler (gözlem).**")
-        self.assertIn(f"`/work/logs/{launch.TARGETS_NOTE}`'dadır (`[{{id, kind}}]`)", prompt)
+        self.assertIn(f"`/work/logs/{launch.TARGETS_NOTE}`'dadır (`[{{id, kind, base_sha, unit_candidates}}]`)",
+                      prompt)
         self.assertIn("hedeflerin adları orada yoktur", prompt)
         self.assertNotIn("identifiers", prompt)
         item = flat(" ".join(spec_page("tohum", "24a").splitlines()[31:33]))
         self.assertIn(f"`/work/logs/{launch.TARGETS_NOTE}`'dadır, adları orada yoktur", item)
         rows = [dict(self.TARGET, id="toy", kind="toy", base_sha=None, identifiers=[]), self.TARGET]
         self.assertEqual(launch.target_ids({"targets": rows}),
-                         [{"id": "toy", "kind": "toy"}, {"id": "copy", "kind": "copy"}])
+                         [{"id": "toy", "kind": "toy", "base_sha": None, "unit_candidates": []},
+                          {"id": "copy", "kind": "copy", "base_sha": "c" * 40, "unit_candidates": []}])
 
     def test_seed_049_is_answered_by_lines_that_say_it(self):  # changelog_drops_seed_049
         page = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")
@@ -1457,8 +1459,8 @@ class GeneralityReadingTest(unittest.TestCase):
                 ("29e", 57, 58): ("liste de sayısı da oturuma verilmez",),
                 ("29e", 64, 65): ("Denetimden geçmek genelliğin kanıtı değildir",),
                 ("26c", 32, 32): ("`identifiers` genellik denetiminin ad listesidir",),
-                ("24a", 32, 33): ("`/work/logs/targets.json`'dadır", "`[{id, kind}]`"),
-                ("24a", 53, 53): ("targets/<hedef>/units.json",)}
+                ("24a", 32, 33): ("`/work/logs/targets.json`'dadır", "`[{id, kind,"),  # E577 widened the row
+                ("24a", 54, 54): ("targets/<hedef>/units.json",)}
         for (prefix, first, last), words in says.items():
             ref = f"`{prefix}:{first}`" if first == last else f"`{prefix}:{first}-{last}`"
             self.assertIn(ref, answer, ref)
@@ -1471,6 +1473,133 @@ class GeneralityReadingTest(unittest.TestCase):
                    if line.startswith("| E573 |"))
         for name in ("generality_reason_renamed", "generality_control_chars_not_text", "changelog_drops_seed_049"):
             self.assertIn(name, row)
+
+
+class UnitProposalReportsTest(unittest.TestCase):
+    """seed-050 and seed-051 (E577-E581; buildsys and interface panel, two rounds): the Founder proposed the copy's unit
+    blind (its row of `setup/summary.json` and `policy.json`'s `operating{}` reach no session) and asked which node
+    wins when the version file and the target's CI disagree; and it asked whether an install-script mark is leave to
+    fetch or an order to run, whether platform-foreign packages are unpacked, and whether a failing optional script
+    refuses the recipe. Answers are interface facts on `24a` 3 and `26c` "Birim tarifi", held here to the launcher; a
+    spec-silent point is decided narrowly on `26c:71` (no new reason; the measure stays `unit.verify`). seed-052's
+    answer (E576) was named on no changelog line, so the launcher still counted it unanswered (E552, E581)."""
+
+    @staticmethod
+    def launch():
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("founder_launch", ROOT / "seed" / "founder" / "launch.py")
+        launch = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(launch)
+        return launch
+
+    @staticmethod
+    def entry():
+        return changelog_entry((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8"),
+                               "2026-11-13, E577")
+
+    def answered_by(self, report, says, upto=None):
+        """The E577 entry names ``report`` and, in its answer, each page range of ``says``; each range holds its words
+        (E342's rule: an answer names the lines that say it, and the lines say what the answer says)."""
+        entry = self.entry()
+        answer = entry[entry.index(f"`{report}` → "):]
+        answer = answer[:answer.index(upto)] if upto else answer
+        for (prefix, first, last), words in says.items():
+            ref = f"`{prefix}:{first}`" if first == last else f"`{prefix}:{first}-{last}`"
+            self.assertIn(ref, answer, f"{report}: {ref}")
+            lines = flat(" ".join(spec_page("tohum", prefix).splitlines()[first - 1:last]))
+            for phrase in words:
+                self.assertIn(phrase, lines, f"{report}: {ref}")
+
+    def test_seed_050_is_answered_by_lines_that_say_it(self):  # changelog_drops_seed_050
+        launch = self.launch()
+        self.answered_by("seed-050-copy-target-row-unreadable-for-unit-proposal", {
+            ("24a", 32, 33): (f"`/work/logs/{launch.TARGETS_NOTE}`'dadır", "`[{id, kind, base_sha, unit_candidates}]`",
+                              "adları orada yoktur"),
+            ("24a", 34, 35): ("`policy.json`'un `operating`'i o oturum için okunur",
+                              f"`/work/logs/{launch.OPERATING_NOTE}`'dadır", "`{operating: {…}}`, alan yoksa `{}`",
+                              "okunamaz ya da `26c` biçiminde değilse dosya yoktur"),
+            ("26c", 67, 67): ("Hedefin iş akışları", "`engines`'ı onu dışlasa da sürüm budur",
+                              "o sürümde kırmızı koşu ölçümdür")}, upto="`seed-051-")
+        self.assertIn("E579", self.entry())  # (d): the numbers are the operator's, owed on the register
+
+    def test_the_version_file_wins_and_a_red_run_is_the_measure(self):  # version_file_loses_to_ci
+        """seed-050 (e): the target's workflows (or a file off the unit's path to the root) said node 22, its
+        `.nvmrc` 20.11.0, and packages' `engines` excluded 20.11.0. The page's version stands; a red run on it is the
+        measurement and the next candidate is tried (`asama-0/08` "Birim seçimi"). Which file is a version file stays
+        unnamed (a weak point the panel kept)."""
+        recipe = paragraph(spec_page("tohum", "26c"), "**Birim tarifi**")
+        self.assertIn("birimin en yakın sürüm dosyasındaki sürüm; en yakın, birimin dizininden köke giden yoldakidir. "
+                      "Hedefin iş akışları ya da o yolda olmayan bir dosya başka sürüm söylese de, paketlerin "
+                      "`engines`'ı onu dışlasa da sürüm budur: o sürümde kırmızı koşu ölçümdür (`asama-0/08` \"Birim "
+                      "seçimi\").", recipe)
+        self.assertIn("tutmazsa sıradaki aday denenir", flat(spec_page("asama-0", "08")))
+
+    def test_a_mark_is_leave_to_fetch_and_the_recipes_measure_is_unit_verify(self):
+        # mark_read_as_run_order script_failure_made_a_reason
+        """seed-051, decided narrowly on one line (`26c:71`): a mark lets a scripted package be fetched; it orders no
+        run, so no page says which marked script runs; a package not unpacked or a script that does not run or exits
+        non-zero (an optional package's too) is no reason; a red lint or test it causes is `unit.verify`'s. No new
+        reason name exists anywhere: the static `recipe` list (`29g`) has no install reason."""
+        line = flat(spec_page("tohum", "26c").splitlines()[70])
+        for words in ("İşaret betikli paketin getirilmesine izindir, koşma buyruğu değildir:",
+                      "işaretli her paketin betiğinin koşması ve 0 ile bitmesi istenmez;",
+                      "betiği koşarsa `koş`ta ağsız koşar (`08`, `asama-0/06`: yalnız yeri),",
+                      "hangi betiğin koşacağını hiçbir sayfa sabitlemez.",
+                      "Tarifin ölçüsü yalnız `unit.verify`'dır (`14`):",
+                      "açılmayan paket, koşmayan ya da 0'dan başka biten betik, isteğe bağlı paketinki dahil, hiçbir "
+                      "sayfada ret nedeni değildir;", "kırmızı `unit.verify`'ındır."):
+            self.assertIn(words, line)
+        self.assertIn("Betik gerektiren adım birimin tarifinde işaretlidir", flat(spec_page("tohum", "08")))
+        self.assertIn("betik gerektiren paket tarifte işaretlidir", flat(spec_page("asama-0", "06")))
+        for page in ("08", "29g", "14"):  # one source: no other page restates the mark's meaning
+            self.assertNotIn("getirilmesine izindir", flat(spec_page("tohum", page)), page)
+        recipe = flat(spec_page("tohum", "29g"))
+        self.assertNotIn("install_scripts_failed", recipe)
+        self.assertNotIn("install_script_failed", flat(spec_page("tohum", "26c")))
+
+    def test_seed_051_is_answered_by_lines_that_say_it(self):  # changelog_drops_seed_051
+        self.answered_by("seed-051-install-marks-run-platform-foreign-scripts", {
+            ("26c", 71, 71): ("getirilmesine izindir, koşma buyruğu değildir", "açılmayan paket",
+                              "isteğe bağlı paketinki dahil, hiçbir sayfada ret nedeni değildir"),
+            ("29g", 20, 21): ("Paketler başka her girdidir", "getirilir, aşağıdaki denetimlerden geçer")},
+            upto="E576'nın yanıtı")
+
+    def test_seed_052_is_named_on_a_changelog_line_by_its_whole_id(self):  # changelog_drops_seed_052
+        """E581: E576 answered seed-052 on `29b:73` but no changelog line named it, so the launcher's reader (E552)
+        still listed it unanswered. The id must sit whole on one line: the reader looks at added lines one by one."""
+        launch = self.launch()
+        rid = "seed-052-known-b-stop-has-no-path-before-b"
+        lines = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
+        self.assertTrue(any(launch.names_report(line, rid) for line in lines))
+        self.answered_by(rid, {("29b", 73, 73): ("(seed-052, E576)", "kanıtı doğruladıktan sonra")})
+        for rid in ("seed-050-copy-target-row-unreadable-for-unit-proposal",
+                    "seed-051-install-marks-run-platform-foreign-scripts"):
+            self.assertTrue(any(launch.names_report(line, rid) for line in lines), rid)
+
+    def test_the_session_is_told_where_operating_is_and_the_launcher_writes_it_there(self):
+        # prompt_operating_note_unnamed operating_keys_page_drift
+        """The prompt names the file the launcher writes, and the seven keys the launcher lets through are `26c`'s."""
+        launch = self.launch()
+        prompt = paragraph((ROOT / "seed" / "founder" / "prompt.md").read_text(encoding="utf-8"),
+                           "**Hedefler (gözlem).**")
+        self.assertIn(f"`/work/logs/{launch.OPERATING_NOTE}`'dadır", prompt)
+        self.assertNotIn("identifiers", prompt)
+        keys = paragraph(spec_page("tohum", "26c"), "**policy.json `operating{}`**")
+        listed = re.search(r"anahtarlar (.*?)\. Döngünün", keys).group(1)
+        self.assertEqual(tuple(re.findall(r"`([a-z_]+)`", listed)), launch.OPERATING_KEYS)
+
+    def test_the_register_names_each_answers_tests_and_mutants(self):
+        rows = {line.split(" | ")[0][2:]: line for line in
+                (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
+                if re.match(r"^\| E5(7[7-9]|8[01]) \|", line)}
+        self.assertEqual(sorted(rows), ["E577", "E578", "E579", "E580", "E581"])
+        for no, names in (("E577", ("changelog_drops_seed_050", "operating_note_passes_text",
+                                    "targets_note_named_candidate_taken", "version_file_loses_to_ci")),
+                          ("E578", ("mark_read_as_run_order", "script_failure_made_a_reason",
+                                    "changelog_drops_seed_051")),
+                          ("E581", ("changelog_drops_seed_052",))):
+            for name in names:
+                self.assertIn(name, rows[no], no)
 
 
 class DocWithChangeTest(unittest.TestCase):

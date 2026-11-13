@@ -13,6 +13,7 @@ Run it on Linux (several tests need a POSIX shell). Exit 0 means every mutant wa
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
@@ -22,6 +23,19 @@ from pathlib import Path
 
 BOOT = Path(__file__).resolve().parents[1]
 ROOT = BOOT.parents[1]
+
+
+def _ci_mutation_shards() -> int:
+    """N of the mutation job's `--shard "$SHARD/N"` in ci.yml, 0 when it is not there. The anchor of
+    `mutation_shards_back_to_eight` is the matrix of N shards: written as a number, it was left behind when a shard
+    was added (the verifier of 9600c4e: range(76) against 77 shards stopped every shard before its first mutant).
+    A matrix that disagrees with N is still a stale anchor."""
+    path = ROOT / ".github" / "workflows" / "ci.yml"
+    text = path.read_text(encoding="utf-8") if path.is_file() else ""
+    found = re.search(r'local/mutate\.py --shard "\$SHARD/([0-9]+)"', text)
+    return int(found.group(1)) if found else 0
+
+
 PKG = "seed/bootstrap/snowball_bootstrap"
 CANARY = "seed/bootstrap/local/canary.py"
 DEFS = "seed/founder/brain_defs.py"  # the capsule's loader of the brain's definitions (E450)
@@ -378,6 +392,23 @@ MUTANTS = [
     ("unanswered_by_prefix", "seed/founder/launch.py", '+ re.escape(rid) + r"(?![\\w-])"', "+ re.escape(rid)",
      "E527: seed-04 reads as answered because seed-041 is named"),
     # E526: the one-command seed epoch delivery (seed/founder/deliver_epoch.py)
+    # the Founder's reasoning effort (owner 2026-11-13)
+    ("founder_effort_not_passed", "seed/founder/launch.py",
+     '               *(["-e", f"FOUNDER_EFFORT={effort}"] if effort else []),', '',
+     "the launcher drops the effort it was asked for"),
+    ("founder_effort_not_used", "seed/founder/entrypoint.sh",
+     '  ${FOUNDER_EFFORT:+--effort "$FOUNDER_EFFORT"} \\\n', '',
+     "the entrypoint never passes the effort to the CLI"),
+    # cost row: the model and the token totals the CLI reported (owner 2026-11-13, Y12)
+    ("cost_row_drops_tokens", "seed/founder/launch.py",
+     '            f"tokens {counts}")', '            f"tokens")',
+     "the cost row loses the CLI's token totals"),
+    ("cost_row_drops_model", "seed/founder/launch.py",
+     "f\"model {fact.get('model_served') or 'unknown'}, ", "f\"model unknown, ",
+     "the cost row no longer names the model the session was served"),
+    ("cost_row_tokens_not_read", "seed/founder/launch.py",
+     '                "tokens": {name: _count(usage.get(key)) for name, key in TOKEN_FIELDS},\n', '',
+     "the closing result's usage is never read into the session record"),
     # E576: seed-052, an evidenced Founder report reverts an accepted exit before the import
     ("revert_before_import_dropped", "spec/tohum/29b-onyukleme-hakemi.md",
      " o başı aktarmadan `reverted_exits`'e yazabilir;", " o başı yazamaz;",
@@ -2570,7 +2601,7 @@ MUTANTS = [
      "      max-parallel: 16" + chr(10), "",
      "E525: every shard starts at once and the referee's runs queue behind them"),
     ("mutation_shards_back_to_eight", ".github/workflows/ci.yml",
-     "        shard: [" + ", ".join(str(k) for k in range(76)) + "]\n",
+     "        shard: [" + ", ".join(str(k) for k in range(_ci_mutation_shards())) + "]\n",
      "        shard: [0, 1, 2, 3, 4, 5, 6, 7]\n",
      "E410: fewer shards than the mutants need, and the mutation run hits its timeout and is cancelled"),
     # E450: the brain's agent and skill definitions, checked in the capsule before claude starts (seed/founder/brain_defs.py)
@@ -3144,8 +3175,9 @@ MUTANTS = [
      "`seed-049-genellik-text-rule-and-names-unreadable` →", "seed-049 →",
      "seed-049: this epoch's entry no longer names the report it answers"),
     ("targets_note_carries_the_names", "seed/founder/launch.py",
-     '    return [{"id": t.id, "kind": t.kind} for t in targets]',
-     '    return [{"id": t.id, "kind": t.kind, "identifiers": list(t.identifiers)} for t in targets]',
+     '    return [{"id": t.id, "kind": t.kind, "base_sha": t.base_sha, "unit_candidates": list(t.unit_candidates)}',
+     '    return [{"id": t.id, "kind": t.kind, "base_sha": t.base_sha, "unit_candidates": list(t.unit_candidates), '
+     '"identifiers": list(t.identifiers)}',
      "E571: the session's targets.json hands over the name list (E290)"),
     ("targets_note_named_id_taken", "seed/founder/launch.py",
      "        if any(name in fold(t.id) for _t, _j, name in names):", "        if False:",
@@ -3160,8 +3192,10 @@ MUTANTS = [
      "E571: a summary whose ids would carry a name starts the pilot anyway"),
     ("targets_note_not_written", "seed/founder/launch.py", "        self.targets_note(stamp)\n", "",
      "E571: no session gets its targets.json"),
-    ("prompt_targets_note_unnamed", "seed/founder/prompt.md", "`/work/logs/targets.json`'dadır (`[{id, kind}]`)",
-     "`/work/logs/hedefler.json`'dadır (`[{id, kind}]`)", "E571: the prompt names a file the launcher never writes"),
+    ("prompt_targets_note_unnamed", "seed/founder/prompt.md",
+     "`/work/logs/targets.json`'dadır (`[{id, kind, base_sha, unit_candidates}]`)",
+     "`/work/logs/hedefler.json`'dadır (`[{id, kind, base_sha, unit_candidates}]`)",
+     "E571: the prompt names a file the launcher never writes"),
     # ---- E574: cost is an observation, not a gate (`tohum/00` Y12, the owner's decision of 2026-11-12)
     ("cost_law_gets_a_line", "spec/tohum/00-cekirdek.md", "Maliyet için sayısal eşik yoktur;",
      "Maliyet oturum başına 20 USD'yi aşarsa iş durur; başka eşik yoktur;",
@@ -3229,6 +3263,70 @@ MUTANTS = [
      + chr(10) + '        return "cost_over_line", link, None' + chr(10)
      + "    if SUPERSEDES not in row:" + chr(10) + "        return None, link, None" + chr(10),
      "E574: a Founder cost row with a given amount is a reason to reject: a cost line in the ledger check"),
+    # ---- seed-050, seed-051 (E577, E578, E581): the copy's row and operating{} reach the session, the version file
+    # against the target's CI, the install-script mark, and seed-052 named on a changelog line
+    ("targets_note_drops_the_candidates", "seed/founder/launch.py",
+     '    return [{"id": t.id, "kind": t.kind, "base_sha": t.base_sha, "unit_candidates": list(t.unit_candidates)}',
+     '    return [{"id": t.id, "kind": t.kind, "base_sha": t.base_sha}',
+     "E577: the session gets no unit candidates and proposes its unit blind again (seed-050 (b))"),
+    ("targets_note_named_candidate_taken", "seed/founder/launch.py",
+     "            if any(name in fold(path) for _t, _j, name in names):", "            if False:",
+     "E577: a unit candidate that holds a target's name reaches the session (E290)"),
+    ("targets_note_base_folded", "seed/founder/launch.py", "        for k, path in enumerate(t.unit_candidates):",
+     '        for k, path in enumerate((*t.unit_candidates, t.base_sha or "")):',
+     "E577: the base is folded for names: hex letters that spell a name stop the pilot for nothing"),
+    ("operating_note_passes_text", "seed/founder/launch.py",
+     '        if not (isinstance(entry, dict) and set(entry) == {"value", "band"} and _number(entry["value"])',
+     '        if not (isinstance(entry, dict) and {"value", "band"} <= set(entry) and _number(entry["value"])',
+     "E577: an operating entry with a field of operator text passes the gate (E290)"),
+    ("operating_note_unknown_key_passes", "seed/founder/launch.py", "        if key not in OPERATING_KEYS:",
+     "        if False:", "E577: a key `26c` does not name, operator text, reaches the session (E290)"),
+    ("operating_note_band_unchecked", "seed/founder/launch.py",
+     "                and isinstance(band, list) and len(band) == 2 and all(_number(b) for b in band)):",
+     "                and isinstance(band, list)):", "E577: a band of text reaches the session"),
+    ("operating_note_drops_the_wrapper", "seed/founder/launch.py", '    return {"operating": shown}',
+     "    return shown", "E577: operating.json is not the `{operating: {...}}` shape `29g` and `24a` name"),
+    ("operating_absent_written_as_object", "seed/founder/launch.py",
+     '    if "operating" not in policy:\n        return {}', '    if "operating" not in policy:\n        return '
+     '{"operating": {}}', "E577: a policy with no operating{} is shown as one the operator wrote empty"),
+    ("operating_unreadable_as_empty", "seed/founder/launch.py",
+     '            say(f"{OPERATING_NOTE} not written for {stamp}: {exc}")\n            return\n',
+     '            say(f"{OPERATING_NOTE} not written for {stamp}: {exc}")\n            note = {}\n',
+     "E577: a policy that could not be read reads to the session as 'the operator wrote none'"),
+    ("operating_read_once", "seed/founder/launch.py", "            note = operating_values(self.policy())",
+     '            self._policy = getattr(self, "_policy", None) or self.policy()\n'
+     "            note = operating_values(self._policy)",
+     "E577: operating{} is read once: what the operator writes while the pilot runs never reaches a session (E579)"),
+    ("operating_note_not_written", "seed/founder/launch.py", "        self.operating_note(stamp)\n", "",
+     "E577: no session gets its operating.json"),
+    ("prompt_operating_note_unnamed", "seed/founder/prompt.md", "`/work/logs/operating.json`'dadır",
+     "`/work/logs/policy.json`'dadır", "E577: the prompt names a file the launcher never writes"),
+    ("operating_keys_page_drift", "spec/tohum/26c-semalar-asama-0.md", "`container_mem_bytes`, `kos_wall_s`",
+     "`container_mem_bytes`, `kos_s`", "E577: the page's operating keys and the launcher's gate drift apart"),
+    ("version_file_loses_to_ci", "spec/tohum/26c-semalar-asama-0.md",
+     "söylese de, paketlerin `engines`'ı onu dışlasa da sürüm budur:",
+     "söylerse onların sürümü geçerlidir:", "seed-050 (e): the target's CI overrides the unit's version file"),
+    ("mark_read_as_run_order", "spec/tohum/26c-semalar-asama-0.md",
+     "ama işaretli her paketin betiğinin koşması ve 0 ile bitmesi istenmez;",
+     "işaretli her paketin betiği `koş`ta koşar ve 0 ile bitmesi zorunludur;",
+     "seed-051 (1): a mark becomes an order to run the script and exit 0"),
+    ("script_failure_made_a_reason", "spec/tohum/26c-semalar-asama-0.md", "hiçbir sayfada ret nedeni değildir;",
+     "tarifi reddettirir (`install_scripts_failed`);", "seed-051 (3): a failing script becomes a reason no list names"),
+    ("changelog_drops_seed_050", "spec/tohum/CHANGELOG.md",
+     "`seed-050-copy-target-row-unreadable-for-unit-proposal` →", "seed-050 →",
+     "seed-050: this epoch's entry no longer names the report it answers"),
+    ("changelog_drops_seed_051", "spec/tohum/CHANGELOG.md",
+     "`seed-051-install-marks-run-platform-foreign-scripts` →", "seed-051 →",
+     "seed-051: this epoch's entry no longer names the report it answers"),
+    ("operating_huge_int_overflows", "seed/founder/launch.py",
+     "    return isinstance(value, int) or (isinstance(value, float) and math.isfinite(value))",
+     "    return isinstance(value, (int, float)) and math.isfinite(value)",
+     "E577: an operating number past a float's range raises OverflowError and crashes the cycle"),
+    ("policy_nesting_escapes", "seed/founder/launch.py", "        except RecursionError:\n",
+     "        except ZeroDivisionError:\n",
+     "E577: a policy.json nested too deep raises RecursionError out of the note and crashes the cycle"),
+    ("changelog_drops_seed_052", "spec/tohum/CHANGELOG.md", "`seed-052-known-b-stop-has-no-path-before-b` → `29b:73`",
+     "seed-052 → `29b:73`", "E581: seed-052's answer is named by no changelog line; the launcher counts it unanswered"),
 ]
 
 

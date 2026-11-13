@@ -90,6 +90,9 @@ def quiet_pilot(launch):
 
         def verdict_on(self, head):  # the referee's artifacts; `PreviousSessionTest` tests the look-up
             return None
+
+        def policy(self):  # the referee repo's policy.json, with no operating{}; `OperatingNoteTest` tests the read
+            return {"constitutional": {}}
     return Quiet
 
 
