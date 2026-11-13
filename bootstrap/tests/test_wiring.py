@@ -821,6 +821,15 @@ class ReportAnswerPagesTest(unittest.TestCase):
         self.assertIn('exit_block["toy_tree_sha256"]', Path(decide.__file__).read_text(encoding="utf-8"))
         self.assertNotIn("E156", decide.EXIT_NOT_CHECKED["spec"])
 
+    def test_29b_lets_an_evidenced_founder_report_revert_an_exit_before_the_import(self):  # revert_before_import_dropped
+        """Seed-052 (E576, the owner's decision of 2026-11-13): a defect the Founder proves between (A) and (B) has a
+        path other than a red (B). The page says the operator may name that head in `reverted_exits` before the import,
+        and the referee releases the freeze on that list alone (`exit_freeze`), with no import row asked."""
+        page = spec_page("tohum", "29b")
+        self.assertIn("o başı aktarmadan `reverted_exits`'e yazabilir", page)
+        self.assertEqual(cli.exit_freeze({"exit_accepted_sha": "a" * 40}, ["a" * 40], 0), (False, True))
+        self.assertEqual(cli.exit_freeze({"exit_accepted_sha": "a" * 40}, [], 0), (True, False))
+
     def test_29e_defines_the_founders_records_by_the_paths_the_classifier_uses(self):
         """Seed-005 (E391, E148's text): what a push of the Founder's records is, said where `29b` "Çıkıştan sonra"
         uses the term."""
@@ -1706,6 +1715,77 @@ class NothingStaleTest(unittest.TestCase):
                 if path.name == "test_units.py" and term == "price_micros_per_mtok":
                     continue
                 self.assertNotIn(term, text, f"{path.relative_to(ROOT)} still says {term!r}")
+
+
+class CostPrincipleTest(unittest.TestCase):
+    """E574 (the owner's decision, 2026-11-12): cost is an observation, not a gate. `tohum/00` Y12 states it, once, in
+    the owner's words; no other page or prompt restates it, and it carries a duty and an order, never a number or a
+    how."""
+
+    Y12 = ("**Y12 Maliyet.** Maliyet bir gözlemdir, kapı değil. Kurucu, hafızasının ve çalışmasının maliyetini "
+           "ölçer, eğilimini kaydeder ve büyümesini bir sorun olarak ele alır. Doğruluk, güvenlik ve zor işin "
+           "tamamlanması her zaman önce gelir: maliyet gerekçesiyle hiçbir iş bırakılmaz, kısaltılmaz, kalitesi "
+           "düşürülmez. Maliyeti düşürmek başlı başına bir hedef değildir; aynı sonuç daha az maliyetle elde "
+           "edilebiliyorsa o yol tercih edilir. Maliyeti değiştiren bir değişiklik de her değişiklik gibi sınanır, "
+           "kanıtlanır ve hakemce sonucuna göre yargılanır. Maliyet için sayısal eşik yoktur; hakem işi maliyete "
+           "göre yargılamaz. Y3'ün bütçe durması bir kaçak frenidir: işi yargılamaz, yalnız durdurur.")
+
+    def core(self):
+        return spec_page("tohum", "00")
+
+    def test_y12_is_the_owners_text_exactly(self):
+        # cost_law_gets_a_line cost_law_loses_its_order cost_law_drops_referee cost_law_brake_is_a_verdict
+        # cost_law_tells_how
+        self.assertEqual(paragraph(self.core(), "**Y12 Maliyet.**"), self.Y12)
+
+    def test_y12_is_a_duty_and_an_order_never_a_number(self):  # cost_law_gets_a_line
+        body = re.sub(r"\bY[0-9]+", "", paragraph(self.core(), "**Y12 Maliyet.**"))
+        self.assertIsNone(re.search(r"[0-9%$`]", body), body)  # no number, no unit, no pointer to a page
+
+    def test_there_are_twelve_laws_and_the_anchor_says_so(self):  # cost_law_numbered_apart
+        page = self.core()
+        self.assertEqual(re.findall(r"(?m)^\*\*Y(\d+) ", page), [str(n) for n in range(1, 13)])
+        self.assertIn("Çapa: yasalar Y1–Y12;", page)
+        self.assertLessEqual(max(len(line) for line in page.splitlines()), 120)
+
+    def test_the_budget_stop_it_names_is_in_y3_and_is_no_judgement_on_29e(self):
+        # y3_budget_law_gone brake_page_says_judged
+        """Y12 says a budget stop judges nothing; `29e` says the head is not judged (the result still reads `rejected`,
+        E550) and Y3 is where the budgets stand. Under both the sentence is true; drop either and it is not."""
+        self.assertIn("Bütçeler serttir; aşım temiz bir duruştur.", paragraph(self.core(), "**Y3 "))
+        self.assertIn("baş yargılanmamıştır", flat(spec_page("tohum", "29e")))
+
+    def test_the_core_never_sends_the_founder_to_the_cost_pages(self):  # core_points_at_the_ladder
+        """The law gives a duty and an order. The core, which the Founder reads every session, names no cost page:
+        where it looks is its own choice."""
+        page = self.core()
+        for pointer in ("`06`", "`20`", "`18a`", "`24a`"):
+            self.assertNotIn(pointer, page)
+
+    def test_the_principle_is_said_once_the_other_pages_point_to_it(self):
+        # cost_principle_restated cost_pointer_gone cost_pointer_24_gone prompt_restates_the_cost_principle
+        pages = sorted((ROOT / "spec" / "tohum").glob("*.md")) + [ROOT / "seed" / "founder" / "prompt.md"]
+        said = [p.name for p in pages if not p.name.startswith("CHANGELOG")
+                and "Maliyet bir gözlemdir" in flat(p.read_text(encoding="utf-8"))]
+        self.assertEqual(said, ["00-cekirdek.md"])
+        for prefix, where in (("06", "**ölçüsüdür** (Y12):"), ("24", "kapı değildir (Y12);"),
+                              ("24a", "(Y12, `asama-0/12`)")):
+            with self.subTest(page=prefix):
+                self.assertIn(where, flat(spec_page("tohum", prefix)))
+
+    def test_24a_does_not_say_the_founder_cannot_measure_its_cost(self):  # founder_cannot_measure_its_cost
+        """Y12 has the Founder measure its own memory and work; `24a` says only who writes the session's `cost`
+        row."""
+        page = flat(spec_page("tohum", "24a"))
+        self.assertNotIn("Kurucu kendi maliyetini ölçemez", page)
+        self.assertIn("`kind: cost` satırını başlatıcı yazar", page)
+
+    def test_the_founder_is_sent_to_the_core_at_every_session_start(self):  # prompt_drops_the_core
+        """Y12 reaches the Founder only because the capsule's prompt names the core in its first step and the launcher
+        opens with it (`24a` 3). Without either the law would stand in the repository unread."""
+        prompt = flat((ROOT / "seed" / "founder" / "prompt.md").read_text(encoding="utf-8"))
+        self.assertIn("`spec/tohum/00-cekirdek.md`", prompt.split("2. Hafızan:")[0])
+        self.assertIn("açılış \"`00` ve `00a`'yı oku\"", flat(spec_page("tohum", "24a")))
 
 
 if __name__ == "__main__":

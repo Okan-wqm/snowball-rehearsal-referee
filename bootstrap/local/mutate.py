@@ -378,6 +378,10 @@ MUTANTS = [
     ("unanswered_by_prefix", "seed/founder/launch.py", '+ re.escape(rid) + r"(?![\\w-])"', "+ re.escape(rid)",
      "E527: seed-04 reads as answered because seed-041 is named"),
     # E526: the one-command seed epoch delivery (seed/founder/deliver_epoch.py)
+    # E576: seed-052, an evidenced Founder report reverts an accepted exit before the import
+    ("revert_before_import_dropped", "spec/tohum/29b-onyukleme-hakemi.md",
+     " o başı aktarmadan `reverted_exits`'e yazabilir;", " o başı yazamaz;",
+     "E576: the page no longer lets the operator revert an exit the Founder proved broken before the import"),
     # E568: the next session reads how the last one ended (usage_limit, timeout, brake, exit, error)
     ("session_end_usage_limit_as_exit", "seed/founder/launch.py",
      '    if usage_limited(sess):\n        return "usage_limit"\n', '',
@@ -2566,7 +2570,7 @@ MUTANTS = [
      "      max-parallel: 16" + chr(10), "",
      "E525: every shard starts at once and the referee's runs queue behind them"),
     ("mutation_shards_back_to_eight", ".github/workflows/ci.yml",
-     "        shard: [" + ", ".join(str(k) for k in range(74)) + "]\n",
+     "        shard: [" + ", ".join(str(k) for k in range(76)) + "]\n",
      "        shard: [0, 1, 2, 3, 4, 5, 6, 7]\n",
      "E410: fewer shards than the mutants need, and the mutation run hits its timeout and is cancelled"),
     # E450: the brain's agent and skill definitions, checked in the capsule before claude starts (seed/founder/brain_defs.py)
@@ -3158,6 +3162,73 @@ MUTANTS = [
      "E571: no session gets its targets.json"),
     ("prompt_targets_note_unnamed", "seed/founder/prompt.md", "`/work/logs/targets.json`'dadır (`[{id, kind}]`)",
      "`/work/logs/hedefler.json`'dadır (`[{id, kind}]`)", "E571: the prompt names a file the launcher never writes"),
+    # ---- E574: cost is an observation, not a gate (`tohum/00` Y12, the owner's decision of 2026-11-12)
+    ("cost_law_gets_a_line", "spec/tohum/00-cekirdek.md", "Maliyet için sayısal eşik yoktur;",
+     "Maliyet oturum başına 20 USD'yi aşarsa iş durur; başka eşik yoktur;",
+     "E574: Y12 draws a line: a number the Founder will loop on"),
+    ("cost_law_loses_its_order", "spec/tohum/00-cekirdek.md",
+     "Doğruluk, güvenlik ve zor işin tamamlanması her zaman önce gelir:", "Doğruluk ile maliyet dengelenir:",
+     "E574: Y12 no longer puts correctness, safety and the finishing of hard work before cost"),
+    ("cost_law_drops_referee", "spec/tohum/00-cekirdek.md", "işi maliyete göre yargılamaz.",
+     "maliyeti de tartar.", "E574: Y12 lets the referee weigh cost in its judgement of the work"),
+    ("cost_law_brake_is_a_verdict", "spec/tohum/00-cekirdek.md", "işi yargılamaz, yalnız durdurur.", "işi reddeder.",
+     "E574: Y12 calls the budget stop a verdict on the work, against `29e` (the head is not judged)"),
+    ("cost_law_tells_how", "spec/tohum/00-cekirdek.md", "bir sorun olarak ele alır.",
+     "bir sorun olarak ele alır; nasıl yapacağı şudur: bir yöntem seçer ve uygular.",
+     "E574: Y12 gains a sentence that tells the Founder how"),
+    ("cost_law_numbered_apart", "spec/tohum/00-cekirdek.md", "**Y12 Maliyet.**", "**Y13 Maliyet.**",
+     "E574: the cost law is renumbered and the list of laws has a hole"),
+    ("y3_budget_law_gone", "spec/tohum/00-cekirdek.md", "Bütçeler serttir; aşım temiz bir",
+     "Bütçeler yoktur; aşım temiz bir", "E574: Y12 points at Y3's budget stop and Y3 no longer has budgets"),
+    ("brake_page_says_judged", "spec/tohum/29e-onyukleme-hakemi-devam.md", "baş yargılanmamıştır",
+     "baş yargılanmıştır", "E574: 29e says a budget-stopped head is judged: Y12's 'the stop judges nothing' is false"),
+    ("core_points_at_the_ladder", "spec/tohum/00-cekirdek.md", "birinci sınıf sayıdır.",
+     "birinci sınıf sayıdır (`06`).", "E574: the core (read every session) sends the Founder to a cost page"),
+    ("cost_principle_restated", "spec/tohum/24a-kurucu-ve-yerlesim.md", "(Y12, `asama-0/12`). `kind: cost` satırını",
+     "(Y12, `asama-0/12`). Maliyet bir gözlemdir, kapı değil. `kind: cost` satırını",
+     "E574: a second page states the principle, and the two statements drift"),
+    ("cost_pointer_gone", "spec/tohum/06-maliyet-merdiveni.md", "**ölçüsüdür** (Y12):", "**ölçüsüdür**:",
+     "E574: the cost ladder's page no longer says where its gate-free statement comes from"),
+    ("cost_pointer_24_gone", "spec/tohum/24-calisma-modeli.md", "kapı değildir (Y12);", "kapı değildir;",
+     "E574: the working model's page no longer says where its gate-free statement comes from"),
+    ("founder_cannot_measure_its_cost", "spec/tohum/24a-kurucu-ve-yerlesim.md",
+     "`kind: cost` satırını başlatıcı yazar (rapor yoksa",
+     "Kurucu kendi maliyetini ölçemez; ölçümü başlatıcı yazar (rapor yoksa",
+     "E574: 24a tells the Founder it cannot measure its own cost, against Y12"),
+    ("prompt_restates_the_cost_principle", "seed/founder/prompt.md", "**Gerçek hedefte sına ve eksiğini kendin bul.**",
+     "Maliyet bir gözlemdir, kapı değil. **Gerçek hedefte sına ve eksiğini kendin bul.**",
+     "E574: the Founder's prompt states the principle a second time"),
+    ("decide_accepts_by_spend", f"{PKG}/decide.py", '    accepted = not reasons and kind in ("spec", "code", "exit")',
+     '    accepted = not reasons and kind in ("spec", "code", "exit") and state["stage_spend_usd_micros"] < 10**15',
+     "E574: the verdict is accepted or not by how much was spent: a cost gate"),
+    ("rival_cost_rejects", f"{PKG}/decide.py",
+     '        state["stage_spend_usd_micros"] += int(rival.get("cost_usd_micros", 0))' + chr(10),
+     '        state["stage_spend_usd_micros"] += int(rival.get("cost_usd_micros", 0))' + chr(10)
+     + '        if int(rival.get("cost_usd_micros", 0)) > 10**9:' + chr(10)
+     + '            reasons.append(_reason("rival_unresolved", ref="too_expensive"))' + chr(10),
+     "E574: a call that cost much is a reason to reject: a cost gate in the verdict"),
+    ("verdict_code_reads_cost", f"{PKG}/decide.py",
+     '    budget_stop = None' + chr(10) + '    allowance = meta.get("rival_allowance") or {}' + chr(10),
+     '    budget_stop = None' + chr(10) + '    spent = state["month_spend_usd_micros"]' + chr(10)
+     + '    allowance = meta.get("rival_allowance") or {}' + chr(10),
+     "E574: the verdict code starts to read what was spent (no branch yet: the first step of a cost gate)"),
+    ("verdict_code_reads_cost_behind_a_comment", f"{PKG}/decide.py",
+     '    budget_stop = None' + chr(10) + '    allowance = meta.get("rival_allowance") or {}' + chr(10),
+     '    budget_stop = None' + chr(10) + '    spent = state["month_spend_usd_micros"]  # cost' + chr(10)
+     + '    allowance = meta.get("rival_allowance") or {}' + chr(10),
+     "E574: the same read with a trailing comment that says cost: a scan that lets any comment through lets it by"),
+    ("parts_green_reads_spend", f"{PKG}/parts.py",
+     "    return bool(tests) and nothing_red(controls, tests, vectors_, lic, module_less)" + chr(10),
+     "    return bool(tests) and nothing_red(controls, tests, vectors_, lic, module_less) and spent_usd() < 5_000_000"
+     + chr(10), "E574: a part is green only while the spend is low: a cost gate in a file that is not decide.py"),
+    ("prompt_drops_the_core", "seed/founder/prompt.md", "1. `spec/tohum/00-cekirdek.md`, ", "1. ",
+     "E574: the capsule's prompt no longer sends the Founder to the core: Y12 (and every law) stands unread"),
+    ("founder_cost_gates_the_ledger", f"{PKG}/ledgercheck.py",
+     "    if SUPERSEDES not in row:" + chr(10) + "        return None, link, None" + chr(10),
+     '    if row.get("kind") == "cost" and "cost_usd_micros 1" in str((row.get("payload") or {}).get("summary", "")):'
+     + chr(10) + '        return "cost_over_line", link, None' + chr(10)
+     + "    if SUPERSEDES not in row:" + chr(10) + "        return None, link, None" + chr(10),
+     "E574: a Founder cost row with a given amount is a reason to reject: a cost line in the ledger check"),
 ]
 
 

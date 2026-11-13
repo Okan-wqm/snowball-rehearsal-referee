@@ -11,7 +11,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from snowball_bootstrap import cli, decide as decide_module, ghapi, parts, state as st
+from snowball_bootstrap import cli, decide as decide_module, ghapi, ledgercheck, parts, state as st
 from snowball_bootstrap.classify import classify
 from snowball_bootstrap.config import ConfigError, Policy
 from snowball_bootstrap.container import RunResult
@@ -1090,6 +1090,106 @@ class PullGates(unittest.TestCase):
         self.assertIn("has_repro=true", gh_output.read_text())
         argv = json.loads((bin_dir / "seen.json").read_text())["argv"]
         self.assertEqual(argv[argv.index("--max-budget-usd") + 1], "0.500000")
+
+
+class CostBlindVerdictTest(unittest.TestCase):
+    """E574, `tohum/00` Y12: the referee does not decide on cost. What a call or a month cost reaches the books and a
+    brake the operator set leaves a head unjudged (E550); no verdict, reason, warning or streak follows from how much
+    was spent. Behaviour over a grid of spends in every kind of outcome, the verdict code's only mentions of money,
+    and the Founder's own cost row where the ledger check meets it."""
+
+    NOW = "2026-11-12T00:00:00Z"  # the one thing in a result that is the clock's
+    SPENDS = ((0, 0, 0), (7, 1000, 2000), (10**9, 10**12, 10**12), (10**15, 10**18, 10**18))
+    SPEND_KEYS = ("month_spend_usd_micros", "stage_spend_usd_micros", "pending_rival")
+
+    def red_run(self):
+        run = green_run()
+        run["tests"][0]["ok"], run["green"] = False, False
+        return run
+
+    def scenes(self):
+        """(kind, run, rival of a given call cost, the reproducers' results, jobs): accepted, frozen, rejected by a red
+        test, by a reproduced refutation, a rival of its own side's failure and an outage."""
+        again = [{"attempt_index": 0, "reproduced": True}]
+        return (("code", green_run, lambda c: not_refuted(cost=c), [], CODE_JOBS),
+                ("spec", lambda: None, lambda c: not_refuted(cost=c), None, {"cagir": "success"}),
+                ("code", self.red_run, lambda c: not_refuted(cost=c), [], CODE_JOBS),
+                ("code", green_run, lambda c: refuted("c", cost=c), again, CODE_JOBS),
+                ("code", green_run, lambda c: unresolved("max_turns", cost=c), [], CODE_JOBS),
+                ("code", green_run, lambda c: refuted("c", cost=c), None, CODE_JOBS))
+
+    def verdicts(self, scene):
+        kind, run, rival, repro, jobs = scene
+        seen = []
+        for call_cost, month, stage in self.SPENDS:
+            meta = meta_(kind, state0(month_spend_usd_micros=month, stage_spend_usd_micros=stage))
+            res = decide(meta, run(), rival(call_cost), repro, jobs, 2, 3, now=self.NOW)
+            state = {k: v for k, v in res["state"].items() if k not in self.SPEND_KEYS}
+            seen.append({"verdict": res["verdict"], "reasons": res["reasons"], "warnings": res["warnings"],
+                         "learning": res["learning"], "rejection": res["rejection"], "budget_stop": res["budget_stop"],
+                         "state": state})
+        return seen
+
+    def test_a_verdict_does_not_depend_on_what_was_spent(self):  # decide_accepts_by_spend rival_cost_rejects
+        kinds = set()
+        for number, scene in enumerate(self.scenes()):
+            seen = self.verdicts(scene)
+            kinds.add(seen[0]["verdict"])
+            with self.subTest(scene=number):
+                for other in seen[1:]:
+                    self.assertEqual(other, seen[0])
+        self.assertEqual(kinds, {"accepted", "frozen", "rejected"})  # the grid is not one outcome
+
+    def test_the_verdict_code_mentions_money_only_to_book_it_and_to_name_a_brake(self):
+        # verdict_code_reads_cost verdict_code_reads_cost_behind_a_comment parts_green_reads_spend
+        """The files that decide (a push, an exit, a part's green) say usd or cost nowhere but where a call's cost is
+        booked and where a brake is named. A comment is cut off first: a read must not pass because a trailing
+        "# cost" sits after it."""
+        import tokenize
+        allowed = (r'state\["(month|stage)_spend_usd_micros"\] \+= int\(rival\.get\("cost_usd_micros", 0\)\)',
+                   r'allowance\.get\("usd_micros"\)', r'"allowed_usd_micros"')
+        pkg = Path(decide_module.__file__).parent
+        for name in ("decide.py", "exitchecks.py", "classify.py", "stages.py", "parts.py"):
+            text = (pkg / name).read_text(encoding="utf-8")
+            lines = text.split("\n")
+            for token in tokenize.generate_tokens(io.StringIO(text).readline):
+                if token.type == tokenize.COMMENT:
+                    row, col = token.start
+                    lines[row - 1] = lines[row - 1][:col]
+            for number, line in enumerate(lines, 1):
+                if re.search(r"usd|cost", line, re.IGNORECASE):
+                    with self.subTest(file=name, line=number):
+                        self.assertTrue(any(re.search(p, line) for p in allowed), f"{name}:{number}: {line.strip()}")
+
+    FOUNDER_COST_AMOUNTS = ("cost_usd_micros 0", "cost_usd_micros 1000000000000", "cost_usd_micros unknown",
+                            "cost_usd_micros -5")
+
+    def test_a_founders_cost_row_is_judged_by_kind_and_chain_never_by_its_amount(self):  # founder_cost_gates_the_ledger
+        """`ledgercheck` is where a Founder-written cost row meets the referee: a chained row of that kind is accepted
+        whatever amount its summary names, so the verdict cannot start to turn on it."""
+        seen = []
+        for amount in self.FOUNDER_COST_AMOUNTS:
+            summary = f"session S: exit 0, 5 min, turns 3, {amount}, CLI result success"
+            rows = ledger_rows(3, edits={1: {"kind": "cost", "payload": {"summary": summary, "refs": []}}})
+            seen.append(ledgercheck.check(ledger_bytes(rows), None, True))
+        self.assertEqual(seen[0], [])
+        for other in seen[1:]:
+            self.assertEqual(other, seen[0])
+
+    def test_ledgercheck_names_cost_only_as_a_row_kind(self):  # founder_cost_gates_the_ledger
+        """The file that judges the Founder's ledger says usd or cost nowhere but in the list of kinds a row may have
+        (a comment is cut off first, as for the files above)."""
+        import tokenize
+        text = Path(ledgercheck.__file__).read_text(encoding="utf-8")
+        lines = text.split("\n")
+        for token in tokenize.generate_tokens(io.StringIO(text).readline):
+            if token.type == tokenize.COMMENT:
+                row, col = token.start
+                lines[row - 1] = lines[row - 1][:col]
+        for number, line in enumerate(lines, 1):
+            if re.search(r"usd|cost", line, re.IGNORECASE):
+                with self.subTest(line=number):
+                    self.assertRegex(line, r'^FOUNDER_KINDS = \(.*"cost".*\)$')
 
 
 if __name__ == "__main__":
