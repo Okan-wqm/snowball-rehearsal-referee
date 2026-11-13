@@ -1,5 +1,5 @@
 {
-  "kill_switch": true,
+  "kill_switch": false,
   "budget_state": "ok",
   "waived_refutations": [
     "027465767d2d46dc"
