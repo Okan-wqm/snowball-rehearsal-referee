@@ -1,0 +1,50 @@
+{
+ "root": ".",
+ "mutants": [
+  {
+   "id": "fs_code_drops_a_page_name",
+   "file": "referee/gate/diffguard.py",
+   "old": "\".prettierrc.json\", \"biome.json\")",
+   "new": "\".prettierrc.json\")",
+   "tests": [
+    "test_diffguard_floor_spec.py"
+   ]
+  },
+  {
+   "id": "fs_code_drops_the_shape",
+   "file": "referee/gate/diffguard.py",
+   "old": "SEED_CONFIG_PATTERNS = (\"tsconfig.*.json\",)",
+   "new": "SEED_CONFIG_PATTERNS = ()",
+   "tests": [
+    "test_diffguard_floor_spec.py"
+   ]
+  },
+  {
+   "id": "fs_list_written_twice_accepted",
+   "file": "tests/test_diffguard_floor_spec.py",
+   "old": "        if len(lists) != 1:",
+   "new": "        if len(lists) < 1:",
+   "tests": [
+    "test_diffguard_floor_spec.py"
+   ]
+  },
+  {
+   "id": "fs_empty_list_accepted",
+   "file": "tests/test_diffguard_floor_spec.py",
+   "old": "        if not names:",
+   "new": "        if False:",
+   "tests": [
+    "test_diffguard_floor_spec.py"
+   ]
+  },
+  {
+   "id": "fs_any_reason_accepted",
+   "file": "tests/test_diffguard_floor_spec.py",
+   "old": "            if reasons(edit(path)) != [\"%s:%s\" % (reason, path)]:",
+   "new": "            if not reasons(edit(path)):",
+   "tests": [
+    "test_diffguard_floor_spec.py"
+   ]
+  }
+ ]
+}

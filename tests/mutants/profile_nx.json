@@ -1,0 +1,364 @@
+{
+ "mutants": [
+  {
+   "id": "nx_npm_script_not_preferred",
+   "file": "profile/fit.py",
+   "old": "if isinstance(scripts, dict) and isinstance(scripts.get(name), str):",
+   "new": "if False:",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_flat_config_order_reversed",
+   "file": "profile/nx.py",
+   "old": "        for file in names:",
+   "new": "        for file in reversed(names):",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_flat_config_only_at_root",
+   "file": "profile/nx.py",
+   "old": "    directory = path\n    while True:\n        for file in",
+   "new": "    directory = \".\"\n    while True:\n        for file in",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_eslint_8_accepted",
+   "file": "profile/nx.py",
+   "old": "if major is None or major < 9:",
+   "new": "if major is None or major < 8:",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_depends_on_allowed",
+   "file": "profile/nx.py",
+   "old": "TARGET_KEYS = (\"executor\", \"options\",",
+   "new": "TARGET_KEYS = (\"dependsOn\", \"executor\", \"options\",",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_defaults_name_before_executor",
+   "file": "profile/nx.py",
+   "old": "    if executor in defaults:\n        return defaults[executor]\n    if name in defaults:\n        return defaults[name]",
+   "new": "    if name in defaults:\n        return defaults[name]\n    if executor in defaults:\n        return defaults[executor]",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_defaults_shortest_glob",
+   "file": "profile/nx.py",
+   "old": "defaults[max(globbed, key=len)]",
+   "new": "defaults[min(globbed, key=len)]",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_defaults_options_allowed",
+   "file": "profile/nx.py",
+   "old": "DEFAULTS_KEYS = (\"inputs\", \"outputs\", \"cache\")",
+   "new": "DEFAULTS_KEYS = (\"inputs\", \"outputs\", \"cache\", \"options\")",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_workspace_root_anywhere",
+   "file": "profile/nx.py",
+   "old": "    if \"{workspaceRoot}\" in value:\n        raise NotComposed(\"token:workspaceRoot\")",
+   "new": "    value = value.replace(\"{workspaceRoot}\", \"\")",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_project_root_first_only",
+   "file": "profile/nx.py",
+   "old": "value = value.replace(\"{projectRoot}\", root)",
+   "new": "value = value.replace(\"{projectRoot}\", root, 1)",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_interpolate_no_normalise",
+   "file": "profile/nx.py",
+   "old": "    norm = posixpath.normpath(joined)",
+   "new": "    norm = joined",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_no_error_flag_dropped",
+   "file": "profile/nx.py",
+   "old": "\"--no-error-on-unmatched-pattern\", ",
+   "new": "",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_config_not_an_input",
+   "file": "profile/nx.py",
+   "old": "            + patterns, [config])",
+   "new": "            + patterns, [])",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_nested_lock_accepted",
+   "file": "profile/nx.py",
+   "old": "if D.nearest_lock(tree, path) not in (\"package-lock.json\", \"npm-shrinkwrap.json\"):",
+   "new": "if D.nearest_lock(tree, path) is None:",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_option_any",
+   "file": "profile/nx.py",
+   "old": "        if key not in OPTIONS[name]:\n            raise NotComposed(\"option:\" + key)",
+   "new": "        pass",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_ts_node_env_dropped",
+   "file": "profile/nx.py",
+   "old": "[\"env\", \"TS_NODE_COMPILER_OPTIONS=\" + TS_NODE, \"node_modules/.bin/jest\"",
+   "new": "[\"env\", \"node_modules/.bin/jest\"",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_never",
+   "file": "profile/nx.py",
+   "old": "    if targets is None or \"lint\" not in targets:\n        return inferred_lint(tree, path, nx)",
+   "new": "    if False:\n        return inferred_lint(tree, path, nx)",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_other_plugin_ignored",
+   "file": "profile/nx.py",
+   "old": "        if plugin != PLUGIN:\n            raise NotComposed(\"plugin:%s\" % plugin)",
+   "new": "        if plugin != PLUGIN:\n            continue",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_plugin_keys_unchecked",
+   "file": "profile/nx.py",
+   "old": "            if key not in PLUGIN_KEYS:",
+   "new": "            if False:",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_target_name_ignored",
+   "file": "profile/nx.py",
+   "old": "        if name == \"lint\":\n            found",
+   "new": "        if True:\n            found",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_entries_not_unique",
+   "file": "profile/nx.py",
+   "old": "    if len(found) > 1:",
+   "new": "    if len(found) > 9:",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_dots_kept",
+   "file": "profile/nx.py",
+   "old": "re.sub(r\"^\\.+\", \"\", e)",
+   "new": "e",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_package_nx_ignored",
+   "file": "profile/nx.py",
+   "old": "    if isinstance(declared, dict) and \"lint\" in declared:",
+   "new": "    if False:",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_config_below_root_accepted",
+   "file": "profile/nx.py",
+   "old": "    if root != \".\":\n        raise NotComposed(\"config_below_root\")",
+   "new": "    if False:\n        raise NotComposed(\"config_below_root\")",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_eslintrc_root_accepted",
+   "file": "profile/nx.py",
+   "old": "    if any(os.path.isfile(os.path.join(tree, f)) for f in ESLINTRC):",
+   "new": "    if False:",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_eslintrc_not_a_config",
+   "file": "profile/nx.py",
+   "old": "        if any(os.path.isfile(os.path.join(tree, _rel(directory, f))) for f in ESLINTRC + FLAT_CONFIGS):",
+   "new": "        if any(os.path.isfile(os.path.join(tree, _rel(directory, f))) for f in FLAT_CONFIGS):",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_eslint_version_unchecked",
+   "file": "profile/nx.py",
+   "old": "        raise NotComposed(\"eslintrc\")\n    _check_eslint(tree, path)",
+   "new": "        raise NotComposed(\"eslintrc\")",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_nested_projects_walked",
+   "file": "profile/nx.py",
+   "old": " and not any(\n            os.path.isfile(os.path.join(here, d, f)) for f in PROJECT_FILES))",
+   "new": ")",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_node_modules_walked",
+   "file": "profile/nx.py",
+   "old": "SKIPPED_DIRS = (\"node_modules\", \".git\")",
+   "new": "SKIPPED_DIRS = (\".git\",)",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_lintable_unchecked",
+   "file": "profile/nx.py",
+   "old": "    if not has_lintable(tree, path, extensions):",
+   "new": "    if False:",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_lib_before_src",
+   "file": "profile/nx.py",
+   "old": "for d in (\"src\", \"lib\")",
+   "new": "for d in (\"lib\", \"src\")",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_defaults_unchecked",
+   "file": "profile/nx.py",
+   "old": "    _check_defaults(nx, \"lint\", \"nx:run-commands\")",
+   "new": "    pass",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_defaults_by_lint_executor",
+   "file": "profile/nx.py",
+   "old": "    _check_defaults(nx, \"lint\", \"nx:run-commands\")",
+   "new": "    _check_defaults(nx, \"lint\", EXECUTORS[\"lint\"])",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_no_chdir",
+   "file": "profile/nx.py",
+   "old": "    return ([\"/bin/sh\", \"-c\", CD_EXEC, path, C.WORKDIR",
+   "new": "    return ([\"/bin/sh\", \"-c\", 'exec \"$@\"', path, C.WORKDIR",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_one_flat_input",
+   "file": "profile/nx.py",
+   "old": "            [f for f in FLAT_CONFIGS if os.path.isfile(os.path.join(tree, f))])",
+   "new": "            [flat_config(tree, \".\")])",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_no_project_file_accepted",
+   "file": "profile/nx.py",
+   "old": "    if not any(os.path.isfile(os.path.join(tree, _rel(path, f))) for f in PROJECT_FILES):",
+   "new": "    if False:",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_cd_unquoted",
+   "file": "profile/nx.py",
+   "old": "CD_EXEC = 'cd -- \"$0\" && exec \"$@\"'",
+   "new": "CD_EXEC = 'cd -- $0 && exec \"$@\"'",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_cd_no_end_of_options",
+   "file": "profile/nx.py",
+   "old": "CD_EXEC = 'cd -- \"$0\" && exec \"$@\"'",
+   "new": "CD_EXEC = 'cd \"$0\" && exec \"$@\"'",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_path_in_script_text",
+   "file": "profile/nx.py",
+   "old": "CD_EXEC = 'cd -- \"$0\" && exec \"$@\"'",
+   "new": "CD_EXEC = 'cd -- \"%s\" && exec \"$@\"'",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  },
+  {
+   "id": "nx_inferred_path_interpolated",
+   "file": "profile/nx.py",
+   "old": "    return ([\"/bin/sh\", \"-c\", CD_EXEC, path, C.WORKDIR",
+   "new": "    return ([\"/bin/sh\", \"-c\", \"cd -- %s && exec \\\"$@\\\"\" % path, path, C.WORKDIR",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  }
+ ]
+}

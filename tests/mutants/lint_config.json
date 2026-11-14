@@ -1,0 +1,112 @@
+{
+ "mutants": [
+  {
+   "id": "lintcfg_test_script_too",
+   "file": "profile/fit.py",
+   "old": "            if name == \"lint\" and ESLINT in (U.script_programs(scripts[name]) or []):\n",
+   "new": "            if ESLINT in (U.script_programs(scripts[name]) or []):\n",
+   "tests": [
+    "test_profile_fit.LintConfig.test_the_test_script_and_a_missing_lint_script_bring_nothing"
+   ]
+  },
+  {
+   "id": "lintcfg_word_anywhere",
+   "file": "profile/fit.py",
+   "old": "ESLINT in (U.script_programs(scripts[name]) or []):\n",
+   "new": "ESLINT in scripts[name]:\n",
+   "tests": [
+    "test_profile_fit.LintConfig.test_only_a_script_with_the_program_eslint"
+   ]
+  },
+  {
+   "id": "lintcfg_any_script",
+   "file": "profile/fit.py",
+   "old": "            if name == \"lint\" and ESLINT in (U.script_programs(scripts[name]) or []):\n",
+   "new": "            if name == \"lint\":\n",
+   "tests": [
+    "test_profile_fit.LintConfig.test_only_a_script_with_the_program_eslint"
+   ]
+  },
+  {
+   "id": "lintcfg_nx_order",
+   "file": "profile/fit.py",
+   "old": "X.flat_config(tree, path, X.ESLINT_FLAT_CONFIGS, os.path.isfile)",
+   "new": "X.flat_config(tree, path, X.FLAT_CONFIGS, os.path.isfile)",
+   "tests": [
+    "test_profile_fit.LintConfig.test_eslints_name_order_in_one_directory"
+   ]
+  },
+  {
+   "id": "lintcfg_directory_counts",
+   "file": "profile/fit.py",
+   "old": "X.flat_config(tree, path, X.ESLINT_FLAT_CONFIGS, os.path.isfile)",
+   "new": "X.flat_config(tree, path, X.ESLINT_FLAT_CONFIGS)",
+   "tests": [
+    "test_profile_fit.LintConfig.test_a_directory_of_that_name_is_passed_over"
+   ]
+  },
+  {
+   "id": "lintcfg_not_added",
+   "file": "profile/fit.py",
+   "old": "                out[\"inputs\"] += [config] if config else []\n",
+   "new": "                out[\"inputs\"] += []\n",
+   "tests": [
+    "test_profile_fit.LintConfig"
+   ]
+  },
+  {
+   "id": "lintcfg_from_the_root",
+   "file": "profile/fit.py",
+   "old": "X.flat_config(tree, path, X.ESLINT_FLAT_CONFIGS, os.path.isfile)",
+   "new": "X.flat_config(tree, \".\", X.ESLINT_FLAT_CONFIGS, os.path.isfile)",
+   "tests": [
+    "test_profile_fit.LintConfig.test_the_nearest_config_is_an_input_with_what_it_imports"
+   ]
+  },
+  {
+   "id": "lintcfg_not_followed",
+   "file": "profile/fit.py",
+   "old": "reached(tree, path, lock, found[\"inputs\"], memo)",
+   "new": "reached(tree, path, lock, (), memo)",
+   "tests": [
+    "test_profile_fit.LintConfig.test_the_nearest_config_is_an_input_with_what_it_imports"
+   ]
+  },
+  {
+   "id": "lintcfg_order_ts_after_mts",
+   "file": "profile/nx.py",
+   "old": "\"eslint.config.cjs\", \"eslint.config.ts\",\n                       \"eslint.config.mts\", \"eslint.config.cts\")",
+   "new": "\"eslint.config.cjs\", \"eslint.config.mts\",\n                       \"eslint.config.ts\", \"eslint.config.cts\")",
+   "tests": [
+    "test_profile_fit.LintConfig.test_eslints_name_order_in_one_directory"
+   ]
+  },
+  {
+   "id": "lintcfg_walker_ignores_names",
+   "file": "profile/nx.py",
+   "old": "        for file in names:\n",
+   "new": "        for file in FLAT_CONFIGS:\n",
+   "tests": [
+    "test_profile_fit.LintConfig.test_eslints_name_order_in_one_directory"
+   ]
+  },
+  {
+   "id": "lintcfg_walker_ignores_exists",
+   "file": "profile/nx.py",
+   "old": "            if exists(os.path.join(tree, rel)):\n",
+   "new": "            if os.path.exists(os.path.join(tree, rel)):\n",
+   "tests": [
+    "test_profile_fit.LintConfig.test_a_directory_of_that_name_is_passed_over"
+   ]
+  },
+  {
+   "id": "lintcfg_nx_default_order",
+   "file": "profile/nx.py",
+   "old": "def flat_config(tree: str, path: str, names: tuple = FLAT_CONFIGS, exists=os.path.exists)",
+   "new": "def flat_config(tree: str, path: str, names: tuple = ESLINT_FLAT_CONFIGS, exists=os.path.exists)",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  }
+ ]
+}

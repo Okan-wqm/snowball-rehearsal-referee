@@ -1,0 +1,124 @@
+{
+ "mutants": [
+  {
+   "id": "unmeasured_becomes_true",
+   "file": "ledger/events.py",
+   "old": "UNMEASURED = {\"covered\": \"unmeasured\", \"reason\": \"no_coverage_tool\"}",
+   "new": "UNMEASURED = {\"covered\": True, \"reason\": \"no_coverage_tool\"}",
+   "tests": [
+    "test_schema.py",
+    "test_activate.py"
+   ]
+  },
+  {
+   "id": "record_first_hunk_only",
+   "file": "ledger/events.py",
+   "old": "**UNMEASURED) for h in hunks]",
+   "new": "**UNMEASURED) for h in hunks[:1]]",
+   "tests": [
+    "test_schema.py"
+   ]
+  },
+  {
+   "id": "record_empty",
+   "file": "ledger/events.py",
+   "old": "hunk_covered=hunk_covered(merged[\"path\"], merged[\"hunks\"])",
+   "new": "hunk_covered=[]",
+   "tests": [
+    "test_schema.py"
+   ]
+  },
+  {
+   "id": "record_other_path",
+   "file": "ledger/events.py",
+   "old": "hunk_covered=hunk_covered(merged[\"path\"], merged[\"hunks\"])",
+   "new": "hunk_covered=hunk_covered(merged[\"path\"] + \"x\", merged[\"hunks\"])",
+   "tests": [
+    "test_schema.py"
+   ]
+  },
+  {
+   "id": "applied_hunks_reversed",
+   "file": "target/land.py",
+   "old": "for h in blocks[0][\"hunks\"]]}",
+   "new": "for h in reversed(blocks[0][\"hunks\"])]}",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "applied_hunks_dropped",
+   "file": "target/land.py",
+   "old": "for h in blocks[0][\"hunks\"]]}",
+   "new": "for h in blocks[0][\"hunks\"][:1]]}",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "schema_paths_unchecked",
+   "file": "ledger/schema.py",
+   "old": "MERGE(p, where) or _hunk_paths(p, where)",
+   "new": "MERGE(p, where)",
+   "tests": [
+    "test_schema.py"
+   ]
+  },
+  {
+   "id": "schema_record_optional",
+   "file": "ledger/schema.py",
+   "old": "\"merge_sha\": hex40,\n               \"hunk_covered\": HUNK_COVERED})",
+   "new": "\"merge_sha\": hex40}, {\"hunk_covered\": HUNK_COVERED})",
+   "tests": [
+    "test_schema.py",
+    "test_pass_row.py"
+   ]
+  },
+  {
+   "id": "schema_covered_any",
+   "file": "ledger/schema.py",
+   "old": "\"covered\": one_of(\"unmeasured\")",
+   "new": "\"covered\": any_value",
+   "tests": [
+    "test_schema.py"
+   ]
+  },
+  {
+   "id": "schema_reason_any",
+   "file": "ledger/schema.py",
+   "old": "\"reason\": one_of(\"no_coverage_tool\")",
+   "new": "\"reason\": any_value",
+   "tests": [
+    "test_schema.py"
+   ]
+  },
+  {
+   "id": "schema_range_any",
+   "file": "ledger/schema.py",
+   "old": "\"old_start\": count,",
+   "new": "\"old_start\": any_value,",
+   "tests": [
+    "test_schema.py"
+   ]
+  },
+  {
+   "id": "d6_hunks_lost",
+   "file": "loop/write_cycle.py",
+   "old": "dict(merged, hunks=change[\"hunks\"])",
+   "new": "dict(merged, hunks=[])",
+   "tests": [
+    "test_activate.py",
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "pass_row_condition_dropped",
+   "file": "harness/pass_row.py",
+   "old": "\"#ret\", \"#kapsama-kaydi\", ",
+   "new": "\"#ret\", ",
+   "tests": [
+    "test_pass_row.py"
+   ]
+  }
+ ]
+}

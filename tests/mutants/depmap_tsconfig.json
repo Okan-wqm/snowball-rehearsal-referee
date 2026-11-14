@@ -1,0 +1,67 @@
+{
+ "mutants": [
+  {
+   "id": "ts_no_boxes",
+   "file": "status/depmap.py",
+   "old": "        projects.add(d, \"tsconfig\", d)\n",
+   "new": "        pass\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "ts_inside_a_project",
+   "file": "status/depmap.py",
+   "old": "and J.TSCONFIG.fullmatch(posixpath.basename(rel)) and projects.owner(rel) is None})",
+   "new": "and J.TSCONFIG.fullmatch(posixpath.basename(rel))})",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "ts_root_boxed",
+   "file": "status/depmap.py",
+   "old": "    ts_boxes = sorted({posixpath.dirname(rel) for rel in files if posixpath.dirname(rel)\n",
+   "new": "    ts_boxes = sorted({posixpath.dirname(rel) for rel in files if True\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "ts_name_search",
+   "file": "status/depmap.py",
+   "old": "and J.TSCONFIG.fullmatch(posixpath.basename(rel))",
+   "new": "and J.TSCONFIG.search(posixpath.basename(rel))",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "ts_name_loose",
+   "file": "profile/jsimports.py",
+   "old": "TSCONFIG = re.compile(r\"tsconfig(\\.[^/]*)?\\.json\")",
+   "new": "TSCONFIG = re.compile(r\"tsconfig[^/]*\\.json\")",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "ts_decided_after_path",
+   "file": "status/depmap.py",
+   "old": "    for d in ts_boxes:\n        projects.add(d, \"tsconfig\", d)\n",
+   "new": "    for d in ts_boxes:\n        projects.add(d, \"tsconfig\", d) if projects.owner(d) is None else None\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "ts_render_count",
+   "file": "status/depmap.py",
+   "old": "\", \".join(\"%s %d\" % (k, cov[\"projects_by_kind\"][k]) for k in PROJECT_KINDS)",
+   "new": "\", \".join(\"%s %d\" % (k, cov[\"projects_by_kind\"][k]) for k in PROJECT_KINDS[:-2] + PROJECT_KINDS[-1:])",
+   "tests": [
+    "test_depmap.py"
+   ]
+  }
+ ]
+}

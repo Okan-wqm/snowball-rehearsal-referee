@@ -1,0 +1,105 @@
+{
+ "mutants": [
+  {
+   "id": "decision_counts_as_merge",
+   "file": "ledger/serial.py",
+   "old": "MERGES = ((\"events\", \"merge\"), (\"drill\", \"plant\"))",
+   "new": "MERGES = ((\"events\", \"merge\"), (\"drill\", \"plant\"), (\"events\", \"decision\"))",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "plant_not_a_merge",
+   "file": "ledger/serial.py",
+   "old": "MERGES = ((\"events\", \"merge\"), (\"drill\", \"plant\"))",
+   "new": "MERGES = ((\"events\", \"merge\"),)",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "merge_row_not_a_merge",
+   "file": "ledger/serial.py",
+   "old": "MERGES = ((\"events\", \"merge\"), (\"drill\", \"plant\"))",
+   "new": "MERGES = ((\"drill\", \"plant\"),)",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "schema_not_checked",
+   "file": "ledger/serial.py",
+   "old": "    reasons = schema.ledger_reasons(ledger)\n",
+   "new": "    reasons = []\n",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "revert_does_not_finish",
+   "file": "ledger/serial.py",
+   "old": "                open_[sha] = False",
+   "new": "                pass",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "revert_without_merge_ignored",
+   "file": "ledger/serial.py",
+   "old": "                bad.add(\"finish_without_merge:%s\" % sha)",
+   "new": "                pass",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "merged_twice_ignored",
+   "file": "ledger/serial.py",
+   "old": "                bad.add(\"merged_twice:%s\" % sha)",
+   "new": "                pass",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "first_reason_only",
+   "file": "ledger/serial.py",
+   "old": "        raise Unusable(sorted(bad))",
+   "new": "        raise Unusable(sorted(bad)[:1])",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "job_ignores_state",
+   "file": "loop/job.py",
+   "old": "        return SE.unfinished(art.state[B.STATE_LEDGER]), None",
+   "new": "        return [], None",
+   "tests": [
+    "test_loop_yaz.py",
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "job_state_refusal_swallowed",
+   "file": "loop/job.py",
+   "old": "        return [], {\"reason\": \"state_refused\", \"reasons\": exc.reasons}",
+   "new": "        return [], None",
+   "tests": [
+    "test_loop_yaz.py",
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "decide_drops_unfinished",
+   "file": "loop/decide.py",
+   "old": "    pending = list(unfinished)",
+   "new": "    pending = []",
+   "tests": [
+    "test_loop_yaz.py"
+   ]
+  }
+ ]
+}

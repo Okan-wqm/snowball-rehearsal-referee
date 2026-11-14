@@ -1,0 +1,85 @@
+{
+ "mutants": [
+  {
+   "id": "ur_lint_exit_1_not_green",
+   "file": "profile/unit_verify.py",
+   "old": "LINT_OK_EXITS = (0, 1)",
+   "new": "LINT_OK_EXITS = (0,)",
+   "tests": [
+    "test_unit_verify.Run.test_lint_must_finish_and_be_deterministic"
+   ]
+  },
+  {
+   "id": "ur_lint_exit_2_green",
+   "file": "profile/unit_verify.py",
+   "old": "LINT_OK_EXITS = (0, 1)",
+   "new": "LINT_OK_EXITS = (0, 1, 2)",
+   "tests": [
+    "test_unit_verify.Run.test_lint_must_finish_and_be_deterministic"
+   ]
+  },
+  {
+   "id": "ur_lint_det_ignores_exit",
+   "file": "profile/unit_verify.py",
+   "old": "len({(r[\"exit\"], r[\"stdout_sha256\"]) for r in lints}) > 1",
+   "new": "len({(r[\"stdout_sha256\"]) for r in lints}) > 1",
+   "tests": [
+    "test_unit_verify.Run.test_lint_runs_must_agree_on_the_exit_code"
+   ]
+  },
+  {
+   "id": "ur_lint_det_ignores_stdout",
+   "file": "profile/unit_verify.py",
+   "old": "len({(r[\"exit\"], r[\"stdout_sha256\"]) for r in lints}) > 1",
+   "new": "len({(r[\"exit\"]) for r in lints}) > 1",
+   "tests": [
+    "test_unit_verify.Run.test_lint_must_finish_and_be_deterministic"
+   ]
+  },
+  {
+   "id": "ur_toolchain_two_components",
+   "file": "profile/unit_verify.py",
+   "old": "TOOLCHAIN = re.compile(r\"node@([0-9]+\\.[0-9]+\\.[0-9]+)\")",
+   "new": "TOOLCHAIN = re.compile(r\"node@([0-9]+\\.[0-9]+(?:\\.[0-9]+)?)\")",
+   "tests": [
+    "test_unit_verify.StaticCheck.test_toolchain_is_exact_node_version"
+   ]
+  },
+  {
+   "id": "ur_toolchain_any_name",
+   "file": "profile/unit_verify.py",
+   "old": "TOOLCHAIN = re.compile(r\"node@([0-9]+\\.[0-9]+\\.[0-9]+)\")",
+   "new": "TOOLCHAIN = re.compile(r\"[a-z]+@([0-9]+\\.[0-9]+\\.[0-9]+)\")",
+   "tests": [
+    "test_unit_verify.StaticCheck.test_toolchain_is_exact_node_version"
+   ]
+  },
+  {
+   "id": "ur_toolchain_prefix_match",
+   "file": "profile/unit_verify.py",
+   "old": "m = TOOLCHAIN.fullmatch(get(\"toolchain\")) if isinstance(get(\"toolchain\"), str) else None",
+   "new": "m = TOOLCHAIN.match(get(\"toolchain\")) if isinstance(get(\"toolchain\"), str) else None",
+   "tests": [
+    "test_unit_verify.StaticCheck.test_toolchain_is_exact_node_version"
+   ]
+  },
+  {
+   "id": "ur_version_file_mismatch_ignored",
+   "file": "profile/unit_verify.py",
+   "old": "        elif m.group(1) != version:\n            reasons.append(\"toolchain_version_mismatch\")",
+   "new": "        elif False:\n            reasons.append(\"toolchain_version_mismatch\")",
+   "tests": [
+    "test_unit_verify.StaticCheck.test_nearest_version_file_must_be_exact_and_equal"
+   ]
+  },
+  {
+   "id": "ur_version_file_range_ok",
+   "file": "profile/unit_verify.py",
+   "old": "VERSION_TEXT = re.compile(r\"v?([0-9]+\\.[0-9]+\\.[0-9]+)\")",
+   "new": "VERSION_TEXT = re.compile(r\"[v^~]?([0-9]+\\.[0-9]+\\.[0-9]+)\")",
+   "tests": [
+    "test_unit_verify.StaticCheck.test_nearest_version_file_must_be_exact_and_equal"
+   ]
+  }
+ ]
+}

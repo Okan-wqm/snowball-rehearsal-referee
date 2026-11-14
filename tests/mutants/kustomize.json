@@ -1,0 +1,373 @@
+{
+ "mutants": [
+  {
+   "id": "yd_marker_any_col",
+   "file": "profile/yamlblock.py",
+   "old": "if indent == 0 and _marker(content, i) is not None:",
+   "new": "if _marker(content, i) is not None:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_marker_no_break",
+   "file": "profile/yamlblock.py",
+   "old": "or line[3:4] not in (\"\", \" \", \"\\t\", \"\\r\"):",
+   "new": "or line[3:4] not in (\"\", \" \", \"\\t\", \"\\r\", \"x\", \"y\", \":\"):",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_marker_content_ignored",
+   "file": "profile/yamlblock.py",
+   "old": "    if _uncomment(line[3:]) != \"\":\n        raise Unreadable(i + 1, \"marker_content\")",
+   "new": "    if False:\n        raise Unreadable(i + 1, \"marker_content\")",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_tab_not_break",
+   "file": "profile/yamlblock.py",
+   "old": "not in (\"\", \" \", \"\\t\", \"\\r\")",
+   "new": "not in (\"\", \" \", \"\\r\")",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_empty_explicit_dropped",
+   "file": "profile/yamlblock.py",
+   "old": "                root, i, end = self.document(i)\n                docs.append((start, root))",
+   "new": "                root, i, end = self.document(i)\n                if root is not None:\n                    docs.append((start, root))",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_anchors_shared",
+   "file": "profile/yamlblock.py",
+   "old": "                self.anchors = {}\n                root, i, end = self.document(i)",
+   "new": "                root, i, end = self.document(i)",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_start_line_after",
+   "file": "profile/yamlblock.py",
+   "old": "                start = i + 1\n                if end == \"---\":\n                    i += 1",
+   "new": "                if end == \"---\":\n                    i += 1\n                start = i + 1",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_dots_end_all",
+   "file": "profile/yamlblock.py",
+   "old": "            if end == \"...\":\n                i += 1\n                continue",
+   "new": "            if end == \"...\":\n                return docs",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_directive_mid",
+   "file": "profile/yamlblock.py",
+   "old": "while i < len(lines) and (self._blank(i) or lines[i].startswith(\"%\")):\n                i += 1\n            if i >= len(lines):\n                return docs",
+   "new": "while i < len(lines) and self._blank(i):\n                i += 1\n            if i >= len(lines):\n                return docs",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_quote_crosses",
+   "file": "profile/yamlblock.py",
+   "old": "if k >= len(lines) or _marker(lines[k], k) is not None:",
+   "new": "if k >= len(lines):",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_load_first_only",
+   "file": "profile/yamlblock.py",
+   "old": "    if len(docs) > 1:\n        raise Unreadable(docs[1][0], \"documents\")\n    return docs[0][1] if docs else None",
+   "new": "    return docs[0][1] if docs else None",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yd_load_all_last",
+   "file": "profile/yamlblock.py",
+   "old": "return [value for _line, value in _Reader(text).documents()]",
+   "new": "return [value for _line, value in _Reader(text).documents()][-1:]",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "kz_name_yml",
+   "file": "profile/kustomize.py",
+   "old": "\"kustomization.yaml\", \"kustomization.yml\", \"Kustomization\")",
+   "new": "\"kustomization.yaml\", \"Kustomization\")",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_no_bases",
+   "file": "profile/kustomize.py",
+   "old": "LISTS = (\"resources\", \"bases\", ",
+   "new": "LISTS = (\"resources\", ",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_no_components",
+   "file": "profile/kustomize.py",
+   "old": "\"bases\", \"components\", \"crds\",",
+   "new": "\"bases\", \"crds\",",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_entry_paths",
+   "file": "profile/kustomize.py",
+   "old": "ENTRY_PATHS = (\"patches\", \"patchesJson6902\")",
+   "new": "ENTRY_PATHS = (\"patches\",)",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_openapi",
+   "file": "profile/kustomize.py",
+   "old": "    if isinstance(doc.get(\"openapi\"), dict) and \"path\" in doc[\"openapi\"]:",
+   "new": "    if False:",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_secret_gen",
+   "file": "profile/kustomize.py",
+   "old": "GENERATORS = (\"configMapGenerator\", \"secretGenerator\")",
+   "new": "GENERATORS = (\"configMapGenerator\",)",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_env_single",
+   "file": "profile/kustomize.py",
+   "old": "            if \"env\" in entry:\n                add(field, entry[\"env\"])",
+   "new": "            pass",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_files_no_split",
+   "file": "profile/kustomize.py",
+   "old": "                            value = value.split(\"=\", 1)[1]",
+   "new": "                            pass",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_envs_split",
+   "file": "profile/kustomize.py",
+   "old": "if key == \"files\" and isinstance(value, str)",
+   "new": "if isinstance(value, str)",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_inline_colon",
+   "file": "profile/kustomize.py",
+   "old": "if \"\\n\" in value or \": \" in value:",
+   "new": "if \"\\n\" in value:",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_inline_mapping",
+   "file": "profile/kustomize.py",
+   "old": "    if isinstance(value, (dict, list)):\n        return \"inline\"",
+   "new": "    if isinstance(value, list):\n        return \"inline\"",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_git_at",
+   "file": "profile/kustomize.py",
+   "old": "if \"://\" in value or value.startswith(\"git@\"):",
+   "new": "if \"://\" in value:",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_host_dot_lead",
+   "file": "profile/kustomize.py",
+   "old": "return \"/\" in value and \".\" in first and not first.startswith(\".\")",
+   "new": "return \"/\" in value and \".\" in first",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_host_slash",
+   "file": "profile/kustomize.py",
+   "old": "return \"/\" in value and \".\" in first and not first.startswith(\".\")",
+   "new": "return \".\" in first and not first.startswith(\".\")",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "kz_patch_entry_not_dict",
+   "file": "profile/kustomize.py",
+   "old": "if isinstance(entry, dict) and \"path\" in entry:",
+   "new": "if isinstance(entry, dict):",
+   "tests": [
+    "test_profile_kustomize.py"
+   ]
+  },
+  {
+   "id": "dk_no_box",
+   "file": "status/depmap.py",
+   "old": "        projects.add(d, \"kustomize\", d)",
+   "new": "        pass",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_box_in_project",
+   "file": "status/depmap.py",
+   "old": "and kustomize.is_kustomization(posixpath.basename(rel)) and projects.owner(rel) is None}):",
+   "new": "and kustomize.is_kustomization(posixpath.basename(rel))}):",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_no_edge",
+   "file": "status/depmap.py",
+   "old": "                edge(here, projects.owner(path), \"kustomize\")",
+   "new": "                pass",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_dir_no_kust_ok",
+   "file": "status/depmap.py",
+   "old": "            elif path in dirs and path not in roots:",
+   "new": "            elif False:",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_remote_missing",
+   "file": "status/depmap.py",
+   "old": "outcome = \"remote\" if kustomize.host_like(value) else \"missing\"",
+   "new": "outcome = \"missing\"",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_multi_doc_ok",
+   "file": "status/depmap.py",
+   "old": "        if docs is None or len(docs) > 1:\n            found[\"unreadable\"].append(rel)",
+   "new": "        if docs is None:\n            found[\"unreadable\"].append(rel)",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_manifest_fields",
+   "file": "status/depmap.py",
+   "old": "and field in (\"resources\", \"bases\", \"crds\"):",
+   "new": ":",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_empty_counted",
+   "file": "status/depmap.py",
+   "old": "            if doc is None:\n                man[\"empty_documents\"] += 1\n                continue",
+   "new": "            if doc is None:\n                man[\"empty_documents\"] += 1",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_kind_any",
+   "file": "status/depmap.py",
+   "old": "key = doc.get(\"kind\") if isinstance(doc, dict) and isinstance(doc.get(\"kind\"), str) else \"no_kind\"",
+   "new": "key = str(doc.get(\"kind\")) if isinstance(doc, dict) else \"no_kind\"",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_unref_no_k8s",
+   "file": "status/depmap.py",
+   "old": "and rel not in named and _k8s_object(_yaml(root, rel))]",
+   "new": "and rel not in named]",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_k8s_first_doc",
+   "file": "status/depmap.py",
+   "old": "               for d in docs or ())",
+   "new": "               for d in (docs or ())[:1])",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_yaml_undecodable_empty",
+   "file": "status/depmap.py",
+   "old": "    text = _read(root, rel)\n    if text is None:\n        return None",
+   "new": "    text = _read(root, rel) or \"\"\n    if text is None:\n        return None",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_compose_multi_ok",
+   "file": "status/depmap.py",
+   "old": "        if docs is None or len(docs) > 1:\n            unreadable[\"compose\" if compose else \"actions\"].append(rel)",
+   "new": "        if docs is None:\n            unreadable[\"compose\" if compose else \"actions\"].append(rel)",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_render_remote",
+   "file": "status/depmap.py",
+   "old": "kz[\"paths\"][\"leaves_root\"], kz[\"paths\"][\"remote\"],",
+   "new": "kz[\"paths\"][\"leaves_root\"], kz[\"paths\"][\"missing\"],",
+   "tests": [
+    "test_depmap.py"
+   ]
+  }
+ ]
+}

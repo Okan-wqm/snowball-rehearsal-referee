@@ -1,0 +1,121 @@
+{
+ "mutants": [
+  {
+   "id": "cap_not_from_policy",
+   "file": "loop/cagir.py",
+   "old": "cap = L.policy_usd(art.policy_bytes, *CANARY_USD)",
+   "new": "cap = 1_000_000",
+   "tests": [
+    "test_loop_cagir.py"
+   ]
+  },
+  {
+   "id": "spend_not_counted",
+   "file": "loop/cagir.py",
+   "old": "book = L.CostBook(art.state[B.STATE_LEDGER], None)",
+   "new": "book = L.CostBook(b\"\", None)",
+   "tests": [
+    "test_loop_cagir.py"
+   ]
+  },
+  {
+   "id": "rows_dropped",
+   "file": "loop/cagir.py",
+   "old": "\"rows\": book.rows,",
+   "new": "\"rows\": [],",
+   "tests": [
+    "test_loop_cagir.py"
+   ]
+  },
+  {
+   "id": "snapshot_is_the_state_head",
+   "file": "loop/cagir.py",
+   "old": "snapshot_id=art.heads[B.INTEGRATION]",
+   "new": "snapshot_id=art.heads[B.STATE]",
+   "tests": [
+    "test_loop_cagir.py"
+   ]
+  },
+  {
+   "id": "token_not_passed",
+   "file": "loop/cagir.py",
+   "old": "book=book, token=token,",
+   "new": "book=book, token=None,",
+   "tests": [
+    "test_loop_cagir.py"
+   ]
+  },
+  {
+   "id": "out_overwritten",
+   "file": "loop/cagir.py",
+   "old": "    if os.path.lexists(out):\n        raise L.Unusable(\"%s exists\" % out)\n",
+   "new": "    pass\n",
+   "tests": [
+    "test_loop_cagir.py"
+   ]
+  },
+  {
+   "id": "env_partly_checked",
+   "file": "loop/job.py",
+   "old": "    for name in CAGIR_ENV:",
+   "new": "    for name in CAGIR_ENV[:2]:",
+   "tests": [
+    "test_loop_cagir.py"
+   ]
+  },
+  {
+   "id": "row_id_without_attempt",
+   "file": "loop/job.py",
+   "old": "row_id=\"cagir-%s-%s\" % (environ[\"GITHUB_RUN_ID\"], environ[\"GITHUB_RUN_ATTEMPT\"])",
+   "new": "row_id=\"cagir-%s-%s\" % (environ[\"GITHUB_RUN_ID\"], environ[\"GITHUB_RUN_ID\"])",
+   "tests": [
+    "test_loop_cagir.py"
+   ]
+  },
+  {
+   "id": "heads_not_judged",
+   "file": "loop/pulled.py",
+   "old": "    if HEADS in parsed and not _heads_valid(parsed[HEADS], state, contents.get(STATUS)):",
+   "new": "    if False:",
+   "tests": [
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "state_not_required",
+   "file": "loop/pulled.py",
+   "old": "TOP = (TREE, UNITS, POLICY) + STATE_FILES",
+   "new": "TOP = (TREE, UNITS, POLICY)",
+   "tests": [
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "cek_hands_over_empty_chains",
+   "file": "loop/job.py",
+   "old": "{p: chains[p] for p in B.STATE_CHAINS}",
+   "new": "{p: b\"\" for p in B.STATE_CHAINS}",
+   "tests": [
+    "test_loop_cek.py"
+   ]
+  },
+  {
+   "id": "integration_head_is_the_state_head",
+   "file": "loop/cek.py",
+   "old": "{B.STATE: state_head, B.INTEGRATION: commit}",
+   "new": "{B.STATE: state_head, B.INTEGRATION: state_head}",
+   "tests": [
+    "test_loop_cek.py"
+   ]
+  },
+  {
+   "id": "policy_usd_floats",
+   "file": "dispatcher/llm_call.py",
+   "old": "    micros = _cost(node)\n",
+   "new": "    micros = int(float(node.text) * 1_000_000) if isinstance(node, JsonNumber) else _cost(node)\n",
+   "tests": [
+    "test_loop_cagir.py"
+   ]
+  }
+ ]
+}

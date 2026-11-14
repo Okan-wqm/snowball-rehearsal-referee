@@ -1,0 +1,301 @@
+{
+ "mutants": [
+  {
+   "id": "dk_escape_ignored",
+   "file": "profile/docker.py",
+   "old": "            escape = m.group(2)\n",
+   "new": "            pass\n",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_comment_in_continuation",
+   "file": "profile/docker.py",
+   "old": "            while i < len(lines) and (not lines[i].strip() or lines[i].strip().startswith(\"#\")):\n",
+   "new": "            while False:\n",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_heredoc_any_keyword",
+   "file": "profile/docker.py",
+   "old": "if keyword.upper() in HEREDOC_KEYWORDS else []",
+   "new": "if True else []",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_heredoc_tabs_kept",
+   "file": "profile/docker.py",
+   "old": "body = lines[i].lstrip(\"\\t\") if strip_tabs else lines[i]",
+   "new": "body = lines[i]",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_heredoc_search",
+   "file": "profile/docker.py",
+   "old": "(m := _HEREDOC.fullmatch(w))",
+   "new": "(m := _HEREDOC.search(w))",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_heredoc_digit_word",
+   "file": "profile/docker.py",
+   "old": "([A-Za-z_][A-Za-z0-9_]*)\\2\")",
+   "new": "([A-Za-z0-9_]+)\\2\")",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_heredoc_no_body",
+   "file": "profile/docker.py",
+   "old": "                if body == word:\n                    break\n",
+   "new": "                break\n",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_from_ignored",
+   "file": "profile/docker.py",
+   "old": "            staged = staged or m.group(0).startswith(\"--from=\")\n",
+   "new": "            staged = False\n",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_flag_boundary",
+   "file": "profile/docker.py",
+   "old": " and (m.end() == len(rest) or rest[m.end()].isspace())",
+   "new": "",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_json_ignored",
+   "file": "profile/docker.py",
+   "old": "        if rest.startswith(\"[\"):\n",
+   "new": "        if False:\n",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_kind_variable_first",
+   "file": "profile/docker.py",
+   "old": "    if \"://\" in source or source.startswith(\"git@\"):\n        return \"remote\"\n    if \"$\" in source:\n        return \"variable\"\n",
+   "new": "    if \"$\" in source:\n        return \"variable\"\n    if \"://\" in source or source.startswith(\"git@\"):\n        return \"remote\"\n",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_one_arg_ok",
+   "file": "profile/docker.py",
+   "old": "        if len(args) < 2:\n",
+   "new": "        if len(args) < 1:\n",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_dest_as_source",
+   "file": "profile/docker.py",
+   "old": "for s in args[:-1])",
+   "new": "for s in args)",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dm_box_any_dockerfile",
+   "file": "status/depmap.py",
+   "old": "    for d in sorted({posixpath.dirname(rel) for rel in dockerfiles if posixpath.dirname(rel)\n                     and projects.owner(rel) is None}):",
+   "new": "    for d in sorted({posixpath.dirname(rel) for rel in dockerfiles if posixpath.dirname(rel)}):",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_box_root",
+   "file": "status/depmap.py",
+   "old": "    for d in sorted({posixpath.dirname(rel) for rel in dockerfiles if posixpath.dirname(rel)\n                     and projects.owner(rel) is None}):",
+   "new": "    for d in sorted({posixpath.dirname(rel) for rel in dockerfiles if projects.owner(rel) is None}):",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_context_from_root",
+   "file": "status/depmap.py",
+   "old": "                place(posixpath.dirname(rel), \".\" if context is None else context,",
+   "new": "                place(\"\", \".\" if context is None else context,",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_dockerfile_default",
+   "file": "status/depmap.py",
+   "old": "\"Dockerfile\" if dockerfile is None else dockerfile, True, cov)",
+   "new": "\"Containerfile\" if dockerfile is None else dockerfile, True, cov)",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_variable_resolved",
+   "file": "status/depmap.py",
+   "old": "        if any(not isinstance(v, str) or \"$\" in v or \"://\" in v for v in (context, dockerfile)):",
+   "new": "        if any(not isinstance(v, str) or \"://\" in v for v in (context, dockerfile)):",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_context_dir_unchecked",
+   "file": "status/depmap.py",
+   "old": "        elif ctx not in dirs or path not in file_set:\n",
+   "new": "        elif path not in file_set:\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_compose_any_yaml",
+   "file": "status/depmap.py",
+   "old": "        compose = docker.is_compose(posixpath.basename(rel))\n",
+   "new": "        compose = rel.endswith((\".yml\", \".yaml\"))\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_leading_slash_kept",
+   "file": "status/depmap.py",
+   "old": "    path = _norm(posixpath.join(context, source.lstrip(\"/\")))\n",
+   "new": "    path = _norm(posixpath.join(context, source))\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_context_not_bound",
+   "file": "status/depmap.py",
+   "old": "    if path is None or not _under(path, context):\n",
+   "new": "    if path is None:\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_glob_any_depth",
+   "file": "status/depmap.py",
+   "old": " and len(p.split(\"/\")) == len(want)\n",
+   "new": "\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_missing_matched",
+   "file": "status/depmap.py",
+   "old": "        return [path] if path in files or path in dirs else []\n",
+   "new": "        return [path]\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_dir_inside_not_reached",
+   "file": "status/depmap.py",
+   "old": "                    if p in dirs:\n",
+   "new": "                    if False:\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_owner_not_reached",
+   "file": "status/depmap.py",
+   "old": "                    edge(here, projects.owner(p), \"docker\")\n",
+   "new": "                    pass\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_built_still_unread",
+   "file": "status/depmap.py",
+   "old": "            if kind == \"code\" and rel not in built:\n",
+   "new": "            if kind == \"code\":\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_first_context_only",
+   "file": "status/depmap.py",
+   "old": "            for ctx in sorted(contexts[rel]):\n",
+   "new": "            for ctx in sorted(contexts[rel])[:1]:\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dm_render_no_docker_count",
+   "file": "status/depmap.py",
+   "old": "\", \".join(\"%s %d\" % (k, cov[\"projects_by_kind\"][k]) for k in PROJECT_KINDS)",
+   "new": "\", \".join(\"%s %d\" % (k, 0 if k == \"docker\" else cov[\"projects_by_kind\"][k]) for k in PROJECT_KINDS)",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "dk_compose_any_key",
+   "file": "profile/docker.py",
+   "old": "    services = doc.get(\"services\") if isinstance(doc, dict) else None\n",
+   "new": "    services = doc\n",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_compose_mapping_as_value",
+   "file": "profile/docker.py",
+   "old": "        if isinstance(build, dict):\n            builds.append",
+   "new": "        if False:\n            builds.append",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_compose_null_built",
+   "file": "profile/docker.py",
+   "old": "        elif build is not None:\n",
+   "new": "        else:\n",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  },
+  {
+   "id": "dk_compose_dockerfile_dropped",
+   "file": "profile/docker.py",
+   "old": "build.get(\"context\"), build.get(\"dockerfile\")))",
+   "new": "build.get(\"context\"), None))",
+   "tests": [
+    "test_profile_docker.py"
+   ]
+  }
+ ]
+}

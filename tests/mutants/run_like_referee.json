@@ -1,0 +1,347 @@
+{
+ "root": ".",
+ "mutants": [
+  {
+   "id": "ignored_files_copied",
+   "old": "\"--cached\", \"--others\", \"--exclude-standard\")",
+   "new": "\"--cached\", \"--others\")",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "untracked_not_copied",
+   "old": "\"--cached\", \"--others\", \"--exclude-standard\")",
+   "new": "\"--cached\", \"--exclude-standard\")",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "gone_file_copied",
+   "old": "return [n for n in names if os.path.lexists(os.path.join(root, n))]",
+   "new": "return names",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "git_failure_ignored",
+   "old": "if proc.returncode != 0:\n        raise Unreadable",
+   "new": "if proc.returncode < 0:\n        raise Unreadable",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "git_missing_uncaught",
+   "old": "    except OSError:\n        raise Unreadable(\"git_unavailable\") from None",
+   "new": "    except ValueError:\n        raise Unreadable(\"git_unavailable\") from None",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "link_followed",
+   "old": "if os.path.islink(src):",
+   "new": "if False:",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "exec_bit_dropped",
+   "old": "os.chmod(out, 0o755 if os.stat(src).st_mode & 0o111 else 0o644)",
+   "new": "os.chmod(out, 0o644)",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "source_mode_kept",
+   "old": "os.chmod(out, 0o755 if os.stat(src).st_mode & 0o111 else 0o644)",
+   "new": "shutil.copymode(src, out)",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "dir_mode_not_set",
+   "old": "    for top, _, _ in os.walk(dst):\n        os.chmod(top, 0o755)",
+   "new": "    for top, _, _ in os.walk(dst):\n        pass",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "root_dir_mode_not_set",
+   "old": "        os.chmod(top, 0o755)",
+   "new": "        os.chmod(top, 0o755) if top != dst else None",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "shared_copy",
+   "old": "own = tempfile.mkdtemp(prefix=\"%s-\" % test[\"id\"], dir=work)",
+   "new": "own = os.path.join(work, \"shared\"); os.makedirs(own, exist_ok=True)",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "pycache_compared",
+   "old": "dirs[:] = [d for d in dirs if d != PYCACHE]",
+   "new": "dirs[:] = list(dirs)",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "all_dirs_skipped",
+   "old": "dirs[:] = [d for d in dirs if d != PYCACHE]",
+   "new": "dirs[:] = [d for d in dirs if d == PYCACHE]",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "exec_bit_not_compared",
+   "old": "hashlib.sha256(f.read()).hexdigest(), bool(st.st_mode & 0o111))",
+   "new": "hashlib.sha256(f.read()).hexdigest())",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "content_not_compared",
+   "old": "out[rel] = (\"file\", hashlib.sha256(f.read()).hexdigest(), bool(st.st_mode & 0o111))",
+   "new": "out[rel] = (\"file\", bool(st.st_mode & 0o111))",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "link_target_not_compared",
+   "old": "out[rel] = (\"link\", os.readlink(path))",
+   "new": "out[rel] = (\"link\",)",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "removed_not_listed",
+   "old": "for p in set(before) | set(after) if",
+   "new": "for p in set(after) if",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "added_not_listed",
+   "old": "for p in set(before) | set(after) if",
+   "new": "for p in set(before) if",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "write_is_ok",
+   "old": "\"ok\": code == 0 and not changed",
+   "new": "\"ok\": code == 0",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "path_inherited",
+   "old": "return {\"PATH\": path, \"HOME\"",
+   "new": "return {\"PATH\": path + os.pathsep + os.environ.get(\"PATH\", \"\"), \"HOME\"",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "environment_leaks",
+   "old": "cwd=tree, env=env(path, tmp),",
+   "new": "cwd=tree, env=dict(os.environ, **env(path, tmp)),",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "home_real",
+   "old": "\"HOME\": HOME,",
+   "new": "\"HOME\": os.path.expanduser(\"~\"),",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "tmpdir_shared",
+   "old": "\"TMPDIR\": tmp,",
+   "new": "\"TMPDIR\": tempfile.gettempdir(),",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "only_python3",
+   "old": "for name in (\"python\", \"python3\"):",
+   "new": "for name in (\"python3\",):",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "stdin_inherited",
+   "old": "cwd=tree, env=env(path, tmp),\n                                  stdin=subprocess.DEVNULL,",
+   "new": "cwd=tree, env=env(path, tmp),\n                                  stdin=None,",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "cwd_parent",
+   "old": "proc = subprocess.run([SHELL, \"-c\", test[\"cmd\"]], cwd=tree,",
+   "new": "proc = subprocess.run([SHELL, \"-c\", test[\"cmd\"]], cwd=own,",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "timeout_not_passed",
+   "old": "                                  timeout=timeout)",
+   "new": "                                  timeout=None)",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "timeout_is_ok",
+   "old": "\"ok\": code == 0 and not changed",
+   "new": "\"ok\": (code == 0 or timed_out) and not changed",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "stderr_dropped",
+   "old": "stdout=subprocess.PIPE, stderr=subprocess.STDOUT,",
+   "new": "stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "tail_head",
+   "old": "\"tail\": out.decode(\"utf-8\", \"replace\")[-TAIL:]",
+   "new": "\"tail\": out.decode(\"utf-8\", \"replace\")[:TAIL]",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "order_by_finish",
+   "old": "results = list(pool.map(lambda t: run_one(t, root, names, path, work, timeout), tests))",
+   "new": "results = list(pool.map(lambda t: run_one(t, root, names, path, work, timeout), tests)); results.sort(key=lambda r: r[\"duration_ms\"])",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "work_left",
+   "old": "    finally:\n        remove(own)",
+   "new": "    finally:\n        pass",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "only_ignored",
+   "old": "    if only:\n",
+   "new": "    if False:\n",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "unknown_only_skipped",
+   "old": "        if missing:\n            raise Unreadable",
+   "new": "        if False:\n            raise Unreadable",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "summary_ok_any",
+   "old": "\"ok\": all(r[\"ok\"] for r in results)",
+   "new": "\"ok\": any(r[\"ok\"] for r in results)",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "exit_one_on_failure_lost",
+   "old": "return 0 if summary[\"ok\"] else 1",
+   "new": "return 0",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "unreadable_exit_one",
+   "old": "        return 2\n",
+   "new": "        return 1\n",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  },
+  {
+   "id": "network_claimed",
+   "old": "\"network\": \"not_isolated\"",
+   "new": "\"network\": \"none\"",
+   "file": "tests/run_like_referee.py",
+   "tests": [
+    "test_run_like_referee.py"
+   ]
+  }
+ ]
+}

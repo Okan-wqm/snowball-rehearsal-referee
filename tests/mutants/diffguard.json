@@ -1,0 +1,1395 @@
+{
+ "mutants": [
+  {
+   "id": "dg_seed_drop_biome",
+   "file": "gate/diffguard.py",
+   "old": "\".prettierrc.json\", \"biome.json\")",
+   "new": "\".prettierrc.json\")",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_seed_drop_tsconfig",
+   "file": "gate/diffguard.py",
+   "old": "\"tsconfig.json\", \"jest.config.js\"",
+   "new": "\"jest.config.js\"",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_seed_pattern",
+   "file": "gate/diffguard.py",
+   "old": "SEED_CONFIG_PATTERNS = (\"tsconfig.*.json\",)",
+   "new": "SEED_CONFIG_PATTERNS = (\"tsconfig.?*.json\",)",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_tools_drop_vite",
+   "file": "gate/diffguard.py",
+   "old": "\"vitest\", \"vite\", \"playwright\"",
+   "new": "\"vitest\", \"playwright\"",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_tools_drop_karma",
+   "file": "gate/diffguard.py",
+   "old": "\"cypress\", \"karma\",",
+   "new": "\"cypress\",",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_tools_drop_stylelint",
+   "file": "gate/diffguard.py",
+   "old": "\"swc\", \"stylelint\")",
+   "new": "\"swc\")",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_exts_drop_cts",
+   "file": "gate/diffguard.py",
+   "old": "r\"(?:js|cjs|mjs|ts|cts|mts|",
+   "new": "r\"(?:js|cjs|mjs|ts|mts|",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_exts_drop_json5",
+   "file": "gate/diffguard.py",
+   "old": "json|jsonc|json5|yml",
+   "new": "json|jsonc|yml",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_exts_drop_toml",
+   "file": "gate/diffguard.py",
+   "old": "|yaml|toml)\"",
+   "new": "|yaml)\"",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_shape_no_word",
+   "file": "gate/diffguard.py",
+   "old": "(?:[.-][A-Za-z0-9_-]+)*\\.config",
+   "new": "\\.config",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_shape_dot_only",
+   "file": "gate/diffguard.py",
+   "old": "(?:[.-][A-Za-z0-9_-]+)*\\.config",
+   "new": "(?:\\.[A-Za-z0-9_-]+)*\\.config",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_shape_preset",
+   "file": "gate/diffguard.py",
+   "old": "(?:preset|workspace)",
+   "new": "(?:workspace)",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_shape_workspace",
+   "file": "gate/diffguard.py",
+   "old": "(?:preset|workspace)",
+   "new": "(?:preset)",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_shape_rc_no_ext",
+   "file": "gate/diffguard.py",
+   "old": "rc(?:\\.%s)?\"",
+   "new": "rc\\.%s\"",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_shape_rc_no_dot",
+   "file": "gate/diffguard.py",
+   "old": "re.compile(r\"\\.(?:%s)rc",
+   "new": "re.compile(r\"\\.?(?:%s)rc",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_measured_drop_nx",
+   "file": "gate/diffguard.py",
+   "old": "(\"project.json\", \"nx.json\", \".npmrc\"",
+   "new": "(\"project.json\", \".npmrc\"",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_measured_drop_node_version",
+   "file": "gate/diffguard.py",
+   "old": "\".nvmrc\", \".node-version\", ",
+   "new": "\".nvmrc\", ",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_measured_drop_clippy",
+   "file": "gate/diffguard.py",
+   "old": "\".clippy.toml\",\n",
+   "new": "\n",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_measured_drop_deny",
+   "file": "gate/diffguard.py",
+   "old": "                         \"deny.toml\")",
+   "new": "                         )",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_root_dir_any",
+   "file": "gate/diffguard.py",
+   "old": "or path.startswith(CONFIG_ROOT_DIR)",
+   "new": "or (\"/\" + path).find(\"/\" + CONFIG_ROOT_DIR) >= 0",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_root_dir_noslash",
+   "file": "gate/diffguard.py",
+   "old": "CONFIG_ROOT_DIR = \".github/\"",
+   "new": "CONFIG_ROOT_DIR = \".github\"",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_manifest_drop_cargo",
+   "file": "gate/diffguard.py",
+   "old": "(\"Cargo.toml\", \"pyproject.toml\")",
+   "new": "(\"pyproject.toml\",)",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_manifest_drop_pyproject",
+   "file": "gate/diffguard.py",
+   "old": "(\"Cargo.toml\", \"pyproject.toml\")",
+   "new": "(\"Cargo.toml\",)",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_lock_drop_shrinkwrap",
+   "file": "gate/diffguard.py",
+   "old": "\"package-lock.json\", \"npm-shrinkwrap.json\", ",
+   "new": "\"package-lock.json\", ",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_lock_drop_pnpm",
+   "file": "gate/diffguard.py",
+   "old": "\"yarn.lock\", \"pnpm-lock.yaml\")",
+   "new": "\"yarn.lock\")",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_lock_drop_uv",
+   "file": "gate/diffguard.py",
+   "old": "\"poetry.lock\", \"uv.lock\"))",
+   "new": "\"poetry.lock\"))",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_symlink_off",
+   "file": "gate/diffguard.py",
+   "old": "found.append(\"symlink\")",
+   "new": "pass",
+   "tests": [
+    "test_diffguard.CommandLine.test_exit_codes_and_output",
+    "test_diffguard.Reasons.test_every_reason_of_a_path"
+   ]
+  },
+  {
+   "id": "dg_submodule_off",
+   "file": "gate/diffguard.py",
+   "old": "found.append(\"submodule\")",
+   "new": "pass",
+   "tests": [
+    "test_diffguard.CommandLine.test_exit_codes_and_output",
+    "test_diffguard.Reasons.test_inside_inputs_plain_edit_passes"
+   ]
+  },
+  {
+   "id": "dg_symlink_mode",
+   "file": "gate/diffguard.py",
+   "old": "SYMLINK, SUBMODULE = \"120000\", \"160000\"",
+   "new": "SYMLINK, SUBMODULE = \"120755\", \"160000\"",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_names_with_spaces",
+    "test_diffguard.ChangedPaths.test_quoted_names_are_decoded"
+   ]
+  },
+  {
+   "id": "dg_escape_abs_off",
+   "file": "gate/diffguard.py",
+   "old": "if path.startswith(\"/\") or \"..\" in",
+   "new": "if \"..\" in",
+   "tests": [
+    "test_diffguard.Reasons.test_path_escape_even_when_it_normalises_back"
+   ]
+  },
+  {
+   "id": "dg_escape_dotdot_off",
+   "file": "gate/diffguard.py",
+   "old": " or \"..\" in path.split(\"/\"):",
+   "new": ":",
+   "tests": [
+    "test_diffguard.Reasons.test_every_reason_of_a_path",
+    "test_diffguard.Reasons.test_path_escape_even_when_it_normalises_back"
+   ]
+  },
+  {
+   "id": "dg_escape_dotdot_substr",
+   "file": "gate/diffguard.py",
+   "old": "\"..\" in path.split(\"/\")",
+   "new": "\"..\" in path",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes",
+    "test_diffguard.Reasons.test_path_escape_even_when_it_normalises_back"
+   ]
+  },
+  {
+   "id": "dg_security_off",
+   "file": "gate/diffguard.py",
+   "old": "found.append(\"security_path\")",
+   "new": "pass",
+   "tests": [
+    "test_diffguard.Reasons.test_every_reason_of_a_path",
+    "test_diffguard.Reasons.test_security_path_without_keyword"
+   ]
+  },
+  {
+   "id": "dg_security_ci",
+   "file": "gate/diffguard.py",
+   "old": "D.covers_as_written(e, path) for e in profile[\"security_paths\"]",
+   "new": "D.covers_as_written(e.lower(), path.lower()) for e in profile[\"security_paths\"]",
+   "tests": [
+    "test_diffguard.Reasons.test_security_path_without_keyword"
+   ]
+  },
+  {
+   "id": "dg_excluded_off",
+   "file": "gate/diffguard.py",
+   "old": "found.append(\"excluded_path\")",
+   "new": "pass",
+   "tests": [
+    "test_diffguard.Reasons.test_every_reason_of_a_path",
+    "test_diffguard.Reasons.test_excluded_path"
+   ]
+  },
+  {
+   "id": "dg_agent_off",
+   "file": "gate/diffguard.py",
+   "old": "found.append(\"agent_config\")",
+   "new": "pass",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_quoted_names_are_decoded",
+    "test_diffguard.ChangedPaths.test_rename_changes_both_names"
+   ]
+  },
+  {
+   "id": "dg_config_names_off",
+   "file": "gate/diffguard.py",
+   "old": "(base in CONFIG_NAMES or any",
+   "new": "(False or any",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes",
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_config_patterns_off",
+   "file": "gate/diffguard.py",
+   "old": "or any(fnmatch.fnmatchcase(base, p) for p in CONFIG_PATTERNS)",
+   "new": "or False",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_config_patterns_ci",
+   "file": "gate/diffguard.py",
+   "old": "fnmatch.fnmatchcase(base, p)",
+   "new": "fnmatch.fnmatch(base.lower(), p)",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_config_shapes_off",
+   "file": "gate/diffguard.py",
+   "old": "or any(r.fullmatch(base) for r in MEASURED_CONFIG_SHAPES)",
+   "new": "or False",
+   "tests": [
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_config_shapes_search",
+   "file": "gate/diffguard.py",
+   "old": "r.fullmatch(base) for r in MEASURED",
+   "new": "r.search(base) for r in MEASURED",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes",
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_config_root_off",
+   "file": "gate/diffguard.py",
+   "old": " or path.startswith(CONFIG_ROOT_DIR)):",
+   "new": "):",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes",
+    "test_diffguard.Reasons.test_every_reason_of_a_path"
+   ]
+  },
+  {
+   "id": "dg_config_path_not_base",
+   "file": "gate/diffguard.py",
+   "old": "if (base in CONFIG_NAMES",
+   "new": "if (path in CONFIG_NAMES",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes",
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_manifest_off",
+   "file": "gate/diffguard.py",
+   "old": "found.append(\"manifest\")",
+   "new": "pass",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_deletion_changes_the_old_name",
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_lock_off",
+   "file": "gate/diffguard.py",
+   "old": "found.append(\"lockfile\")",
+   "new": "pass",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes",
+    "test_diffguard.Reasons.test_measured_tool_config_manifest_lock"
+   ]
+  },
+  {
+   "id": "dg_gitattr_off",
+   "file": "gate/diffguard.py",
+   "old": "found.append(\"gitattributes\")",
+   "new": "pass",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes"
+   ]
+  },
+  {
+   "id": "dg_outside_off",
+   "file": "gate/diffguard.py",
+   "old": "found.append(\"outside_inputs\")",
+   "new": "pass",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_copy_changes_the_new_name_only",
+    "test_diffguard.ChangedPaths.test_rename_changes_both_names"
+   ]
+  },
+  {
+   "id": "dg_outside_all",
+   "file": "gate/diffguard.py",
+   "old": "if not any(D.covers_as_written(e, path) for e in recipe[\"inputs\"])",
+   "new": "if not all(D.covers_as_written(e, path) for e in recipe[\"inputs\"])",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_copy_changes_the_new_name_only",
+    "test_diffguard.ChangedPaths.test_deletion_changes_the_old_name"
+   ]
+  },
+  {
+   "id": "dg_first_reason_only",
+   "file": "gate/diffguard.py",
+   "old": "    return [\"%s:%s\" % (r, path) for r in found]",
+   "new": "    return [\"%s:%s\" % (r, path) for r in found[:1]]",
+   "tests": [
+    "test_diffguard.Reasons.test_config_manifest_lock_gitattributes",
+    "test_diffguard.Reasons.test_every_reason_of_a_path"
+   ]
+  },
+  {
+   "id": "dg_unsorted",
+   "file": "gate/diffguard.py",
+   "old": "    return sorted(reasons)",
+   "new": "    return list(reasons)",
+   "tests": [
+    "test_diffguard.Reasons.test_every_reason_of_a_path"
+   ]
+  },
+  {
+   "id": "dg_dup_kept",
+   "file": "gate/diffguard.py",
+   "old": "    reasons = set()\n",
+   "new": "    reasons = []\n",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_copy_changes_the_new_name_only",
+    "test_diffguard.ChangedPaths.test_deletion_changes_the_old_name"
+   ]
+  },
+  {
+   "id": "dg_first_path_only",
+   "file": "gate/diffguard.py",
+   "old": "        for path in block[\"changed\"]:",
+   "new": "        for path in block[\"changed\"][:1]:",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_rename_changes_both_names"
+   ]
+  },
+  {
+   "id": "dg_strings_elem",
+   "file": "gate/diffguard.py",
+   "old": "all(isinstance(v, str) for v in value)",
+   "new": "True",
+   "tests": [
+    "test_diffguard.FailsClosed.test_unusable_profile_or_recipe"
+   ]
+  },
+  {
+   "id": "dg_strings_list",
+   "file": "gate/diffguard.py",
+   "old": "(isinstance(value, list) and all",
+   "new": "(isinstance(value, (list, str)) and all",
+   "tests": [
+    "test_diffguard.FailsClosed.test_unusable_profile_or_recipe"
+   ]
+  },
+  {
+   "id": "dg_strings_excluded_skipped",
+   "file": "gate/diffguard.py",
+   "old": "for k in (\"security_paths\", \"excluded_dirs\")}",
+   "new": "for k in (\"security_paths\",)} | {\"excluded_dirs\": profile.get(\"excluded_dirs\") or []}",
+   "tests": [
+    "test_diffguard.FailsClosed.test_unusable_profile_or_recipe"
+   ]
+  },
+  {
+   "id": "dg_rename_new_only",
+   "file": "gate/diffguard.py",
+   "old": "else [a, b] if rename else [b]",
+   "new": "else [b] if rename else [b]",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_names_with_spaces",
+    "test_diffguard.ChangedPaths.test_one_side_quoted_rename"
+   ]
+  },
+  {
+   "id": "dg_rename_old_only",
+   "file": "gate/diffguard.py",
+   "old": "else [a, b] if rename else [b]",
+   "new": "else [a] if rename else [b]",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_names_with_spaces",
+    "test_diffguard.ChangedPaths.test_one_side_quoted_rename"
+   ]
+  },
+  {
+   "id": "dg_copy_both",
+   "file": "gate/diffguard.py",
+   "old": "else [a, b] if rename else [b]",
+   "new": "else [a, b] if rename or copy else [b]",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_copy_changes_the_new_name_only"
+   ]
+  },
+  {
+   "id": "dg_copy_old",
+   "file": "gate/diffguard.py",
+   "old": "else [a, b] if rename else [b]",
+   "new": "else [a, b] if rename else [a] if copy else [b]",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_copy_changes_the_new_name_only"
+   ]
+  },
+  {
+   "id": "dg_new_modes_only_new_file",
+   "file": "gate/diffguard.py",
+   "old": "if key in (\"new mode \", \"new file mode \"):",
+   "new": "if key == \"new file mode \":",
+   "tests": [
+    "test_diffguard.Reasons.test_symlink_and_submodule_by_mode_not_content"
+   ]
+  },
+  {
+   "id": "dg_new_modes_only_new_mode",
+   "file": "gate/diffguard.py",
+   "old": "if key in (\"new mode \", \"new file mode \"):",
+   "new": "if key == \"new mode \":",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind",
+    "test_diffguard.CommandLine.test_exit_codes_and_output"
+   ]
+  },
+  {
+   "id": "dg_old_modes_judged",
+   "file": "gate/diffguard.py",
+   "old": "if key in (\"new mode \", \"new file mode \"):",
+   "new": "if True:",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind",
+    "test_diffguard.Reasons.test_symlink_and_submodule_by_mode_not_content"
+   ]
+  },
+  {
+   "id": "dg_index_mode_ignored",
+   "file": "gate/diffguard.py",
+   "old": "                    modes.append(_check_mode(m.group(1), line))",
+   "new": "                    _check_mode(m.group(1), line)",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind",
+    "test_diffguard.Reasons.test_symlink_and_submodule_by_mode_not_content"
+   ]
+  },
+  {
+   "id": "dg_kind_delete",
+   "file": "gate/diffguard.py",
+   "old": "kind = (\"delete\" if deleted else",
+   "new": "kind = (\"modify\" if deleted else",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind",
+    "test_check.MappedLine.test_paths"
+   ]
+  },
+  {
+   "id": "dg_old_none_create",
+   "file": "gate/diffguard.py",
+   "old": "\"old\": None if created else a",
+   "new": "\"old\": a",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind"
+   ]
+  },
+  {
+   "id": "dg_esc_a",
+   "file": "gate/diffguard.py",
+   "old": "\"a\": 7, ",
+   "new": "\"a\": 97, ",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes"
+   ]
+  },
+  {
+   "id": "dg_esc_b",
+   "file": "gate/diffguard.py",
+   "old": "\"b\": 8, ",
+   "new": "\"b\": 98, ",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes"
+   ]
+  },
+  {
+   "id": "dg_esc_t",
+   "file": "gate/diffguard.py",
+   "old": "\"t\": 9, ",
+   "new": "\"t\": 116, ",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes"
+   ]
+  },
+  {
+   "id": "dg_esc_n",
+   "file": "gate/diffguard.py",
+   "old": "\"n\": 10, ",
+   "new": "\"n\": 110, ",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes"
+   ]
+  },
+  {
+   "id": "dg_esc_v",
+   "file": "gate/diffguard.py",
+   "old": "\"v\": 11, ",
+   "new": "\"v\": 118, ",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes"
+   ]
+  },
+  {
+   "id": "dg_esc_f",
+   "file": "gate/diffguard.py",
+   "old": "\"f\": 12, ",
+   "new": "\"f\": 102, ",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes"
+   ]
+  },
+  {
+   "id": "dg_esc_r",
+   "file": "gate/diffguard.py",
+   "old": "\"r\": 13, ",
+   "new": "\"r\": 114, ",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes"
+   ]
+  },
+  {
+   "id": "dg_esc_quote",
+   "file": "gate/diffguard.py",
+   "old": "'\"': 34, ",
+   "new": "'\"': 39, ",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes"
+   ]
+  },
+  {
+   "id": "dg_esc_backslash",
+   "file": "gate/diffguard.py",
+   "old": "\"\\\\\": 92}",
+   "new": "\"\\\\\": 47}",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes"
+   ]
+  },
+  {
+   "id": "dg_octal_first_digit",
+   "file": "gate/diffguard.py",
+   "old": "r\"[0-3][0-7][0-7]\"",
+   "new": "r\"[0-7][0-7][0-7]\"",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_octal_base",
+   "file": "gate/diffguard.py",
+   "old": "int(text[i + 1:i + 4], 8)",
+   "new": "int(text[i + 1:i + 4], 10) % 256",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes",
+    "test_diffguard.ChangedPaths.test_one_side_quoted_rename"
+   ]
+  },
+  {
+   "id": "dg_bad_escape_kept",
+   "file": "gate/diffguard.py",
+   "old": "            raise DiffError(\"bad escape in quoted name %r\" % text)",
+   "new": "            out.append(92)\n            i += 1",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_unterminated_ok",
+   "file": "gate/diffguard.py",
+   "old": "    raise DiffError(\"unterminated quoted name %r\" % text)",
+   "new": "    return out.decode(\"utf-8\", \"surrogateescape\"), i",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_text_after_quote_ok",
+   "file": "gate/diffguard.py",
+   "old": "        if end != len(text):\n            raise",
+   "new": "        if False:\n            raise",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_no_space_after_quote_ok",
+   "file": "gate/diffguard.py",
+   "old": "        if rest[end:end + 1] != \" \":\n",
+   "new": "        if False:\n",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_trailing_quote_off",
+   "file": "gate/diffguard.py",
+   "old": "    if rest.endswith('\"'):",
+   "new": "    if False:",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_one_side_quoted_rename"
+   ]
+  },
+  {
+   "id": "dg_symmetric_no_space_check",
+   "file": "gate/diffguard.py",
+   "old": "if rest[half] == \" \" and a[2:] == b[2:]:",
+   "new": "if a[2:] == b[2:]:",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_strip_empty_ok",
+   "file": "gate/diffguard.py",
+   "old": "if not prefixed.startswith(prefix) or len(prefixed) == len(prefix):",
+   "new": "if not prefixed.startswith(prefix):",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_strip_prefix_ok",
+   "file": "gate/diffguard.py",
+   "old": "if not prefixed.startswith(prefix) or len(prefixed) == len(prefix):",
+   "new": "if len(prefixed) == len(prefix):",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_side_tab_always",
+   "file": "gate/diffguard.py",
+   "old": "if value.endswith(\"\\t\") and \" \" in value:",
+   "new": "if value.endswith(\"\\t\"):",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_side_tab_never",
+   "file": "gate/diffguard.py",
+   "old": "if value.endswith(\"\\t\") and \" \" in value:",
+   "new": "if False:",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_names_with_spaces"
+   ]
+  },
+  {
+   "id": "dg_mode_any",
+   "file": "gate/diffguard.py",
+   "old": "    if mode not in MODES:\n",
+   "new": "    if not mode.isdigit():\n",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_modes_drop_exec",
+   "file": "gate/diffguard.py",
+   "old": "MODES = frozenset((\"100644\", \"100755\", SYMLINK",
+   "new": "MODES = frozenset((\"100644\", SYMLINK",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind",
+    "test_diffguard.ChangedPaths.test_every_quote_escape_git_writes"
+   ]
+  },
+  {
+   "id": "dg_hunk_old_default",
+   "file": "gate/diffguard.py",
+   "old": "old = 1 if m.group(2) is None else int(m.group(2))",
+   "new": "old = 0 if m.group(2) is None else int(m.group(2))",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind",
+    "test_diffguard.ChangedPaths.test_deletion_changes_the_old_name"
+   ]
+  },
+  {
+   "id": "dg_hunk_new_default",
+   "file": "gate/diffguard.py",
+   "old": "new = 1 if m.group(4) is None else int(m.group(4))",
+   "new": "new = 0 if m.group(4) is None else int(m.group(4))",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind",
+    "test_diffguard.ChangedPaths.test_names_with_spaces"
+   ]
+  },
+  {
+   "id": "dg_hunk_header_search",
+   "file": "gate/diffguard.py",
+   "old": "    m = HUNK.match(lines[i])",
+   "new": "    m = HUNK.search(lines[i])",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_hunk_header_ok",
+   "file": "gate/diffguard.py",
+   "old": "    m = HUNK.match(lines[i])",
+   "new": "    m = HUNK.match(lines[i]) or HUNK.match(\"@@ -1 +1 @@\")",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_hunk_short_ok",
+   "file": "gate/diffguard.py",
+   "old": "            raise DiffError(\"hunk ends before its counts\")",
+   "new": "            break",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_hunk_empty_line_not_context",
+   "file": "gate/diffguard.py",
+   "old": "if tag in (\" \", \"\"):",
+   "new": "if tag == \" \":",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_empty_line_is_context"
+   ]
+  },
+  {
+   "id": "dg_hunk_unknown_line_ok",
+   "file": "gate/diffguard.py",
+   "old": "            raise DiffError(\"line %r inside a hunk\" % line)",
+   "new": "            break",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_hunk_long_ok",
+   "file": "gate/diffguard.py",
+   "old": "        if old < 0 or new < 0:\n            raise DiffError(\"hunk longer than its counts\")",
+   "new": "        if False:\n            raise DiffError(\"hunk longer than its counts\")",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_hunk_long_new_only",
+   "file": "gate/diffguard.py",
+   "old": "if old < 0 or new < 0:",
+   "new": "if old < 0:",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_hunk_long_old_only",
+   "file": "gate/diffguard.py",
+   "old": "if old < 0 or new < 0:",
+   "new": "if new < 0:",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_noeol_misplaced_ok",
+   "file": "gate/diffguard.py",
+   "old": "            if not body or not body[-1][2]:\n                raise DiffError(\"misplaced %r\" % line)",
+   "new": "            if not body:\n                raise DiffError(\"misplaced %r\" % line)",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_noeol_ignored",
+   "file": "gate/diffguard.py",
+   "old": "            body[-1][2] = False\n",
+   "new": "\n",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable",
+    "test_activate.Apply.test_insertion_deletion_and_end_of_file"
+   ]
+  },
+  {
+   "id": "dg_close_at_next_line",
+   "file": "gate/diffguard.py",
+   "old": "        if any(closed[s] for s in sides):",
+   "new": "        if any(closed[s] for s in sides) and body[-1][2]:",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_closed_unchecked",
+   "file": "gate/diffguard.py",
+   "old": "        if any(closed[s] for s in sides):",
+   "new": "        if False:",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_closed_context_one_side",
+   "file": "gate/diffguard.py",
+   "old": "for s in ((\"-\", \"+\") if body[-1][0] == \" \" else (body[-1][0],)):",
+   "new": "for s in (body[-1][0],):",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_noeol_trailing_off",
+   "file": "gate/diffguard.py",
+   "old": "while old > 0 or new > 0 or (i < len(lines) and lines[i].startswith(\"\\\\\")):",
+   "new": "while old > 0 or new > 0:",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind",
+    "test_diffguard.ChangedPaths.test_names_with_spaces"
+   ]
+  },
+  {
+   "id": "dg_pos_empty_ok",
+   "file": "gate/diffguard.py",
+   "old": "        if oc == 0 and nc == 0:\n",
+   "new": "        if False:\n",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_pos_overlap_ok",
+   "file": "gate/diffguard.py",
+   "old": "if first <= end or (oc and os_ < 1):",
+   "new": "if (oc and os_ < 1):",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable",
+    "test_check.MappedLine.test_hunk_starts_are_checked"
+   ]
+  },
+  {
+   "id": "dg_pos_overlap_lt",
+   "file": "gate/diffguard.py",
+   "old": "if first <= end or (oc and os_ < 1):",
+   "new": "if first < end or (oc and os_ < 1):",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable",
+    "test_check.MappedLine.test_hunk_starts_are_checked"
+   ]
+  },
+  {
+   "id": "dg_pos_plus_unchecked",
+   "file": "gate/diffguard.py",
+   "old": "        if ns != expect:\n",
+   "new": "        if False:\n",
+   "tests": [
+    "test_check.MappedLine.test_cli_map",
+    "test_check.MappedLine.test_hunk_starts_are_checked"
+   ]
+  },
+  {
+   "id": "dg_pos_no_delta",
+   "file": "gate/diffguard.py",
+   "old": "        delta += nc - oc\n",
+   "new": "\n",
+   "tests": [
+    "test_check.MappedLine.test_cli_map",
+    "test_check.MappedLine.test_real_diffs_against_the_files"
+   ]
+  },
+  {
+   "id": "dg_pos_insert_offset",
+   "file": "gate/diffguard.py",
+   "old": "expect = os_ + delta + (1 if oc == 0 else 0)",
+   "new": "expect = os_ + delta + 0",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind",
+    "test_diffguard.ChangedPaths.test_names_with_spaces"
+   ]
+  },
+  {
+   "id": "dg_pos_delete_offset",
+   "file": "gate/diffguard.py",
+   "old": "- (1 if nc == 0 else 0)",
+   "new": "- 0",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_deletion_changes_the_old_name",
+    "test_activate.Apply.test_insertion_deletion_and_end_of_file"
+   ]
+  },
+  {
+   "id": "dg_pos_end_insert",
+   "file": "gate/diffguard.py",
+   "old": "end = os_ + oc - 1 if oc else os_",
+   "new": "end = os_ + oc - 1 if oc else os_ - 1",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_pos_first_insert",
+   "file": "gate/diffguard.py",
+   "old": "first = os_ if oc else os_ + 1",
+   "new": "first = os_",
+   "tests": [
+    "test_diffguard.ChangedPaths.test_block_fields_by_kind",
+    "test_diffguard.ChangedPaths.test_names_with_spaces"
+   ]
+  },
+  {
+   "id": "dg_pos_unchecked",
+   "file": "gate/diffguard.py",
+   "old": "            _check_positions(hunks, header)",
+   "new": "            pass",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable",
+    "test_check.MappedLine.test_cli_map"
+   ]
+  },
+  {
+   "id": "dg_outside_block_ok",
+   "file": "gate/diffguard.py",
+   "old": "            raise DiffError(\"line %r outside any block\" % header)",
+   "new": "            i += 1\n            continue",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_repeated_header_ok",
+   "file": "gate/diffguard.py",
+   "old": "            if key in ext:\n",
+   "new": "            if False:\n",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_index_unchecked",
+   "file": "gate/diffguard.py",
+   "old": "                if not m:\n                    raise DiffError(\"bad index line %r\" % line)",
+   "new": "                if not m:\n                    m = INDEX.match(\"index 0..0\")",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_index_hex_upper",
+   "file": "gate/diffguard.py",
+   "old": "INDEX = re.compile(r\"index [0-9a-f]+\\.\\.[0-9a-f]+",
+   "new": "INDEX = re.compile(r\"index [0-9a-fA-F]+\\.\\.[0-9a-fA-F]+",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_score_unchecked",
+   "file": "gate/diffguard.py",
+   "old": "                if not SCORE.fullmatch(value):",
+   "new": "                if False:",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_rename_and_copy_ok",
+   "file": "gate/diffguard.py",
+   "old": "        if rename and copy:\n",
+   "new": "        if False:\n",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_rename_half_ok",
+   "file": "gate/diffguard.py",
+   "old": "            if src not in ext or dst not in ext:",
+   "new": "            if src not in ext and dst not in ext:",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_rename_empty_ok",
+   "file": "gate/diffguard.py",
+   "old": "            if not a or not b:\n",
+   "new": "            if False:\n",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_rename_disagree_ok",
+   "file": "gate/diffguard.py",
+   "old": "if (names or (None, None)) != (\"a/\" + a, \"b/\" + b) and header",
+   "new": "if False and header",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_names_unsplit_ok",
+   "file": "gate/diffguard.py",
+   "old": "            if names is None:\n                raise DiffError(\"cannot split names in %r\" % header)",
+   "new": "            if names is None:\n                names = (\"a/x\", \"b/x\")",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_names_differ_ok",
+   "file": "gate/diffguard.py",
+   "old": "            if a != b:\n",
+   "new": "            if False:\n",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_delete_other_ok",
+   "file": "gate/diffguard.py",
+   "old": "if deleted and (created or rename or copy or \"new mode \" in ext):",
+   "new": "if deleted and created:",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_minus_without_plus_ok",
+   "file": "gate/diffguard.py",
+   "old": "            if i + 1 >= len(lines) or not lines[i + 1].startswith(\"+++ \"):\n                raise",
+   "new": "            if i + 1 >= len(lines):\n                raise",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_side_names_unchecked",
+   "file": "gate/diffguard.py",
+   "old": "if old != (DEV_NULL if created else \"a/\" + a) or new != (DEV_NULL if deleted else \"b/\" + b):",
+   "new": "if False:",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_side_plus_unchecked",
+   "file": "gate/diffguard.py",
+   "old": " or new != (DEV_NULL if deleted else \"b/\" + b):",
+   "new": ":",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_no_hunk_ok",
+   "file": "gate/diffguard.py",
+   "old": "            if i >= len(lines) or not lines[i].startswith(\"@@\"):\n",
+   "new": "            if False:\n",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_binary_any_line",
+   "file": "gate/diffguard.py",
+   "old": "if not (lines[i] == \"\" or BINARY_SIZE.fullmatch(lines[i]) or BASE85_LINE.fullmatch(lines[i])):",
+   "new": "if False:",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_base85_space",
+   "file": "gate/diffguard.py",
+   "old": "BASE85_LINE = re.compile(r\"[A-Za-z][0-9A-Za-z!#$%&()*+\\-;<=>?@^_`{|}~]+\")",
+   "new": "BASE85_LINE = re.compile(r\"[A-Za-z][0-9A-Za-z!#$%&()*+\\-;<=>?@^_`{|}~ ]+\")",
+   "tests": [
+    "test_diffguard.FailsClosed.test_each_case_is_unusable"
+   ]
+  },
+  {
+   "id": "dg_binary_differ_off",
+   "file": "gate/diffguard.py",
+   "old": "        elif i < len(lines) and lines[i].startswith(\"Binary files \") and lines[i].endswith(\" differ\"):",
+   "new": "        elif False:",
+   "tests": [
+    "test_check.MappedLine.test_paths"
+   ]
+  },
+  {
+   "id": "dg_apply_any_kind",
+   "file": "gate/diffguard.py",
+   "old": "if block[\"kind\"] != \"modify\" or block[\"old\"] != block[\"new\"] or block[\"binary\"] \\\n            or set(block[\"headers\"]) - {\"index\"}:",
+   "new": "if block[\"binary\"]:",
+   "tests": [
+    "test_activate.Apply.test_only_an_in_place_text_change"
+   ]
+  },
+  {
+   "id": "dg_apply_start_insert",
+   "file": "gate/diffguard.py",
+   "old": "start = h[\"old_start\"] - 1 if h[\"old_count\"] else h[\"old_start\"]",
+   "new": "start = h[\"old_start\"] - 1",
+   "tests": [
+    "test_activate.Apply.test_insertion_deletion_and_end_of_file"
+   ]
+  },
+  {
+   "id": "dg_apply_beyond_ok",
+   "file": "gate/diffguard.py",
+   "old": "if start < pos or start > len(base):",
+   "new": "if start < pos:",
+   "tests": [
+    "test_activate.Apply.test_insertion_deletion_and_end_of_file"
+   ]
+  },
+  {
+   "id": "dg_apply_eol_ignored",
+   "file": "gate/diffguard.py",
+   "old": "if pos >= len(base) or base[pos] != [line, eol]:",
+   "new": "if pos >= len(base) or base[pos][0] != line:",
+   "tests": [
+    "test_activate.Apply.test_insertion_deletion_and_end_of_file"
+   ]
+  },
+  {
+   "id": "dg_apply_mismatch_ok",
+   "file": "gate/diffguard.py",
+   "old": "if pos >= len(base) or base[pos] != [line, eol]:",
+   "new": "if pos >= len(base):",
+   "tests": [
+    "test_activate.Apply.test_applies_at_its_own_line_only",
+    "test_activate.Apply.test_insertion_deletion_and_end_of_file"
+   ]
+  },
+  {
+   "id": "dg_apply_context_dropped",
+   "file": "gate/diffguard.py",
+   "old": "            if tag == \" \":\n                out.append(base[pos])",
+   "new": "            if tag == \"-\":\n                out.append(base[pos])",
+   "tests": [
+    "test_activate.Apply.test_applies_at_its_own_line_only",
+    "test_activate.Apply.test_bytes_that_are_not_utf8_are_kept"
+   ]
+  },
+  {
+   "id": "dg_apply_tail_dropped",
+   "file": "gate/diffguard.py",
+   "old": "    out.extend(base[pos:])\n",
+   "new": "\n",
+   "tests": [
+    "test_activate.Apply.test_applies_at_its_own_line_only",
+    "test_activate.Apply.test_insertion_deletion_and_end_of_file"
+   ]
+  },
+  {
+   "id": "dg_apply_mid_noeol_ok",
+   "file": "gate/diffguard.py",
+   "old": "    if any(not eol for _, eol in out[:-1]):",
+   "new": "    if False:",
+   "tests": [
+    "test_activate.Apply.test_insertion_deletion_and_end_of_file"
+   ]
+  },
+  {
+   "id": "dg_cli_argc",
+   "file": "gate/diffguard.py",
+   "old": "if len(argv) != 4 or argv[0] != \"check\":",
+   "new": "if len(argv) < 4 or argv[0] != \"check\":",
+   "tests": [
+    "test_diffguard.CommandLine.test_unusable_inputs_are_refused"
+   ]
+  },
+  {
+   "id": "dg_cli_verb",
+   "file": "gate/diffguard.py",
+   "old": "if len(argv) != 4 or argv[0] != \"check\":",
+   "new": "if len(argv) != 4:",
+   "tests": [
+    "test_diffguard.CommandLine.test_unusable_inputs_are_refused"
+   ]
+  },
+  {
+   "id": "dg_cli_exit_one",
+   "file": "gate/diffguard.py",
+   "old": "        return 0 if not reasons else 1",
+   "new": "        return 0 if not reasons else 2",
+   "tests": [
+    "test_diffguard.CommandLine.test_exit_codes_and_output"
+   ]
+  },
+  {
+   "id": "dg_cli_ok_flag",
+   "file": "gate/diffguard.py",
+   "old": "_emit({\"ok\": not reasons, \"reasons\": reasons})",
+   "new": "_emit({\"ok\": True, \"reasons\": reasons})",
+   "tests": [
+    "test_diffguard.CommandLine.test_exit_codes_and_output"
+   ]
+  },
+  {
+   "id": "dg_cli_strict_utf8",
+   "file": "gate/diffguard.py",
+   "old": "text = fh.read().decode(\"utf-8\", \"surrogateescape\")",
+   "new": "text = fh.read().decode(\"utf-8\")",
+   "tests": [
+    "test_diffguard.CommandLine.test_non_utf8_hunk_content_is_usable"
+   ]
+  },
+  {
+   "id": "dg_cli_oserror_uncaught",
+   "file": "gate/diffguard.py",
+   "old": "except (DiffError, ValueError, OSError, RecursionError) as exc:",
+   "new": "except (DiffError, ValueError, RecursionError) as exc:",
+   "tests": [
+    "test_diffguard.CommandLine.test_unusable_inputs_are_refused"
+   ]
+  },
+  {
+   "id": "dg_cli_valueerror_uncaught",
+   "file": "gate/diffguard.py",
+   "old": "except (DiffError, ValueError, OSError, RecursionError) as exc:",
+   "new": "except (DiffError, OSError, RecursionError) as exc:",
+   "tests": [
+    "test_diffguard.CommandLine.test_unusable_inputs_are_refused"
+   ]
+  },
+  {
+   "id": "dg_cli_diff_error_uncaught",
+   "file": "gate/diffguard.py",
+   "old": "except (DiffError, ValueError, OSError, RecursionError) as exc:",
+   "new": "except (OSError,) as exc:",
+   "tests": [
+    "test_diffguard.CommandLine.test_unusable_inputs_are_refused"
+   ]
+  },
+  {
+   "id": "dg_load_plain_json",
+   "file": "gate/diffguard.py",
+   "old": "        return cli.load(fh)",
+   "new": "        return json.load(fh)",
+   "tests": [
+    "test_diffguard.CommandLine.test_unusable_inputs_are_refused"
+   ]
+  }
+ ]
+}

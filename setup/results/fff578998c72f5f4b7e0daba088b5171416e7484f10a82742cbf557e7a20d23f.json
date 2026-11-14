@@ -1,0 +1,3815 @@
+{
+  "base": "a6d20f8394df56da1ce6cf5b7bd1d62688968351",
+  "budget_stop": null,
+  "controls": [
+    {
+      "exit": 0,
+      "id": "exit_zero",
+      "ok": true,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "id": "exit_one",
+      "ok": true,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "id": "network_blocked",
+      "ok": true,
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "id": "source_read_only",
+      "ok": true,
+      "timed_out": false
+    }
+  ],
+  "exam_faults": [],
+  "exit": {
+    "brain_sha": "91bbd2781dbc7d8edba8a0dccf35ed3fff2ffe97",
+    "checks": {
+      "agac": {
+        "reasons": [],
+        "status": "ok",
+        "why": ""
+      },
+      "genellik": {
+        "reasons": [],
+        "status": "ok",
+        "why": ""
+      },
+      "is-akisi": {
+        "reasons": [],
+        "status": "ok",
+        "why": ""
+      },
+      "kurucu-defteri": {
+        "reasons": [],
+        "status": "ok",
+        "why": "L185 superseded by L306; L263 superseded by L307; L276 superseded by L308; L285 superseded by L309; L293 superseded by L310; L302 superseded by L311"
+      }
+    },
+    "missing": [],
+    "open_claims": [
+      {
+        "claim": "The CHANGELOG entry says the spec review found no correction needed and that in `calls` the called MF is smaller than the caller. But `calls` says '17 ve 18 hepsini çağırır', so 17 calls 18 and 18 calls 17, which is a cycle and breaks that ordering rule. The same push files reports/spec-004-calls-17-18.json about this very line, so the review claim contradicts the Founder's own report.",
+        "first_head": "e5bd40590fe55462d33ef1a00ef5c1b8bceb6c5c",
+        "id": "92156b07bb5f",
+        "observed": null
+      },
+      {
+        "claim": "loop.fetch.fetch has no caller in the live path: its own docstring in cek.py says 'nothing calls it yet', and only test_fetch.py runs it. This breaks Y4 (a mechanism with no caller; code with tests but off the live path should leave the live path in the same PR).",
+        "first_head": "3f01932460e58ba7e8a733760aeaba3257334db9",
+        "id": "e68f29ca3f75",
+        "observed": null
+      },
+      {
+        "claim": "The new harness.pass_row module breaks Y4. Its own docstring says 'nothing calls it yet', and status/off_live.json lists it as unwired, so it is a mechanism with tests (T45) but no caller on the live path. Y4 says such code leaves the live path in the same PR. Instead the push adds a new off-live entry and a new test hook for it.",
+        "first_head": "e22b78ad502df6029d895f0ba7d5af407417481b",
+        "id": "d235b0fe39f2",
+        "observed": null
+      },
+      {
+        "claim": "read_map only catches OSError and ValueError, so a deeply nested JSON map file raises an uncaught RecursionError. The spec says an unusable map file must give exit 2 with {ok:false,error}; here it exits 1 with a traceback, which is also the exit code for 'maps differ'.",
+        "first_head": "7f8b1178909242fed9790d5c72b73e4ea6458d5c",
+        "id": "26787c717fab",
+        "observed": {
+          "contradicted": true,
+          "exit": 2,
+          "head": "91bbd2781dbc7d8edba8a0dccf35ed3fff2ffe97",
+          "shown": false,
+          "stderr_tail": "",
+          "stdout_tail": "{\"error\": \"/tmp/deep.json: JSON nested too deeply\", \"ok\": false}\n",
+          "tautological": null,
+          "timed_out": false
+        }
+      }
+    ],
+    "owner_exception": [
+      {
+        "anchor": "durustluk",
+        "carry_commitment": "c6cf6478007150e51887db91ea62ca965f9675f084ba11c724bcc6e539f4b3a1",
+        "carry_to": 1,
+        "measured": false,
+        "reason": "Dürüstlük ekimi Kurucu başlamadan yapılmadı (E287); sahip istisnayı 2026-10-31'de onayladı (E294); koşul Aşama 1'in çıkışına taşınır ve orada ölçülür, ikinci istisna yoktur.",
+        "stage": 0
+      },
+      {
+        "anchor": "spec",
+        "carry_commitment": "256e2d1089eabcfee346a5cd34d86a7d62599cc88e709630f30e92be928d635e",
+        "carry_to": 1,
+        "measured": false,
+        "reason": "E286, E561: #spec'in mekanik maddelerinin makine tanımı yok; sahibin kararı 2026-11-06: Aşama 1'in (A)'sına taşınır (stages/carry-spec.json)",
+        "stage": 0
+      }
+    ],
+    "pinned_sha": "a6d20f8394df56da1ce6cf5b7bd1d62688968351",
+    "referee_tree_sha256": "3ba9c357ef39920fb3005be0e247b532b949cd2ea454ccc2a21993961645ec0f",
+    "repeat_events": 2,
+    "requested": true,
+    "toy_tree_sha256": "6d234f7dababc17c71b3b5a46eb25ab28f942b9d7f8b130775808ca4da7c302a",
+    "transferable": true
+  },
+  "head": "91bbd2781dbc7d8edba8a0dccf35ed3fff2ffe97",
+  "kind": "exit",
+  "learning": {
+    "not_learning": [],
+    "repeat_events": 2,
+    "repeated": []
+  },
+  "licenses": [],
+  "module_less": [
+    {
+      "exit": 1,
+      "mf": 1,
+      "module": "referee/ledger/chain.py",
+      "module_present": true,
+      "output_sha256": "950dfef581020c2b432a6edabf392bb8e802bbdaa754ead47505577f4ff47720",
+      "output_tail": "         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_chain.py\", line 25, in <module>\n    from ledger import chain  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'chain' from 'ledger' (/tmp/work/referee/ledger/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T13",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 2,
+      "module": "referee/gate/secrets.py",
+      "module_present": true,
+      "output_sha256": "b322c37d34501a0bf48a1f80db14b1720d341ed3a1577830193cdca34fe4d0d7",
+      "output_tail": "referee/tests/test_secrets.py\", line 1046, in test_stdin_is_not_read_and_usage\n    self.assertEqual((code, last), (0, {\"clean\": True, \"lines\": []}), raw)\nAssertionError: Tuples differ: (1, None) != (0, {'clean': True, 'lines': []})\n\nFirst differing element 0:\n1\n0\n\n- (1, None)\n+ (0, {'clean': True, 'lines': []}) : b'/tmp/venv/bin/python: No module named gate.secrets\\n'\n\n----------------------------------------------------------------------\nRan 50 tests in 4.838s\n\nFAILED (failures=14, errors=301)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T38",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 3,
+      "module": "referee/runner/contained.py",
+      "module_present": true,
+      "output_sha256": "b91d37fe2f2e1edffbe3cfbd6f97b4e01e1f3d40e0518bdd300261604fee7dd9",
+      "output_tail": "^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_contained_red.py\", line 22, in <module>\n    from runner import contained  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'contained' from 'runner' (/tmp/work/referee/runner/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T20",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 3,
+      "module": "referee/runner/contained.py",
+      "module_present": true,
+      "output_sha256": "471ed8756b7c6ac4cb263ef5994d622570c49d43537624a0da5f99294c9a5eb9",
+      "output_tail": "^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_contained.py\", line 32, in <module>\n    from runner import contained  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'contained' from 'runner' (/tmp/work/referee/runner/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T21",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 4,
+      "module": "referee/profile/derive.py",
+      "module_present": true,
+      "output_sha256": "2ba7de5dfc0d75771633a68954fb6779206a409edd660d8a357f3e0aa0edcd96",
+      "output_tail": "^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_profile.py\", line 32, in <module>\n    from profile import derive as D  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'derive' from 'profile' (/tmp/work/referee/profile/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T19",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 4,
+      "module": "referee/profile/derive.py",
+      "module_present": true,
+      "output_sha256": "aae6bd09659626a704c463a9f0391a7360623ca685608c2b287d61cdaa15aa1c",
+      "output_tail": "^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_profile_units.py\", line 23, in <module>\n    from profile import derive as D  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'derive' from 'profile' (/tmp/work/referee/profile/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T47",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 5,
+      "module": "referee/runner/deps_npm.py",
+      "module_present": true,
+      "output_sha256": "022ce1be0551b2efd5ca792a6c3592ceb78aaff97d647f2e201a8c0a0827a3b0",
+      "output_tail": "^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_deps_npm.py\", line 46, in <module>\n    from runner import deps_npm as N  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'deps_npm' from 'runner' (/tmp/work/referee/runner/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T34",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 6,
+      "module": "referee/profile/unit_verify.py",
+      "module_present": true,
+      "output_sha256": "f91e454f7b7e882f324651878ba79edd554f18256a94bd3fd4bde03a8f6cb6c8",
+      "output_tail": "^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_unit_verify.py\", line 29, in <module>\n    from profile import unit_verify as U  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'unit_verify' from 'profile' (/tmp/work/referee/profile/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T48",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 7,
+      "module": "referee/gate/diffguard.py",
+      "module_present": true,
+      "output_sha256": "e6e743fb3dfb08166c7fc8ae0809688ec27381c8f3fc01b8844765a8263130b1",
+      "output_tail": "^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_diffguard.py\", line 30, in <module>\n    from gate import diffguard as G  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'diffguard' from 'gate' (/tmp/work/referee/gate/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T23",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 8,
+      "module": "referee/gate/check.py",
+      "module_present": true,
+      "output_sha256": "906fb2d4165565593dfd6a13454ab674355eb2a739ca301ce9282d62a0bbde71",
+      "output_tail": "       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_check.py\", line 43, in <module>\n    from gate import check as C  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'check' from 'gate' (/tmp/work/referee/gate/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T35",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 9,
+      "module": "referee/target/write.py",
+      "module_present": true,
+      "output_sha256": "374da1c6848cf183ab843241228f730f012ee1a7aad87f394d68ca965061991d",
+      "output_tail": "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_write.py\", line 44, in <module>\n    from target import write as W  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'write' from 'target' (/tmp/work/referee/target/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T49",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 10,
+      "module": "referee/ledger/append.py",
+      "module_present": true,
+      "output_sha256": "1d6f14cdd1a0a72062b0a6dbf4108c4f616a38279a4eb210103ebc76b1985565",
+      "output_tail": "^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_append.py\", line 35, in <module>\n    from ledger import append as AP  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'append' from 'ledger' (/tmp/work/referee/ledger/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T39",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 11,
+      "module": "referee/ledger/anchor.py",
+      "module_present": true,
+      "output_sha256": "1a0be9659078b93464194721e39b95ef4204cff0130bb1b9892757dfaa8b51b2",
+      "output_tail": "^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_anchor.py\", line 30, in <module>\n    from ledger import anchor as AN  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'anchor' from 'ledger' (/tmp/work/referee/ledger/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T40",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 12,
+      "module": "referee/gate/sentinel.py",
+      "module_present": true,
+      "output_sha256": "d8ef3674b1603a8ff8d8d40551988aee026ecb596f242b9e8e138a3d27a685b1",
+      "output_tail": "^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_sentinel.py\", line 25, in <module>\n    from gate import sentinel as S  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'sentinel' from 'gate' (/tmp/work/referee/gate/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T36",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 13,
+      "module": "referee/gate/revert.py",
+      "module_present": true,
+      "output_sha256": "e2bd357e6f234efd999a9681641de55addeb6d4eea328da7ec2ce86593f83f7a",
+      "output_tail": "   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_revert.py\", line 29, in <module>\n    from gate import revert as R  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'revert' from 'gate' (/tmp/work/referee/gate/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T25",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 14,
+      "module": "referee/harness/revert_drill.py",
+      "module_present": true,
+      "output_sha256": "a87c6844ad3727fd258d187f512f9ecc8bb2d3a4c6e95d4000226b82d88f9ca5",
+      "output_tail": "  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_revert_drill.py\", line 30, in <module>\n    from harness import revert_drill as D  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'revert_drill' from 'harness' (/tmp/work/referee/harness/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T50",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 15,
+      "module": "referee/dispatcher/llm_call.py",
+      "module_present": true,
+      "output_sha256": "8a0b37763750d0dbd494535ba02e2e7de923e4f18c7f9cf980fbe56b571c3769",
+      "output_tail": "^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_llm_call.py\", line 42, in <module>\n    from dispatcher import llm_call as L  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'llm_call' from 'dispatcher' (/tmp/work/referee/dispatcher/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T37",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 16,
+      "module": "referee/status/block.py",
+      "module_present": true,
+      "output_sha256": "ebb14aee44a36685576c201d9187e8497c91d9223d87d9bc01fd4de3d8e02e6f",
+      "output_tail": "^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_status_block.py\", line 38, in <module>\n    from status import block as SB  # noqa: E402\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nImportError: cannot import name 'block' from 'status' (/tmp/work/referee/status/__init__.py)\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T42",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 17,
+      "module": "referee/.github/workflows/loop.yml",
+      "module_present": true,
+      "output_sha256": "50557aa7878856a85fa6a482606aa78a33277c91a466a972152d306af6061f47",
+      "output_tail": "ng\n    out = simulate(parse(committed()), {n: (0, \"false\") for n in JOBS})\n                         ^^^^^^^^^^^\n  File \"/tmp/work/referee/tests/test_loop_workflow.py\", line 143, in committed\n    with open(WORKFLOW, encoding=\"utf-8\") as fh:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/work/referee/.github/workflows/loop.yml'\n\n----------------------------------------------------------------------\nRan 40 tests in 7.455s\n\nFAILED (errors=53)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T46",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 18,
+      "module": "referee/activate.py",
+      "module_present": true,
+      "output_sha256": "79db5ce892b21892e0f2a7f27e35c57e2d823d760bafcc1ec16d8e646a6ace83",
+      "output_tail": "test_path\n    module = self._get_module_from_name(name)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_activate.py\", line 40, in <module>\n    import activate  # noqa: E402\n    ^^^^^^^^^^^^^^^\nModuleNotFoundError: No module named 'activate'\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T45",
+      "timed_out": false
+    },
+    {
+      "exit": 1,
+      "mf": 18,
+      "module": "referee/activate.py",
+      "module_present": true,
+      "output_sha256": "b0b18674d0905e93a94860787b0be132c8d0958d5c52048e7c93a90f211615fa",
+      "output_tail": "d_test_path\n    module = self._get_module_from_name(name)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/unittest/loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n  File \"/tmp/work/referee/tests/test_schema.py\", line 31, in <module>\n    import activate  # noqa: E402\n    ^^^^^^^^^^^^^^^\nModuleNotFoundError: No module named 'activate'\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "runner_fault": false,
+      "stayed_green": false,
+      "test_id": "T14",
+      "timed_out": false
+    }
+  ],
+  "reasons": [],
+  "rejection": null,
+  "reports": [
+    {
+      "id": "referee-016-reproducer-polarity",
+      "kind": "referee_weakness",
+      "ref": "spec/tohum/29-tohum-koltuklari.md:32",
+      "sha256": "19da65014b60e5c6cc81fce7367c9f566b02870551319c958c363afc0976897a",
+      "state": "confirmed"
+    },
+    {
+      "id": "referee-049-rival-budget-consumes-commit",
+      "kind": "referee_weakness",
+      "ref": "spec/asama-0/12-butce.md:19",
+      "sha256": "4eb9a1a8a54731229eafbb77db1ba70173e7dba52714b9ac0f9f771dfd6fdc68",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-001-seed-dir-missing",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/24a-kurucu-ve-yerlesim.md:50",
+      "sha256": "c647012eb8a28b39f51e37cd65cc08e4b1de7453b22d31147be0b24f98209865",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-002-29b-stale-after-narrowing",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29b-onyukleme-hakemi.md:69",
+      "sha256": "c79fbc4b349926849e82e74d2ff5293a535ef2dc4b164664c0462f0ad7adc08b",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-003-toy-repo-no-reader",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/27-sozluk-ve-okuyucular.md:50",
+      "sha256": "4f23bc417daa9145de6414fd22a71b3e9af6952087ac3f3e98790bab4341d83e",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-005-push-class-ledger",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29b-onyukleme-hakemi.md:36",
+      "sha256": "ef370143321d3252c324e38ba76f9ac9ff5b41daee47b7d6ab47c940c15d71c5",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-006-ledger-kind-set",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/26-semalar.md:33",
+      "sha256": "5ddec92e1a0197b3656403e01be979b62bad021f6b242041f736cba468db753a",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-007-chain-cli-exit-and-broken-row",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29a-tohum-vektorleri.md:70",
+      "sha256": "9b9dbe204c07e3c11b7c5168b9d75efec7a12d46b814be1ee35033302413a854",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-008-secrets-vector-interface",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29d-vektor-gruplari.md:25",
+      "sha256": "ca7627002ba7ad9484edc15b45e64fcff5b9f3a58213a211d7362f1a5d1edc21",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-009-secret-in-prompt-no-location",
+      "kind": "referee_weakness",
+      "ref": "spec/tohum/29b-onyukleme-hakemi.md:26",
+      "sha256": "e37c79ab6a8e18efebdfc4c306e74ce3e954dde44607337a0936fba344f79c66",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-010-verdict-withheld-no-claim",
+      "kind": "referee_weakness",
+      "ref": "spec/tohum/29b-onyukleme-hakemi.md:26",
+      "sha256": "1475d1fb528d09a08069ddd09ef5f87b9d3dc359c6385793d1f97f2a1b6ee6c7",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-017-diffguard-config-list",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29k-vektor-arayuzleri-yol-kurallari.md:48-51",
+      "sha256": "b4caa03f0da720324789f642f72a7a7af907dd9148d196c502ae62a5fceff943",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-018-k0map-interface",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29h-vektor-arayuzleri-mf8-13.md:14",
+      "sha256": "8e2aecd1178a3cfc1bae8a1c65b42883d58ee5005a0d639110334837d3e6e17e",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-020-refs-interface",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29i-vektor-arayuzleri-mf8-13-devam.md:14",
+      "sha256": "2618707411eda8fd2e76fcc7ff851978d4ec4e36ef88c840f5f7aeb1403a7081",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-022-k0map-mismatched-file-rules",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29h-vektor-arayuzleri-mf8-13.md:31",
+      "sha256": "0b836db08b49c28d1970496481dc176defa227761f395dc8fc9acfef74d097ae",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-023-run-record-producer",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29h-vektor-arayuzleri-mf8-13.md:27",
+      "sha256": "4fdb1deb687a5a43aeaac27554005eed36b6e1f747cbc332df90a666d78b6751",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-024-revert-parent-is-onto-head",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29i-vektor-arayuzleri-mf8-13-devam.md:22",
+      "sha256": "073229b36b56ffff96502f4ba06dfe3ba55c7dbf71709905c94f231c213b68e7",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-025-append-choices",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29i-vektor-arayuzleri-mf8-13-devam.md:46",
+      "sha256": "709480e2c4e2d0d488804a8b356c393804a7b5c44c21a6c3c633ba23197ed25c",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-027-root-choices",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29j-vektor-arayuzleri-mf8-13-son.md:14",
+      "sha256": "f70143eb732b7117d2329d555862fcdb6c1f96039883eb09cec1518e9398d57c",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-029-flaky-choices",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29j-vektor-arayuzleri-mf8-13-son.md:34",
+      "sha256": "22837b1639b2376d467d7a43804ee289590189f915cf9543f50e6d81b02164b2",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-030-cause-choices",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29j-vektor-arayuzleri-mf8-13-son.md:50",
+      "sha256": "072ef6cb2fcd533d277f6ce9e6783f654514d23b70b3bd529b2bf6491933bcac",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-031-revert-drill-interface",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29m-vektor-arayuzleri-mf14-18.md:13",
+      "sha256": "2d06b033dd30b102aaca1661467aa2c814125a954d6a56328635585ff91eac87",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-033-llm-call-interface",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29m-vektor-arayuzleri-mf14-18.md:54",
+      "sha256": "b363ff79071c19dddfc0325452d8ca62b233b6f24326dabff00f372df9915320",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-034-status-block-interface",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29n-vektor-arayuzleri-mf14-18-devam.md:12",
+      "sha256": "d1a7019b5f36679739a768ed10ac62bb3071025d0d272542c5ffed83892b1eb0",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-035-loop-control-and-yaml-subset",
+      "kind": "seed_issue",
+      "ref": "spec/asama-0/10-cikis-testi.md:20",
+      "sha256": "b3133e5bae50c5536c35748b89cfc1dc4ed2e51c2d37e3e541f30f022154bfb0",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-037-genesis-interface",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29o-vektor-arayuzleri-mf14-18-son.md:11",
+      "sha256": "50dde84efcafa16610a0e88cd42e28f3b6baf46439edfd342a569cc3c3e32440",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-039-prompt-vector-assumes-mf2-floor",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29m-vektor-arayuzleri-mf14-18.md:64",
+      "sha256": "815a954825a8ebb9f875e525d34ebe68df2e5f431a32ab59418939e8c5667ad3",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-040-d1-bootstrap-state-read",
+      "kind": "seed_issue",
+      "ref": "spec/asama-0/01-amac.md:37",
+      "sha256": "90fdc34f87a3f3193ca956a5cf9c0477ccc0c978fe17dead61227376ebdcbdee",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-041-loop-run-inputs-unnamed",
+      "kind": "seed_issue",
+      "ref": "spec/asama-0/01-amac.md:37",
+      "sha256": "e5a0d0d081b97e8cb5d3ba5487f4072936fe0da6baa970cb426e49216b1fe988",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-042-d4-canary-inputs-unnamed",
+      "kind": "seed_issue",
+      "ref": "spec/asama-0/01-amac.md:40",
+      "sha256": "570bc0ab14481b530d4c1d878ef9145cc7ec4cdc2f4d6201f4728e50c7cb113c",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-043-sentinel-end-row-unnamed",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/07-entegrasyon-dali-ve-geri-alma.md:5",
+      "sha256": "8b484acff4671ce92aed0ff168b1b30798d026c8c4d1ff030ac3bff7ef8abd6a",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-044-revert-facts-producers",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29j-vektor-arayuzleri-mf8-13-son.md:60",
+      "sha256": "dfdf2446c201f8b83bb5356e4a0745446a2a5834e1e607bb3bfe3cf2dbc0de75",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-045-drill-live-inputs-unnamed",
+      "kind": "seed_issue",
+      "ref": "spec/asama-0/01-amac.md:44",
+      "sha256": "6ac018383d43a033eb64269c06c1a4f5e9a8b890d4803aaded0acbe9b4aa3b65",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-046-pass-row-unnamed",
+      "kind": "seed_issue",
+      "ref": "spec/asama-0/10a-cikis-canli-dongu.md:31",
+      "sha256": "a718a1de1d67d95d80dc39874c082ea1ca275cff030153a402ab4971dca42558",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-047-regenesis-and-genesis-inputs",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/26d-semalar-pass-satiri.md:32-34",
+      "sha256": "2da619ae606294c81dcb25cd57a7352942fd67db14f1915e0a0c078634bc97cc",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-048-copy-gate-record-and-a-result-bytes",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29s-dongu-girdileri.md:23-24",
+      "sha256": "6f053fce7c9f0881d283d361a96f7aa98f117d6186a34c04a3b0c664fa1c0346",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-049-genellik-text-rule-and-names-unreadable",
+      "kind": "seed_issue",
+      "ref": "spec/asama-0/10-cikis-testi.md:22",
+      "sha256": "e3436267bed0cbac7f23c5fb5a6551cf280d68ee9ca8475a307e05c0fe221089",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-050-copy-target-row-unreadable-for-unit-proposal",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/26c-semalar-asama-0.md:31",
+      "sha256": "4c2863b996498015903809eb99230a2193c7d4c8c88815384222cede1df5ce4e",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-051-install-marks-run-platform-foreign-scripts",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/08-sandbox-ve-durust-bildirim.md:20",
+      "sha256": "39f8df49a1cc552c3a204b7d27529b595422e0ed87988402cbed62b584722c1c",
+      "state": "confirmed"
+    },
+    {
+      "id": "seed-052-known-b-stop-has-no-path-before-b",
+      "kind": "seed_issue",
+      "ref": "spec/tohum/29b-onyukleme-hakemi.md:73",
+      "sha256": "018e8db0f50e8d5e01347218a92cd9d3fed068d5caaf9a20abfcff1e056992d4",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-004-calls-17-18",
+      "kind": "spec_issue",
+      "ref": "spec/asama-0/14-sirali-mikro-ozellikler.md:48",
+      "sha256": "974c32c68f02f4bfbf4605324411d1a6868c9e6e1c3029e821a9f7bfba6fb239",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-011-profile-shadows-stdlib",
+      "kind": "spec_issue",
+      "ref": "spec/asama-0/14-sirali-mikro-ozellikler.md:31",
+      "sha256": "eaba63920f8da5f501d1256db71f97130af8432f49119a30c162f09c09b16195",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-012-install-scripts-required-form",
+      "kind": "spec_issue",
+      "ref": "spec/tohum/26c-semalar-asama-0.md:54",
+      "sha256": "2e2d9ea49221d4fb366f3273299110e7635eae014afbf8afdb8668d5fb1574aa",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-013-lint-green-vs-violation",
+      "kind": "spec_issue",
+      "ref": "spec/asama-0/08-kabul-kurali-ve-esleme.md:63",
+      "sha256": "c4b5eccf2fc55f832770e978767a73946370dc85126abad53dee686fed67a11f",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-014-toolchain-form-and-calls-6-4",
+      "kind": "spec_issue",
+      "ref": "spec/tohum/26c-semalar-asama-0.md:58",
+      "sha256": "62abfa311a208d00b6e0a74f09643f1831ea90f48a729f686fdbd6aabe9882ae",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-015-npmlock-workspace-link",
+      "kind": "spec_issue",
+      "ref": "spec/tohum/29g-vektor-arayuzleri-devam.md:21",
+      "sha256": "9b6b20025d7e9a91ca28d186828a02d36af5ecacd7f1a7753011880f64e3dd9f",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-019-calls-7-8-3-8",
+      "kind": "spec_issue",
+      "ref": "spec/asama-0/14-sirali-mikro-ozellikler.md:47",
+      "sha256": "86cc83eda6511f72b6c9e862577f75c0e8be772fb3ff6fbe5508d60b384a682f",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-021-target-write-callers",
+      "kind": "spec_issue",
+      "ref": "spec/asama-0/14-sirali-mikro-ozellikler.md:47",
+      "sha256": "d5a1c472bb0f0315ba14a21734ac8f71b1de3000f1025f7fa81781421e92585c",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-026-append-writes-through-target-write",
+      "kind": "spec_issue",
+      "ref": "spec/asama-0/14-sirali-mikro-ozellikler.md:47",
+      "sha256": "b12fa0d9954164a346622ec54c6b6cd439f90a40645d405d0b46d3290fcc6ad5",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-028-anchor-calls-append",
+      "kind": "seed_issue",
+      "ref": "spec/asama-0/14-sirali-mikro-ozellikler.md:47",
+      "sha256": "1828dfae76c436abda4b4fc8a5736a9d583e3f4680f33d86a52ecc431aca7b5f",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-032-drill-calls-9-14",
+      "kind": "seed_issue",
+      "ref": "spec/asama-0/14-sirali-mikro-ozellikler.md:47",
+      "sha256": "621c04e5ea3aa740b803f6c82dda746cf2a0caa51cc6377b66f9ea7595f1e80c",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-036-cycle-composition-unowned",
+      "kind": "spec_issue",
+      "ref": "spec/asama-0/14-sirali-mikro-ozellikler.md:44",
+      "sha256": "2b53fd5b45b121eb140de9b7e196efdf172aef5ab5308191a870f81c63ea7f51",
+      "state": "confirmed"
+    },
+    {
+      "id": "spec-038-expect-reason-comparison",
+      "kind": "spec_issue",
+      "ref": "spec/tohum/26c-semalar-asama-0.md:54",
+      "sha256": "81170e5fe7d2b0e9ba136e206e244446f352ae70826715fd6786c629e7805087",
+      "state": "confirmed"
+    }
+  ],
+  "reproducers": [],
+  "rival": null,
+  "rival_reused": false,
+  "run": {
+    "attempt": "1",
+    "id": "43525964002"
+  },
+  "schema": "snowball-bootstrap-result/1",
+  "state": {
+    "exit_accepted_sha": "91bbd2781dbc7d8edba8a0dccf35ed3fff2ffe97",
+    "frozen_specs": {
+      "spec/asama-0": "4a21b92377ac1025c229c889e308d8c38ba537c8437d35d6a7226c8c971dd1b7"
+    },
+    "last_accepted_sha": "91bbd2781dbc7d8edba8a0dccf35ed3fff2ffe97",
+    "last_evaluated_sha": "91bbd2781dbc7d8edba8a0dccf35ed3fff2ffe97",
+    "month": "2026-11",
+    "month_spend_usd_micros": 30521240,
+    "open_claims": [
+      {
+        "claim": "The CHANGELOG entry says the spec review found no correction needed and that in `calls` the called MF is smaller than the caller. But `calls` says '17 ve 18 hepsini çağırır', so 17 calls 18 and 18 calls 17, which is a cycle and breaks that ordering rule. The same push files reports/spec-004-calls-17-18.json about this very line, so the review claim contradicts the Founder's own report.",
+        "evidence_refs": [
+          {
+            "line_end": 7,
+            "line_start": 7,
+            "path": "spec/asama-0/CHANGELOG.md"
+          },
+          {
+            "line_end": 48,
+            "line_start": 47,
+            "path": "spec/asama-0/14-sirali-mikro-ozellikler.md"
+          },
+          {
+            "line_end": 6,
+            "line_start": 1,
+            "path": "reports/spec-004-calls-17-18.json"
+          }
+        ],
+        "first_head": "e5bd40590fe55462d33ef1a00ef5c1b8bceb6c5c",
+        "id": "92156b07bb5f",
+        "observed": null,
+        "reproducer": null,
+        "rewritten": false
+      },
+      {
+        "claim": "loop.fetch.fetch has no caller in the live path: its own docstring in cek.py says 'nothing calls it yet', and only test_fetch.py runs it. This breaks Y4 (a mechanism with no caller; code with tests but off the live path should leave the live path in the same PR).",
+        "evidence_refs": [
+          {
+            "line_end": 45,
+            "line_start": 42,
+            "path": "referee/loop/cek.py"
+          },
+          {
+            "line_end": 96,
+            "line_start": 76,
+            "path": "referee/loop/fetch.py"
+          }
+        ],
+        "first_head": "3f01932460e58ba7e8a733760aeaba3257334db9",
+        "id": "e68f29ca3f75",
+        "observed": null,
+        "reproducer": null,
+        "rewritten": false
+      },
+      {
+        "claim": "The new harness.pass_row module breaks Y4. Its own docstring says 'nothing calls it yet', and status/off_live.json lists it as unwired, so it is a mechanism with tests (T45) but no caller on the live path. Y4 says such code leaves the live path in the same PR. Instead the push adds a new off-live entry and a new test hook for it.",
+        "evidence_refs": [
+          {
+            "line_end": 40,
+            "line_start": 1,
+            "path": "referee/harness/pass_row.py"
+          },
+          {
+            "line_end": 9,
+            "line_start": 6,
+            "path": "referee/status/off_live.json"
+          }
+        ],
+        "first_head": "e22b78ad502df6029d895f0ba7d5af407417481b",
+        "id": "d235b0fe39f2",
+        "observed": null,
+        "reproducer": null,
+        "rewritten": false
+      },
+      {
+        "claim": "read_map only catches OSError and ValueError, so a deeply nested JSON map file raises an uncaught RecursionError. The spec says an unusable map file must give exit 2 with {ok:false,error}; here it exits 1 with a traceback, which is also the exit code for 'maps differ'.",
+        "evidence_refs": [
+          {
+            "line_end": 1131,
+            "line_start": 1124,
+            "path": "referee/status/depmap.py"
+          }
+        ],
+        "first_head": "7f8b1178909242fed9790d5c72b73e4ea6458d5c",
+        "id": "26787c717fab",
+        "observed": {
+          "contradicted": true,
+          "exit": 2,
+          "head": "91bbd2781dbc7d8edba8a0dccf35ed3fff2ffe97",
+          "shown": false,
+          "stderr_tail": "",
+          "stdout_tail": "{\"error\": \"/tmp/deep.json: JSON nested too deeply\", \"ok\": false}\n",
+          "tautological": null,
+          "timed_out": false
+        },
+        "reproducer": {
+          "cmd": "python3 -c \"print('['*200000)\" > /tmp/deep.json; cd referee && python3 -m status.depmap delta /tmp/deep.json /tmp/deep.json 2>&1",
+          "correct_exit": 2,
+          "correct_stderr_contains": null,
+          "correct_stdout_contains": "\"ok\": false",
+          "expect_exit": 1,
+          "expect_stderr_contains": null,
+          "expect_stdout_contains": "RecursionError"
+        },
+        "rewritten": false
+      }
+    ],
+    "open_refutations": [],
+    "origin": "artifact",
+    "outage_count": 0,
+    "outage_sha": null,
+    "outage_since": null,
+    "outage_stop": null,
+    "pending_rival": null,
+    "reject_streaks": {},
+    "rejected_exit_request": "7a7b6f0125d0e5250aa487d04588f0f66bee2b37c3fcaf33c2d9be725be876e1",
+    "repeat_events": 2,
+    "rival_artifacts": [
+      {
+        "outcome": "survived",
+        "sha": "e5bd40590fe55462d33ef1a00ef5c1b8bceb6c5c"
+      },
+      {
+        "outcome": "survived",
+        "sha": "ffaa4572de3708b42f7e51be2542086d28f54ab2"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "1c83fb751471485175d20e355cf9f89fe558b131"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "6e29850acc9f0582a401cdd88f8130ac3b51a915"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "8265299252f49e329b9a6b64f84b9d5ccb7be565"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "11ebc1e8977b2db456de258df1339462cbf0f7a9"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "d02c9240bae4908ae479e6a228ed5592157cffb8"
+      },
+      {
+        "outcome": "survived",
+        "sha": "99d66a9f2b6f3995890ced7287b63cefd33a9bca"
+      },
+      {
+        "outcome": "survived",
+        "sha": "fe29a7c00a5c2e31996b2f8eec47061f5ce5ee8e"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "30c477e184df6ff852401bdd55d2e5984f1ee62c"
+      },
+      {
+        "outcome": "survived",
+        "sha": "6c78821a1a14f3060b341657ca01b855c56dab7e"
+      },
+      {
+        "outcome": "survived",
+        "sha": "783c853256278d7c207892b084eb922d28d3e9a6"
+      },
+      {
+        "outcome": "survived",
+        "sha": "da85e6b05a7390abdc1aa15c15e9d0c1ae545da6"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "58e1c16c2f864d67931bb1809f558e176113aacb"
+      },
+      {
+        "outcome": "survived",
+        "sha": "86cc8b44b64742886460941891a54a29c9cfb12e"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "f668776f6cdfb5089b24b3aedbde3f7dec60624f"
+      },
+      {
+        "outcome": "survived",
+        "sha": "deab54b8258bab2639f81223218fd735d5f6955f"
+      },
+      {
+        "outcome": "survived",
+        "sha": "11ebd7fa733dea752167eece9ae14dcb00144854"
+      },
+      {
+        "outcome": "survived",
+        "sha": "2be80ed9df653bfba238d87f06294a17c0c754f8"
+      },
+      {
+        "outcome": "survived",
+        "sha": "d14b44a3b52a811f1693993f26038e42682a9cfe"
+      },
+      {
+        "outcome": "survived",
+        "sha": "b5bc718e157104b142276f978d3ca6b4dfc45c36"
+      },
+      {
+        "outcome": "survived",
+        "sha": "1d5f5408ca225275a1c32aa2ddc7e0047abf0b4c"
+      },
+      {
+        "outcome": "survived",
+        "sha": "8ddb44d5f746a1e97858346d2f1cf601c414559d"
+      },
+      {
+        "outcome": "survived",
+        "sha": "e02b5f98e81d473bbb0dec048fe2b9e2fc5883ef"
+      },
+      {
+        "outcome": "survived",
+        "sha": "b23f4970f87e2ad701aa5ed33766c74020cc348d"
+      },
+      {
+        "outcome": "survived",
+        "sha": "a04995472bf5a943e3244bb1ac521049b41cd1eb"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "f07f21576a223262d1bc9145a7261555cb9d2d4a"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "d0dc43326155a82c8baa349cf68d3de062ed3524"
+      },
+      {
+        "outcome": "survived",
+        "sha": "aa70be01d15f4a44a6f554e259dd8c488b9bb59d"
+      },
+      {
+        "outcome": "survived",
+        "sha": "6f8cef2448e344db362c50379a2b8711a667787f"
+      },
+      {
+        "outcome": "survived",
+        "sha": "ebc999f181368f30cbc1a325aa57589fa193e358"
+      },
+      {
+        "outcome": "survived",
+        "sha": "8223c90bc8e0681ff9677d8a04e595d028dde378"
+      },
+      {
+        "outcome": "survived",
+        "sha": "f057f1e97b5588e80d087061249e38a1a88d8c64"
+      },
+      {
+        "outcome": "survived",
+        "sha": "fe5907bdff1fdff3159ce010dfb454dca916fc08"
+      },
+      {
+        "outcome": "survived",
+        "sha": "268092c288b1f19ab87b511015d0f1b8b35226d5"
+      },
+      {
+        "outcome": "survived",
+        "sha": "517b39d551777e12001dcf23bf8584450093a97f"
+      },
+      {
+        "outcome": "survived",
+        "sha": "3e1a10562ef60e60286be19a2a7b71befb515099"
+      },
+      {
+        "outcome": "survived",
+        "sha": "f3f493321714593914756c621951562ed3cb406e"
+      },
+      {
+        "outcome": "survived",
+        "sha": "2d364da65a9ee4ccf2dd0f1df44c83fa5c42a3f6"
+      },
+      {
+        "outcome": "survived",
+        "sha": "e4dc54a40cc668935e6e732976875d8913174b63"
+      },
+      {
+        "outcome": "survived",
+        "sha": "3f01932460e58ba7e8a733760aeaba3257334db9"
+      },
+      {
+        "outcome": "survived",
+        "sha": "8c5716036d80eec502dd7bda574877e155da0c78"
+      },
+      {
+        "outcome": "survived",
+        "sha": "cdb1c4389dd5d42de144e316d887bae5743dc4b0"
+      },
+      {
+        "outcome": "survived",
+        "sha": "a1a7fa477aecf8ddda58d9f133a82aacc7f6cac6"
+      },
+      {
+        "outcome": "survived",
+        "sha": "1e85febeea9dbe0bc8ec659d39baaa29407bc2fb"
+      },
+      {
+        "outcome": "survived",
+        "sha": "82157dcb889e53d881c65de78e6948041fd7fe58"
+      },
+      {
+        "outcome": "survived",
+        "sha": "2c2c40425ffa7fe975a1577e343eddf30a112132"
+      },
+      {
+        "outcome": "survived",
+        "sha": "179d438c558361a7b328c3d75e35d82b83abf10d"
+      },
+      {
+        "outcome": "survived",
+        "sha": "2be41fc4c8910babd4352358103b7e3e217ada9a"
+      },
+      {
+        "outcome": "survived",
+        "sha": "6ab24f63e109124a9c2662093d3ffaf6d2637095"
+      },
+      {
+        "outcome": "survived",
+        "sha": "801c130e299fbb39e071ab90a748fed40bf20a1d"
+      },
+      {
+        "outcome": "survived",
+        "sha": "9e246645a57f5482f091bbef045db82e56d5a17a"
+      },
+      {
+        "outcome": "survived",
+        "sha": "50eb7157d261578bfa9281d947bd2ff8668115a2"
+      },
+      {
+        "outcome": "survived",
+        "sha": "a05ee32c04f3f320c6028bc2ce48751dc0917b1c"
+      },
+      {
+        "outcome": "survived",
+        "sha": "386e856664a3f56b85bcc7a9c942c9e1a56f182e"
+      },
+      {
+        "outcome": "survived",
+        "sha": "ff652e9f2860f5580cc1d6c82dda6581abb4c7cd"
+      },
+      {
+        "outcome": "survived",
+        "sha": "5cc4e86b742fe96932f3fa39b201ab724b9f1f4b"
+      },
+      {
+        "outcome": "survived",
+        "sha": "47133b350923b34c13b5637e676644978e072266"
+      },
+      {
+        "outcome": "survived",
+        "sha": "aa46fee5f968fd720e95b0e804e6cf5d52b06c5f"
+      },
+      {
+        "outcome": "survived",
+        "sha": "76372ff0656e13822a7c38799e57d3909b9201d2"
+      },
+      {
+        "outcome": "survived",
+        "sha": "717763f6534d43149afce98b5ce67b46b0124cb1"
+      },
+      {
+        "outcome": "survived",
+        "sha": "e3eb7a8bac8cdd63df95128efacf50a174b70786"
+      },
+      {
+        "outcome": "survived",
+        "sha": "93137bba12dba4256f55c9aaa4b7ae444ff70dc1"
+      },
+      {
+        "outcome": "survived",
+        "sha": "e144ee7b7daddee588851f7055929838fdd54d85"
+      },
+      {
+        "outcome": "survived",
+        "sha": "c9f96af5bb734a7f641b1d2bd4655a549e293896"
+      },
+      {
+        "outcome": "survived",
+        "sha": "99ccdfc7abcce9994273ecb9ef52f569a39d2099"
+      },
+      {
+        "outcome": "survived",
+        "sha": "738a2788c955d5747f84e7ffe7443dfdc5a2d1a4"
+      },
+      {
+        "outcome": "survived",
+        "sha": "44eaec96bea3c063e8d5b5760403785749b8da70"
+      },
+      {
+        "outcome": "survived",
+        "sha": "6db75ca7708fc720740fc8769fef9e0065156808"
+      },
+      {
+        "outcome": "survived",
+        "sha": "be28c743f25bf4e2fe246be76392c862803e6bd1"
+      },
+      {
+        "outcome": "survived",
+        "sha": "64a7e7c781ba2fdbdee3fa68b7b52fa66972ca24"
+      },
+      {
+        "outcome": "survived",
+        "sha": "6e382bee2ca2b50cc32520b7600b2b14a55a4a70"
+      },
+      {
+        "outcome": "survived",
+        "sha": "eb550ada81958d84ea974a80d2633db6cb7887b7"
+      },
+      {
+        "outcome": "survived",
+        "sha": "908cac90c0e8b944a35073c9a6638d67c70228f3"
+      },
+      {
+        "outcome": "survived",
+        "sha": "ce3c7fef5303a1b8660424d83353b5f69fc7a50d"
+      },
+      {
+        "outcome": "survived",
+        "sha": "fd6c9e659938659280efb8c32f87d017008d178f"
+      },
+      {
+        "outcome": "survived",
+        "sha": "d97b7bebeef3cc7319d75e842082245fa48ee574"
+      },
+      {
+        "outcome": "survived",
+        "sha": "e22b78ad502df6029d895f0ba7d5af407417481b"
+      },
+      {
+        "outcome": "refuted",
+        "sha": "4423ff329a1d3664c97b4fc622dce12cefb0d1ed"
+      },
+      {
+        "outcome": "survived",
+        "sha": "14fc52f1cd5eb453638c71e5a5921dd77a163ee5"
+      },
+      {
+        "outcome": "survived",
+        "sha": "f4baf704fce8eda4e5f4e4c1f18f2b1749d0e408"
+      },
+      {
+        "outcome": "survived",
+        "sha": "92a7fa003b04816e34ff6442535432bd3db85a4a"
+      },
+      {
+        "outcome": "survived",
+        "sha": "003d289982d578e60db999a83897f188beac0f17"
+      },
+      {
+        "outcome": "survived",
+        "sha": "545f47ced051fed2e6ce271e3293cedcaf62c9e2"
+      },
+      {
+        "outcome": "survived",
+        "sha": "f9b9ca1d1469fcb8f29b1525f8887d50dce061fc"
+      },
+      {
+        "outcome": "survived",
+        "sha": "9397dd1176fded127ffd97f116771f9f3afdd94c"
+      },
+      {
+        "outcome": "survived",
+        "sha": "0bb1465348b40f3c7cedee744c5ef215b5ed3b74"
+      },
+      {
+        "outcome": "survived",
+        "sha": "039ae79a4ebd38f0a3df0c5bf521658142584427"
+      },
+      {
+        "outcome": "survived",
+        "sha": "1b024d438d8539afd3ff08e9c0751408ac63ae59"
+      },
+      {
+        "outcome": "survived",
+        "sha": "f15492173197f8dcf4fbe7a516c5592ed9c0315b"
+      },
+      {
+        "outcome": "survived",
+        "sha": "f0fc6c3e3b1eab0870fefdbe895af3d35c2c8ed3"
+      },
+      {
+        "outcome": "survived",
+        "sha": "bbce677fcf35848fafc4ebaad18d0152b82b114a"
+      },
+      {
+        "outcome": "survived",
+        "sha": "133399b5c2eca8da9faa955f773b90121b134740"
+      },
+      {
+        "outcome": "survived",
+        "sha": "cf07e966e076b37672e8cd88e2ceb389f71da980"
+      },
+      {
+        "outcome": "survived",
+        "sha": "9221ef59b80b48f99940112822c172da4e14c927"
+      },
+      {
+        "outcome": "survived",
+        "sha": "935de163a0ee9cc3a91b0bd43b734c9a2a68e901"
+      },
+      {
+        "outcome": "survived",
+        "sha": "0b1a643785c62e1b076cc6dfc72a767afd15ca8d"
+      },
+      {
+        "outcome": "survived",
+        "sha": "533b413e280b02b979560766fa08053a078cebbd"
+      },
+      {
+        "outcome": "survived",
+        "sha": "c9781f63495392c7e8186b0e941375c1fb9f956c"
+      },
+      {
+        "outcome": "survived",
+        "sha": "d6dccd1e1db74c6c7e59dd0fec0f00364256e4b4"
+      },
+      {
+        "outcome": "survived",
+        "sha": "fc4c07be8a21e6903ccad41e5d09652a217f6dfa"
+      },
+      {
+        "outcome": "survived",
+        "sha": "306244aad66317f4b5549d593786a39e428ce63a"
+      },
+      {
+        "outcome": "survived",
+        "sha": "22040baf66cfcbfab5630e7b950722b64e889a7c"
+      },
+      {
+        "outcome": "survived",
+        "sha": "7f8b1178909242fed9790d5c72b73e4ea6458d5c"
+      },
+      {
+        "outcome": "survived",
+        "sha": "62cacff49514654bfc2bb248bb4ca97d77e22f78"
+      },
+      {
+        "outcome": "survived",
+        "sha": "224cb5caba4ab0096baf7d9c596974b02806726c"
+      },
+      {
+        "outcome": "survived",
+        "sha": "378cb619cf1b83d6242487f3d48a4a3884240bc2"
+      },
+      {
+        "outcome": "survived",
+        "sha": "740064edfb68a5da23087722c195d0ce239c7dec"
+      },
+      {
+        "outcome": "survived",
+        "sha": "ef872102070c572a9b360b315dc5f253d5a371c9"
+      },
+      {
+        "outcome": "survived",
+        "sha": "c050fd9e2bbe2563c8e0558f14d736ae668da724"
+      },
+      {
+        "outcome": "survived",
+        "sha": "0b76c6feac5eec93d09529e8327c65f02e38ccc4"
+      },
+      {
+        "outcome": "survived",
+        "sha": "d244987275b1a9494a26cf184d61f50623ed4ce0"
+      },
+      {
+        "outcome": "survived",
+        "sha": "7fb6380433d3bb9f38b3b5e9550014d8441afd9d"
+      },
+      {
+        "outcome": "survived",
+        "sha": "992c2dca454321cfec19f02b31db9cb16dedf7e6"
+      },
+      {
+        "outcome": "survived",
+        "sha": "718d67c1b13fe102ed07be72ef65815907f33772"
+      },
+      {
+        "outcome": "survived",
+        "sha": "89a7a224710de64be78d12ea5d5d15b684dcb636"
+      },
+      {
+        "outcome": "survived",
+        "sha": "f433a1b86886171a5e66720cfc928f45c57951d4"
+      },
+      {
+        "outcome": "survived",
+        "sha": "4eab442bb2d19d0c81ec469d66efa9981377d923"
+      },
+      {
+        "outcome": "survived",
+        "sha": "80a08cedecef80441a1c1dfcb6c649aed658c66e"
+      },
+      {
+        "outcome": "survived",
+        "sha": "0e0a187138948e1b655a5f112dd25bebf393e975"
+      },
+      {
+        "outcome": "survived",
+        "sha": "f9d26e005b0f19acb5ac41c2e3604334fdb182cd"
+      },
+      {
+        "outcome": "survived",
+        "sha": "a4dd9d3d455fd3fc8b90e139e4ddb29afa7e3e01"
+      },
+      {
+        "outcome": "survived",
+        "sha": "5e6a9b1388d521bef7f8edc880baf56e0c80c0df"
+      },
+      {
+        "outcome": "survived",
+        "sha": "d76080dd992101de1f34e977bfaa3907917b3a08"
+      },
+      {
+        "outcome": "survived",
+        "sha": "27374f9fb00ecda63e901063c734c3d0d66da5d2"
+      },
+      {
+        "outcome": "survived",
+        "sha": "7d969ad9fc34ffa6bed27e6d7d3906bc63a43be5"
+      },
+      {
+        "outcome": "survived",
+        "sha": "1dbabb873be324cf0c5101f5eb4365d56f5cb89b"
+      },
+      {
+        "outcome": "survived",
+        "sha": "63811d2d83f39c3f226bac165bba6e143cafb95c"
+      },
+      {
+        "outcome": "survived",
+        "sha": "dab6f8bde825ee4355bec797a2cbbba0b1fc0739"
+      },
+      {
+        "outcome": "survived",
+        "sha": "bae8a0d1c0c3c6cb6fb56525ef63cea880ccc3aa"
+      },
+      {
+        "outcome": "survived",
+        "sha": "8e7593111e76d5ad14e80fe0927643e87d38bde4"
+      },
+      {
+        "outcome": "survived",
+        "sha": "b46f79f119232793b2a424433a2fd04d9bfb49d7"
+      },
+      {
+        "outcome": "survived",
+        "sha": "a6d20f8394df56da1ce6cf5b7bd1d62688968351"
+      }
+    ],
+    "rival_side_streak": 0,
+    "runs": 189,
+    "schema": "snowball-bootstrap-state/4",
+    "stage_spend_usd_micros": 46247585
+  },
+  "state_reproducers": [
+    {
+      "contradicted": true,
+      "exit": 2,
+      "key": "26787c717fab",
+      "reproduced": false,
+      "runner_fault": false,
+      "shown": false,
+      "source": "claim",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "35cacf6726fc978ab2a8e061be3e2d27cfbab6b78b4cef82918add7337a06ba3",
+      "stdout_tail": "{\"error\": \"/tmp/deep.json: JSON nested too deeply\", \"ok\": false}\n",
+      "tautological": null,
+      "timed_out": false
+    }
+  ],
+  "tests": [
+    {
+      "cmd_sha256": "f7b9285c6dab6f63b26f5011c880316a0506302d4d9cb4067715dd3fac0dbbb9",
+      "duration_ms": 17574,
+      "exit": 0,
+      "id": "T13",
+      "ok": true,
+      "output_tail": "\n........................\n----------------------------------------------------------------------\nRan 24 tests in 15.107s\n\nOK\n",
+      "stderr_sha256": "729484be0dd3bc2120ca196832eec67c76f80f14f03a221074eb14daead31072",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "559d7876abf22c9be75f72a21d1dba730e5d231b22a91fe4d674dc722ce6276d",
+      "duration_ms": 139905,
+      "exit": 0,
+      "id": "T38",
+      "ok": true,
+      "output_tail": "\n..................................................\n----------------------------------------------------------------------\nRan 50 tests in 116.438s\n\nOK\n..........................................\n----------------------------------------------------------------------\nRan 42 tests in 16.736s\n\nOK\n.........\n----------------------------------------------------------------------\nRan 9 tests in 3.615s\n\nOK\n",
+      "stderr_sha256": "6241d3868e17de3f14fb71f9c23b8b4f9f5aac2adefb4b3037fbe56290b0d29c",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "76bcc8dc291b7e0df03267594ec38ba38e325fe433f86f3691acc7332e81d595",
+      "duration_ms": 4019,
+      "exit": 0,
+      "id": "T20",
+      "ok": true,
+      "output_tail": "\n.....\n----------------------------------------------------------------------\nRan 5 tests in 1.245s\n\nOK\n",
+      "stderr_sha256": "7ad57d833bfc7252cf6b001541efc1c21be03b3fcc051d65a0dd1423a63df817",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "4d507363b36fa61e300336c174f503c5060521adb117d1350392e5f1000aec5b",
+      "duration_ms": 29406,
+      "exit": 0,
+      "id": "T21",
+      "ok": true,
+      "output_tail": "\n...............................\n----------------------------------------------------------------------\nRan 31 tests in 26.855s\n\nOK\n",
+      "stderr_sha256": "f0a6dc5df3d6d404d0618b11a4b19870c9048d6e320c12acc3210dc568f7d5f8",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "56b06fae422ff687080b342bc9a0d1ed87b6e86e0e8a736090b512e8de4bc137",
+      "duration_ms": 11849,
+      "exit": 0,
+      "id": "T19",
+      "ok": true,
+      "output_tail": "\n.....................................\n----------------------------------------------------------------------\nRan 37 tests in 9.275s\n\nOK\n",
+      "stderr_sha256": "3ce8d365cfde2663e76bde3481bf89adbe6944a2e74cf84c77725e386803c536",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "a5011f2ce8b01dad2a1cacad2f0a3c35e8c8d7678d9e630f09298bfaa2bd7567",
+      "duration_ms": 6702,
+      "exit": 0,
+      "id": "T47",
+      "ok": true,
+      "output_tail": "\n...........\n----------------------------------------------------------------------\nRan 11 tests in 0.022s\n\nOK\n............................\n----------------------------------------------------------------------\nRan 28 tests in 0.066s\n\nOK\n......................\n----------------------------------------------------------------------\nRan 22 tests in 0.967s\n\nOK\n......................\n----------------------------------------------------------------------\nRan 22 tests in 0.467s\n\nOK\n...........\n----------------------------------------------------------------------\nRan 11 tests in 0.006s\n\nOK\n.................\n----------------------------------------------------------------------\nRan 17 tests in 0.002s\n\nOK\n.........................\n----------------------------------------------------------------------\nRan 25 tests in 0.004s\n\nOK\n..............\n----------------------------------------------------------------------\nRan 14 tests in 0.002s\n\nOK\n.......\n----------------------------------------------------------------------\nRan 7 tests in 0.001s\n\nOK\n...............\n----------------------------------------------------------------------\nRan 15 tests in 0.033s\n\nOK\n",
+      "stderr_sha256": "921f6decb0ff0d25d8d16f06bbe8c5e2aa4c73b6e69bb89371caacf4f849c4b4",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "06fac77e42371d9959671e5a3b6b6ea2b5aeed708034f34e00a3aa8e67d829ba",
+      "duration_ms": 37799,
+      "exit": 0,
+      "id": "T34",
+      "ok": true,
+      "output_tail": "\n......................................................................\n----------------------------------------------------------------------\nRan 70 tests in 34.479s\n\nOK\n...\n----------------------------------------------------------------------\nRan 3 tests in 0.006s\n\nOK\n",
+      "stderr_sha256": "e5a848ae9af24b052bb3630b8788fe66e6c3dcd121c66e6df82fa12994ec89e8",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "f16f168e8f7e8196f76c8254542e9beea02dd2c16343ab0bb5bbbfa6914a474b",
+      "duration_ms": 123113,
+      "exit": 0,
+      "id": "T48",
+      "ok": true,
+      "output_tail": "\n...............................................................................................\n----------------------------------------------------------------------\nRan 95 tests in 85.088s\n\nOK\n.....................\n----------------------------------------------------------------------\nRan 21 tests in 0.909s\n\nOK\n..................................\n----------------------------------------------------------------------\nRan 34 tests in 33.253s\n\nOK\n.............\n----------------------------------------------------------------------\nRan 13 tests in 0.013s\n\nOK\n",
+      "stderr_sha256": "ac35387977f92d1e478dd20db7c35a9e53f675aa0d2f9f58ebb39b7450c846e7",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "3f037a5966e413fdfababeb6c29a563c7b901f874f7aaee0b09dcfac0da244f2",
+      "duration_ms": 4573,
+      "exit": 0,
+      "id": "T23",
+      "ok": true,
+      "output_tail": "\n..........................\n----------------------------------------------------------------------\nRan 26 tests in 1.651s\n\nOK\n.....\n----------------------------------------------------------------------\nRan 5 tests in 0.005s\n\nOK\n",
+      "stderr_sha256": "81ff3ce3e55111017e1234c69f39e2c1507ed4a641891b970ddbb826f66aed8b",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "899783e3c311a49fcc909b09625593bbd0840c89741dca87e07f1a69763c0918",
+      "duration_ms": 6323,
+      "exit": 0,
+      "id": "T35",
+      "ok": true,
+      "output_tail": "\n...................................\n----------------------------------------------------------------------\nRan 35 tests in 3.815s\n\nOK\n",
+      "stderr_sha256": "2f85e25b8095b52b195289ca99cdb800544a3b8ba20457da2a1f69fb15a95df9",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "b86d6805393660e1b3119e07d1971596cf29e955290f632c20669983eb647e4e",
+      "duration_ms": 14621,
+      "exit": 0,
+      "id": "T49",
+      "ok": true,
+      "output_tail": "\n........................................................\n----------------------------------------------------------------------\nRan 56 tests in 11.740s\n\nOK\n",
+      "stderr_sha256": "2c08cd7f9a8a6917b1d80e28037800aa1115df736f253b6bda36cad7b9e7ea3c",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "dd7a1cc54e6ae0b9495c7d6f164f230aa323a6c957bab34c79a4797598425f40",
+      "duration_ms": 6512,
+      "exit": 0,
+      "id": "T39",
+      "ok": true,
+      "output_tail": "\n..........................\n----------------------------------------------------------------------\nRan 26 tests in 2.838s\n\nOK\n................\n----------------------------------------------------------------------\nRan 16 tests in 0.059s\n\nOK\n......\n----------------------------------------------------------------------\nRan 6 tests in 0.023s\n\nOK\n",
+      "stderr_sha256": "b09769e54f9e6917e3092f49b57439a6fab69efd7e88cb3c320eb255b91974f3",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "3fff8138d14d52d08b52b73fdd1424145a2444a8848a2796dda0ab78335ffd78",
+      "duration_ms": 6587,
+      "exit": 0,
+      "id": "T40",
+      "ok": true,
+      "output_tail": "\n......................\n----------------------------------------------------------------------\nRan 22 tests in 2.971s\n\nOK\n...........\n----------------------------------------------------------------------\nRan 11 tests in 0.099s\n\nOK\n.............\n----------------------------------------------------------------------\nRan 13 tests in 0.254s\n\nOK\n",
+      "stderr_sha256": "a94658c40846a1663817c359750afd39e5d93baf96167ad71f1775312e30fe73",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "cc63a7c7f5b24d6b22f3ac7f2fff62bbf9ea8eacd6cd6e1eeaecc08aac2b38b2",
+      "duration_ms": 4502,
+      "exit": 0,
+      "id": "T36",
+      "ok": true,
+      "output_tail": "\n............................\n----------------------------------------------------------------------\nRan 28 tests in 2.042s\n\nOK\n",
+      "stderr_sha256": "14f4d0df4a5204b2b1600f9f8c4d63c0bd1d693ff71baae95fec210ab50c1ad6",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "4c42b836b2acb0d2eb0c3fa8dc7fd08850191fe3cc04492cd64544453cc44b34",
+      "duration_ms": 5321,
+      "exit": 0,
+      "id": "T25",
+      "ok": true,
+      "output_tail": "\n...............................\n----------------------------------------------------------------------\nRan 31 tests in 2.448s\n\nOK\n",
+      "stderr_sha256": "59b15440c7a71941a428c27b88f21fc6f45e3fa9bc8f55222834510ab962b21c",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "50a9710fe995cdc9954bb1f7fd8df6284b8628a527c75eecaf6db62632c57950",
+      "duration_ms": 10966,
+      "exit": 0,
+      "id": "T50",
+      "ok": true,
+      "output_tail": "\n.............................\n----------------------------------------------------------------------\nRan 29 tests in 8.285s\n\nOK\n",
+      "stderr_sha256": "fb67473315bfb047e3e4d469d818415c0fc865030738f8acb6f96cfd3157d14d",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "306ee02c00c93deed7ec95d97cebe305207793cd5471ba2183386510036117b9",
+      "duration_ms": 9522,
+      "exit": 0,
+      "id": "T37",
+      "ok": true,
+      "output_tail": "\n..............................................\n----------------------------------------------------------------------\nRan 46 tests in 7.028s\n\nOK\n",
+      "stderr_sha256": "4c109189dd9f5af6bc68f29ff5a47f510db04f7a9785723610d820adf87867e1",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "5e7d0a3e138d115134718ae79fc9f5afd5cb3538f29d39f59b870d7001200f99",
+      "duration_ms": 63247,
+      "exit": 0,
+      "id": "T42",
+      "ok": true,
+      "output_tail": "\n..................\n----------------------------------------------------------------------\nRan 18 tests in 4.415s\n\nOK\n.................................................................\n----------------------------------------------------------------------\nRan 65 tests in 8.797s\n\nOK\n..............................................................\n----------------------------------------------------------------------\nRan 62 tests in 46.741s\n\nOK\n",
+      "stderr_sha256": "1f46f457649dc0f1479a5184d969c3cb483c027036fc062ab070ecaac14c2bd0",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "3ec3a05d2c560f7d1643f72335700697895f84ee794d0700a37a28de2fcbf179",
+      "duration_ms": 331126,
+      "exit": 0,
+      "id": "T46",
+      "ok": true,
+      "output_tail": "\n........................................\n----------------------------------------------------------------------\nRan 40 tests in 7.793s\n\nOK\n........................................\n----------------------------------------------------------------------\nRan 40 tests in 11.814s\n\nOK\n................\n----------------------------------------------------------------------\nRan 16 tests in 0.633s\n\nOK\n................\n----------------------------------------------------------------------\nRan 16 tests in 1.605s\n\nOK\n...................................\n----------------------------------------------------------------------\nRan 35 tests in 43.448s\n\nOK\n................................................\n----------------------------------------------------------------------\nRan 48 tests in 100.776s\n\nOK\n.............\n----------------------------------------------------------------------\nRan 13 tests in 0.080s\n\nOK\n.................\n----------------------------------------------------------------------\nRan 17 tests in 0.022s\n\nOK\n........................\n----------------------------------------------------------------------\nRan 24 tests in 33.658s\n\nOK\n..................................................\n----------------------------------------------------------------------\nRan 50 tests in 114.101s\n\nOK\n...........\n----------------------------------------------------------------------\nRan 11 tests in 0.011s\n\nOK\n....s............\n----------------------------------------------------------------------\nRan 17 tests in 1.539s\n\nOK (skipped=1)\n......................................\n----------------------------------------------------------------------\nRan 38 tests in 0.543s\n\nOK\n...................\n----------------------------------------------------------------------\nRan 19 tests in 0.618s\n\nOK\n...............\n----------------------------------------------------------------------\nRan 15 tests in 4.897s\n\nOK\n.\n----------------------------------------------------------------------\nRan 1 test in 0.009s\n\nOK\n...\n----------------------------------------------------------------------\nRan 3 tests in 0.002s\n\nOK\n....\n----------------------------------------------------------------------\nRan 4 tests in 0.004s\n\nOK\n",
+      "stderr_sha256": "464153a89ea0edad4b9fcf179c2671c8b6746eeaddd0ec9c6425e867c9ff6a6f",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "4453530c0548c6509054ec9541fdbf795ab40f15048fd64a005af6c6b934e7fa",
+      "duration_ms": 93457,
+      "exit": 0,
+      "id": "T45",
+      "ok": true,
+      "output_tail": "\n.............................\n----------------------------------------------------------------------\nRan 29 tests in 2.755s\n\nOK\n...............................\n----------------------------------------------------------------------\nRan 31 tests in 15.254s\n\nOK\n.......................\n----------------------------------------------------------------------\nRan 23 tests in 1.127s\n\nOK\n...\n----------------------------------------------------------------------\nRan 3 tests in 69.447s\n\nOK\n...........\n----------------------------------------------------------------------\nRan 11 tests in 0.089s\n\nOK\n",
+      "stderr_sha256": "4166b5e531daefc5e363b57408cc404298b81c16cbe74d146e0e1f0b41e40b1e",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    },
+    {
+      "cmd_sha256": "48f0c62aebffbd2d8daee3ab9d2757920a4dabd3ce5da41f121f45bedba61c8d",
+      "duration_ms": 19737,
+      "exit": 0,
+      "id": "T14",
+      "ok": true,
+      "output_tail": "\n..........\n----------------------------------------------------------------------\nRan 10 tests in 0.055s\n\nOK\n.................................................\n----------------------------------------------------------------------\nRan 49 tests in 5.703s\n\nOK\n.....................\n----------------------------------------------------------------------\nRan 21 tests in 1.479s\n\nOK\n...........\n----------------------------------------------------------------------\nRan 11 tests in 8.679s\n\nOK\n...................\n----------------------------------------------------------------------\nRan 19 tests in 0.166s\n\nOK\n",
+      "stderr_sha256": "c59e4b58dcc3aa04fb5aafe1cc4556b6a63783ccb1f5bcb7a98d3a6f370f9965",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "timed_out": false
+    }
+  ],
+  "vectors": [
+    {
+      "detail": "got 3bae91580aca99362572e9f5f41b3e46c2bc0c29236f72e867faa5cd46ca603a",
+      "exit": 0,
+      "id": "chain.V1.hash",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got 640eae94a77d1a73c0676cf52e681cb3aa0593f607f6feab6ca9a43a8f094460",
+      "exit": 0,
+      "id": "chain.V1.hash_changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got 3b10a5bb06351b0933c0e30f7dd55d3a57245743b97fb1faba348351a554a45c",
+      "exit": 0,
+      "id": "chain.V2.hash",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got 6b8efa56b145c82d8c5d85c3df589b2048f63bc841f316295182c1f8355b5a40",
+      "exit": 0,
+      "id": "chain.V2.hash_changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "{\"broken_row\": null, \"line\": null, \"reason\": null, \"valid\": true}",
+      "exit": 0,
+      "id": "chain.verify_good",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "{\"broken_row\": \"r2\", \"line\": 2, \"reason\": \"row_hash does not match the row\", \"valid\": false}",
+      "exit": 1,
+      "id": "chain.V3",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": false, \"lines\": [7]}",
+      "exit": 1,
+      "id": "secrets.diff_added_line",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": true, \"lines\": []}",
+      "exit": 0,
+      "id": "secrets.diff_added_line.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": false, \"lines\": [7]}",
+      "exit": 1,
+      "id": "secrets.diff_context_line",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": true, \"lines\": []}",
+      "exit": 0,
+      "id": "secrets.diff_context_line.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": false, \"lines\": [1]}",
+      "exit": 1,
+      "id": "secrets.row_json_escape",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": true, \"lines\": []}",
+      "exit": 0,
+      "id": "secrets.row_json_escape.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": false, \"lines\": [4]}",
+      "exit": 1,
+      "id": "secrets.prompt",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": true, \"lines\": []}",
+      "exit": 0,
+      "id": "secrets.prompt.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": true, \"lines\": []}",
+      "exit": 0,
+      "id": "secrets.prompt_clean",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": false, \"lines\": [4]}",
+      "exit": 1,
+      "id": "secrets.prompt_clean.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": false, \"lines\": [2, 3]}",
+      "exit": 1,
+      "id": "secrets.glued_token",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": false, \"lines\": [3]}",
+      "exit": 1,
+      "id": "secrets.glued_token.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": true, \"lines\": []}",
+      "exit": 0,
+      "id": "secrets.clean_near_miss",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": false, \"lines\": [8]}",
+      "exit": 1,
+      "id": "secrets.clean_near_miss.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": false}",
+      "exit": 2,
+      "id": "secrets.row_unusable_fails_closed",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"clean\": true}",
+      "exit": 0,
+      "id": "secrets.row_unusable_fails_closed.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"network\": \"none\", \"cap_drop\": [\"ALL\"], \"cap_add\": [], \"privileged\": false, \"read_only\": true, \"uid\": 1001, \"memory_bytes\": 536870912, \"mounts\": [[\"/runs/r-0001/deps\", \"ro\"], [\"/runs/",
+      "exit": 0,
+      "id": "contained.argv_baseline",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"network\": \"none\", \"cap_drop\": [\"ALL\"], \"cap_add\": [], \"privileged\": false, \"read_only\": true, \"uid\": 1001, \"memory_bytes\": 536870913, \"mounts\": [[\"/runs/r-0001/deps\", \"ro\"], [\"/runs/",
+      "exit": 0,
+      "id": "contained.argv_baseline.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"network\": \"none\", \"cap_drop\": [\"ALL\"], \"cap_add\": [], \"privileged\": false, \"read_only\": true, \"uid\": 2002, \"memory_bytes\": 805306368, \"mounts\": [[\"/runs/r-0002/out\", \"rw\"], [\"/runs/r",
+      "exit": 0,
+      "id": "contained.argv_second_request",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"network\": \"none\", \"cap_drop\": [\"ALL\"], \"cap_add\": [], \"privileged\": false, \"read_only\": true, \"uid\": 2003, \"memory_bytes\": 805306368, \"mounts\": [[\"/runs/r-0002/out\", \"rw\"], [\"/runs/r",
+      "exit": 0,
+      "id": "contained.argv_second_request.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 1,
+      "id": "contained.refuse_unpinned_image",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "contained.refuse_unpinned_image.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 1,
+      "id": "contained.refuse_actions_env",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "contained.refuse_actions_env.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 1,
+      "id": "contained.refuse_docker_socket",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "contained.refuse_docker_socket.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 1,
+      "id": "contained.refuse_services",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "contained.refuse_services.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 1,
+      "id": "contained.refuse_missing_mem_limit",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "contained.refuse_missing_mem_limit.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"languages\": [\"javascript\", \"typescript\"], \"unit_candidates\": [\"packages/web\", \"packages/api\"], \"security_paths\": [\"packages/api/src/auth/login.ts\", \"packages/api/src/session.ts\", \"packages/web/s",
+      "exit": 0,
+      "id": "profile.agent_config_case_insensitive",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"languages\": [\"javascript\", \"typescript\"], \"unit_candidates\": [\"packages/web\", \"packages/api\"], \"security_paths\": [\"packages/api/src/auth/login.ts\", \"packages/api/src/session.ts\", \"packages/web/s",
+      "exit": 0,
+      "id": "profile.agent_config_case_insensitive.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"languages\": [\"javascript\", \"typescript\"], \"unit_candidates\": [\"packages/web\", \"packages/api\"], \"security_paths\": [\"packages/api/src/auth/login.ts\", \"packages/api/src/session.ts\", \"packages/web/s",
+      "exit": 0,
+      "id": "profile.operator_excluded_paths",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"languages\": [\"javascript\", \"python\", \"typescript\"], \"unit_candidates\": [\"packages/web\", \"packages/api\", \"vendor\"], \"security_paths\": [\"packages/api/src/auth/login.ts\", \"packages/api/src/session.",
+      "exit": 0,
+      "id": "profile.operator_excluded_paths.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"languages\": [\"javascript\", \"typescript\"], \"unit_candidates\": [\"packages/web\", \"packages/api\"], \"security_paths\": [\"packages/api/src/auth/login.ts\", \"packages/api/src/session.ts\", \"packages/web/s",
+      "exit": 0,
+      "id": "profile.security_keyword_substring",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"languages\": [\"javascript\", \"typescript\"], \"unit_candidates\": [\"packages/web\", \"packages/api\"], \"security_paths\": [\"packages/api/src/auth/login.ts\", \"packages/web/src/tokenizer.js\"], \"excluded_pa",
+      "exit": 0,
+      "id": "profile.security_keyword_substring.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"languages\": [\"javascript\", \"typescript\"], \"unit_candidates\": [\"packages/web\", \"packages/api\"], \"security_paths\": [\"packages/api/src/auth/login.ts\", \"packages/api/src/session.ts\", \"packages/web/s",
+      "exit": 0,
+      "id": "profile.unit_candidates_order_and_filter",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"languages\": [\"javascript\", \"typescript\"], \"unit_candidates\": [\"packages/api\", \"packages/web\"], \"security_paths\": [\"packages/api/src/auth/login.ts\", \"packages/api/src/session.ts\", \"packages/web/s",
+      "exit": 0,
+      "id": "profile.unit_candidates_order_and_filter.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": false, \"reasons\": [\"narrows:excluded_paths\"]}",
+      "exit": 1,
+      "id": "profile.reject_narrowed_excluded",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "profile.reject_narrowed_excluded.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": false, \"reasons\": [\"narrows:security_paths\"]}",
+      "exit": 1,
+      "id": "profile.reject_narrowed_security",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "profile.reject_narrowed_security.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "profile.accept_widened",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": false, \"reasons\": [\"narrows:security_paths\"]}",
+      "exit": 1,
+      "id": "profile.accept_widened.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "profile.accept_widened_outside_tree",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": false, \"reasons\": [\"narrows:excluded_paths\"]}",
+      "exit": 1,
+      "id": "profile.accept_widened_outside_tree.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": false, \"reasons\": [\"differs:languages\"]}",
+      "exit": 1,
+      "id": "profile.reject_different_languages",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "profile.reject_different_languages.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": false, \"reasons\": [\"differs:unit_candidates\"]}",
+      "exit": 1,
+      "id": "profile.reject_reordered_unit_candidates",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "profile.reject_reordered_unit_candidates.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": false, \"reasons\": [\"differs:unit_candidates\"]}",
+      "exit": 1,
+      "id": "profile.reject_added_unit_candidate",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"accepted\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "profile.reject_added_unit_candidate.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:c8b74b5a620c70bb24263efc66e4080c844934a1a78fd788c0625b0a8274ac19\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"node_modu",
+      "exit": 0,
+      "id": "npmlock.integrity_good_and_one_byte",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"rejected\": [\"integrity_mismatch:node_modules/snowball-fixture-a\"], \"artefact\": null, \"licenses\": null}",
+      "exit": 1,
+      "id": "npmlock.integrity_good_and_one_byte.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"rejected\": [\"install_script_unmarked:node_modules/snowball-fixture-b\"], \"artefact\": null, \"licenses\": null}",
+      "exit": 1,
+      "id": "npmlock.install_script_unmarked",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:c8b74b5a620c70bb24263efc66e4080c844934a1a78fd788c0625b0a8274ac19\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"node_modu",
+      "exit": 0,
+      "id": "npmlock.install_script_unmarked.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:c8b74b5a620c70bb24263efc66e4080c844934a1a78fd788c0625b0a8274ac19\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"node_modu",
+      "exit": 0,
+      "id": "npmlock.install_script_marked_by_lock_path",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"rejected\": [\"install_script_unmarked:node_modules/snowball-fixture-b\"], \"artefact\": null, \"licenses\": null}",
+      "exit": 1,
+      "id": "npmlock.install_script_marked_by_lock_path.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 2,
+      "id": "npmlock.bare_name_refused",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "npmlock.bare_name_refused.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 2,
+      "id": "npmlock.bare_name_not_in_lock_refused",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "npmlock.bare_name_not_in_lock_refused.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 2,
+      "id": "npmlock.scoped_bare_name_refused",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "npmlock.scoped_bare_name_refused.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 2,
+      "id": "npmlock.lock_path_not_in_lock_refused",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "npmlock.lock_path_not_in_lock_refused.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "npmlock.name_version_not_in_lock_marks_nothing",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 2,
+      "id": "npmlock.name_version_not_in_lock_marks_nothing.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false}",
+      "exit": 2,
+      "id": "npmlock.root_key_refused",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true}",
+      "exit": 0,
+      "id": "npmlock.root_key_refused.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"rejected\": [\"registry_not_allowed:node_modules/snowball-fixture-a\"], \"artefact\": null, \"licenses\": null}",
+      "exit": 1,
+      "id": "npmlock.registry_not_allowed",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:c8d8a18cef2a79bb4e2bb14fabd6dddfb14971ffa1e6be86557c8ef9044d07cf\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"node_modu",
+      "exit": 0,
+      "id": "npmlock.registry_not_allowed.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"rejected\": [\"git_dependency:node_modules/snowball-fixture-a\"], \"artefact\": null, \"licenses\": null}",
+      "exit": 1,
+      "id": "npmlock.git_dependency",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:c8d8a18cef2a79bb4e2bb14fabd6dddfb14971ffa1e6be86557c8ef9044d07cf\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"node_modu",
+      "exit": 0,
+      "id": "npmlock.git_dependency.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"rejected\": [\"file_dependency:node_modules/snowball-fixture-a\"], \"artefact\": null, \"licenses\": null}",
+      "exit": 1,
+      "id": "npmlock.file_dependency",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:c8d8a18cef2a79bb4e2bb14fabd6dddfb14971ffa1e6be86557c8ef9044d07cf\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"node_modu",
+      "exit": 0,
+      "id": "npmlock.file_dependency.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:3709f448fa7c1106b118e3914914658e321c3d34bd9b029bc997dda7964816dd\", \"licenses\": [{\"license\": \"GPL-3.0-only\", \"name\": \"snowball-fixture-e\", \"path\": \"",
+      "exit": 0,
+      "id": "npmlock.license_from_tarball",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:d589cdddc8d30c0f7bb0d7d116ce6b9af5d90d99994dc7810a9898c4948fd536\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-e\", \"path\": \"node_modu",
+      "exit": 0,
+      "id": "npmlock.license_from_tarball.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:c8b74b5a620c70bb24263efc66e4080c844934a1a78fd788c0625b0a8274ac19\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"node_modu",
+      "exit": 0,
+      "id": "npmlock.same_lock_same_address",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:c8d8a18cef2a79bb4e2bb14fabd6dddfb14971ffa1e6be86557c8ef9044d07cf\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"node_modu",
+      "exit": 0,
+      "id": "npmlock.same_lock_same_address.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:a25b94d9cbcc27c524aaa77f18eac1ddb1809cf965e5416aa8dbd0a9d3f39da9\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"libs/ui/n",
+      "exit": 0,
+      "id": "npmlock.workspaces_lock",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"rejected\": [\"registry_not_allowed:libs/ui\", \"registry_not_allowed:node_modules/@acme/ui\"], \"artefact\": null, \"licenses\": null}",
+      "exit": 1,
+      "id": "npmlock.workspaces_lock.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"rejected\": [\"registry_not_allowed:libs/ui\", \"registry_not_allowed:node_modules/@acme/ui\"], \"artefact\": null, \"licenses\": null}",
+      "exit": 1,
+      "id": "npmlock.workspace_folder_needs_its_link",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:a25b94d9cbcc27c524aaa77f18eac1ddb1809cf965e5416aa8dbd0a9d3f39da9\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"libs/ui/n",
+      "exit": 0,
+      "id": "npmlock.workspace_folder_needs_its_link.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"rejected\": [\"registry_not_allowed:libs/ui/node_modules/snowball-fixture-a\"], \"artefact\": null, \"licenses\": null}",
+      "exit": 1,
+      "id": "npmlock.nested_registry_not_allowed",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"rejected\": [], \"artefact\": \"sha256:a25b94d9cbcc27c524aaa77f18eac1ddb1809cf965e5416aa8dbd0a9d3f39da9\", \"licenses\": [{\"license\": \"MIT\", \"name\": \"snowball-fixture-a\", \"path\": \"libs/ui/n",
+      "exit": 0,
+      "id": "npmlock.nested_registry_not_allowed.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "recipe.good",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"services_not_empty\"]}",
+      "exit": 1,
+      "id": "recipe.good.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"image_not_pinned\"]}",
+      "exit": 1,
+      "id": "recipe.image_tag_only",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "recipe.image_tag_only.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"image_not_pinned\"]}",
+      "exit": 1,
+      "id": "recipe.image_digest_malformed",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "recipe.image_digest_malformed.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"inputs_missing_unit\"]}",
+      "exit": 1,
+      "id": "recipe.inputs_missing_unit_dir",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "recipe.inputs_missing_unit_dir.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"input_excluded:packages/api/.Claude/\"]}",
+      "exit": 1,
+      "id": "recipe.inputs_agent_config",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "recipe.inputs_agent_config.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"input_not_plain:/packages/shared/\"]}",
+      "exit": 1,
+      "id": "recipe.inputs_not_plain",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "recipe.inputs_not_plain.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"limit_key_unknown:cpu_seconds\"]}",
+      "exit": 1,
+      "id": "recipe.limit_key_unknown",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "recipe.limit_key_unknown.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"cmd_empty:test_cmd\"]}",
+      "exit": 1,
+      "id": "recipe.test_cmd_empty",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "recipe.test_cmd_empty.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"cmd_empty:affected_test_cmd\", \"cmd_empty:lint_cmd\"]}",
+      "exit": 1,
+      "id": "recipe.cmd_entries",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"cmd_empty:affected_test_cmd\"]}",
+      "exit": 1,
+      "id": "recipe.cmd_entries.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "diffguard.inside_inputs",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"outside_inputs:packages/sharex/src/util.ts\"]}",
+      "exit": 1,
+      "id": "diffguard.inside_inputs.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"symlink:packages/api/src/current.ts\"]}",
+      "exit": 1,
+      "id": "diffguard.symlink",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "diffguard.symlink.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"submodule:packages/api/vendor/lib\"]}",
+      "exit": 1,
+      "id": "diffguard.submodule",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "diffguard.submodule.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"path_escape:packages/api/src/../util.ts\"]}",
+      "exit": 1,
+      "id": "diffguard.dotdot_path",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "diffguard.dotdot_path.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"agent_config:packages/api/Claude.md\"]}",
+      "exit": 1,
+      "id": "diffguard.agent_config_case_insensitive",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "diffguard.agent_config_case_insensitive.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"security_path:packages/api/src/vault/store.ts\"]}",
+      "exit": 1,
+      "id": "diffguard.security_path",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "diffguard.security_path.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"config:packages/api/.eslintrc.json\", \"gitattributes:packages/api/.gitattributes\", \"lockfile:packages/api/package-lock.json\", \"manifest:packages/api/package.json\"]}",
+      "exit": 1,
+      "id": "diffguard.config_manifest_lock_gitattributes",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"config:packages/api/.eslintrc.json\", \"lockfile:packages/api/package-lock.json\", \"manifest:packages/api/package.json\"]}",
+      "exit": 1,
+      "id": "diffguard.config_manifest_lock_gitattributes.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"excluded_path:packages/api/generated/schema.ts\"]}",
+      "exit": 1,
+      "id": "diffguard.excluded_path",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"reasons\": []}",
+      "exit": 0,
+      "id": "diffguard.excluded_path.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"manifest:packages/sharex/package.json\", \"outside_inputs:packages/sharex/package.json\"]}",
+      "exit": 1,
+      "id": "diffguard.every_reason",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"reasons\": [\"manifest:packages/shared/package.json\"]}",
+      "exit": 1,
+      "id": "diffguard.every_reason.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"mapped\": [21, 21]}",
+      "exit": 0,
+      "id": "k0map.map_shift",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"mapped\": [10, 11]}",
+      "exit": 0,
+      "id": "k0map.map_shift.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"mapped\": [10, 11]}",
+      "exit": 0,
+      "id": "k0map.map_inside_hunk",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"mapped\": [12, 12]}",
+      "exit": 0,
+      "id": "k0map.map_inside_hunk.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"mapped\": [5, 5]}",
+      "exit": 0,
+      "id": "k0map.map_insertion_point",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"mapped\": [7, 7]}",
+      "exit": 0,
+      "id": "k0map.map_insertion_point.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"mapped\": []}",
+      "exit": 0,
+      "id": "k0map.map_deleted_line",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"mapped\": [8, 8]}",
+      "exit": 0,
+      "id": "k0map.map_deleted_line.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"mapped\": [8, 8]}",
+      "exit": 0,
+      "id": "k0map.map_after_pure_hunks",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"mapped\": [4, 4]}",
+      "exit": 0,
+      "id": "k0map.map_after_pure_hunks.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.merge",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"artefact_hash_mismatch\"]}",
+      "exit": 1,
+      "id": "k0map.merge.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"artefact_hash_mismatch\"]}",
+      "exit": 1,
+      "id": "k0map.artefact_hash_mismatch",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.artefact_hash_mismatch.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"artefact_hash_mismatch\"]}",
+      "exit": 1,
+      "id": "k0map.forged_candidate_run",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"not_distinguished\"]}",
+      "exit": 1,
+      "id": "k0map.forged_candidate_run.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"artefact_hash_mismatch\"]}",
+      "exit": 1,
+      "id": "k0map.forged_checks",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.forged_checks.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"artefact_hash_mismatch\"]}",
+      "exit": 1,
+      "id": "k0map.mismatched_file_not_read",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"target_not_found\"]}",
+      "exit": 1,
+      "id": "k0map.mismatched_file_not_read.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"not_distinguished\"]}",
+      "exit": 1,
+      "id": "k0map.not_distinguished",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.not_distinguished.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"not_distinguished\"]}",
+      "exit": 1,
+      "id": "k0map.insertion_not_distinguished",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.insertion_not_distinguished.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"target_not_found\"]}",
+      "exit": 1,
+      "id": "k0map.target_not_found",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.target_not_found.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"tool_nondeterministic\"]}",
+      "exit": 1,
+      "id": "k0map.tool_nondeterministic",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.tool_nondeterministic.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"tool_nondeterministic\"]}",
+      "exit": 1,
+      "id": "k0map.base_nondeterministic",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.base_nondeterministic.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"scope_violation\"]}",
+      "exit": 1,
+      "id": "k0map.scope_violation",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.scope_violation.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"scope_violation\"]}",
+      "exit": 1,
+      "id": "k0map.insertion_past_fix",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.insertion_past_fix.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"ratchet_increase\", \"tests_red\"]}",
+      "exit": 1,
+      "id": "k0map.ratchet_and_broken_test",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.ratchet_and_broken_test.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"red_control_green\"]}",
+      "exit": 1,
+      "id": "k0map.red_control_green",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"merge\", \"reasons\": []}",
+      "exit": 0,
+      "id": "k0map.red_control_green.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"merge_paused\", \"sentinel_pending\", \"zero_tests\"]}",
+      "exit": 1,
+      "id": "k0map.fail_closed_controls",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"decision\": \"reject\", \"reasons\": [\"merge_paused\", \"zero_tests\"]}",
+      "exit": 1,
+      "id": "k0map.fail_closed_controls.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commit\": {\"parents\": [\"4a479c25153b63e58db4c254f56ea8a37aad95ce\"], \"tree\": \"93f7ba6edfbbfd6a0315d53f942935bcebcfbd6a\"}, \"ok\": true, \"refs\": [\"refs/heads/brain/c/revert-12\"], \"writes\": [\"POST /re",
+      "exit": 0,
+      "id": "refs.revert_first_parent_tree",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commit\": null, \"ok\": false, \"refs\": [], \"writes\": []}",
+      "exit": 1,
+      "id": "refs.revert_first_parent_tree.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commit\": null, \"forced\": false, \"ok\": false, \"refs\": [], \"writes\": []}",
+      "exit": 1,
+      "id": "refs.refuse_revert_not_head",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commit\": {\"parents\": [\"4a479c25153b63e58db4c254f56ea8a37aad95ce\"], \"tree\": \"93f7ba6edfbbfd6a0315d53f942935bcebcfbd6a\"}, \"forced\": false, \"ok\": true, \"refs\": [\"refs/heads/brain/c/revert-12\"], \"wr",
+      "exit": 0,
+      "id": "refs.refuse_revert_not_head.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"refs\": [], \"writes\": []}",
+      "exit": 1,
+      "id": "refs.refuse_main",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"refs\": [\"refs/heads/brain/state\"], \"writes\": [\"PATCH /repos/example/toy/git/refs/heads/brain/state\"]}",
+      "exit": 0,
+      "id": "refs.refuse_main.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"forced\": false, \"ok\": true, \"refs\": [\"refs/heads/brain/c/7\"], \"writes\": [\"PATCH /repos/example/toy/git/refs/heads/brain/c/7\"]}",
+      "exit": 0,
+      "id": "refs.update_never_forces",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"forced\": false, \"ok\": true, \"refs\": [\"refs/heads/brain/state\"], \"writes\": [\"PATCH /repos/example/toy/git/refs/heads/brain/state\"]}",
+      "exit": 0,
+      "id": "refs.update_never_forces.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"refs\": [], \"writes\": []}",
+      "exit": 1,
+      "id": "refs.refuse_prefix_lookalike",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"refs\": [\"refs/heads/brain/c/7\"], \"writes\": [\"POST /repos/example/toy/git/refs\"]}",
+      "exit": 0,
+      "id": "refs.refuse_prefix_lookalike.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"refs\": [], \"writes\": []}",
+      "exit": 1,
+      "id": "refs.refuse_dotdot",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"refs\": [\"refs/heads/brain/c/main\"], \"writes\": [\"POST /repos/example/toy/git/refs\"]}",
+      "exit": 0,
+      "id": "refs.refuse_dotdot.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"refs\": [], \"writes\": []}",
+      "exit": 1,
+      "id": "refs.refuse_merge_into_main",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"refs\": [\"refs/heads/brain/integration\"], \"writes\": [\"PUT /repos/example/toy/pulls/12/merge\"]}",
+      "exit": 0,
+      "id": "refs.refuse_merge_into_main.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": false, \"refs\": [], \"writes\": []}",
+      "exit": 1,
+      "id": "refs.refuse_pr_into_main",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"ok\": true, \"refs\": [], \"writes\": [\"POST /repos/example/toy/pulls\"]}",
+      "exit": 0,
+      "id": "refs.refuse_pr_into_main.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"998631f2b895692ac6723078a2a4cb03c29285ab46befc0f206d65c2e2562650\", \"1e93cd2413c50adb48f0d110ac523822c6ec793c5f6ce5b532d62a2e9f417f51\"",
+      "exit": 0,
+      "id": "append.cycle_one_commit",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"998631f2b895692ac6723078a2a4cb03c29285ab46befc0f206d65c2e2562650\", \"96fd8960003d1eb915480cce2d439c268380e130536110846c38f90796e4d529\"",
+      "exit": 0,
+      "id": "append.cycle_one_commit.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"5cf401e6e5de31dca426efc19cffcfe148c36dea1754c55983d74addc3ffb9c3\"]}",
+      "exit": 0,
+      "id": "append.chains_onto_current_tip",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"60883893381da4bc9eb12f7d3938c28f9791e7952f2ed683534164c5099edbfb\"]}",
+      "exit": 0,
+      "id": "append.chains_onto_current_tip.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 0, \"hard_stop\": true, \"ok\": false, \"row_hashes\": []}",
+      "exit": 1,
+      "id": "append.refuse_broken_tip",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"5cf401e6e5de31dca426efc19cffcfe148c36dea1754c55983d74addc3ffb9c3\"]}",
+      "exit": 0,
+      "id": "append.refuse_broken_tip.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 0, \"hard_stop\": true, \"ok\": false, \"row_hashes\": []}",
+      "exit": 1,
+      "id": "append.refuse_unparsable_ledger",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"998631f2b895692ac6723078a2a4cb03c29285ab46befc0f206d65c2e2562650\"]}",
+      "exit": 0,
+      "id": "append.refuse_unparsable_ledger.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 0, \"hard_stop\": true, \"ok\": false, \"row_hashes\": []}",
+      "exit": 1,
+      "id": "append.refuse_broken_chain_first",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 0, \"hard_stop\": false, \"ok\": false, \"row_hashes\": []}",
+      "exit": 2,
+      "id": "append.refuse_broken_chain_first.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 0, \"hard_stop\": true, \"ok\": false, \"row_hashes\": []}",
+      "exit": 1,
+      "id": "append.refuse_rewritten_history",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"998631f2b895692ac6723078a2a4cb03c29285ab46befc0f206d65c2e2562650\"]}",
+      "exit": 0,
+      "id": "append.refuse_rewritten_history.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 0, \"hard_stop\": true, \"ok\": false, \"row_hashes\": []}",
+      "exit": 1,
+      "id": "append.refuse_reserialized_row",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"998631f2b895692ac6723078a2a4cb03c29285ab46befc0f206d65c2e2562650\"]}",
+      "exit": 0,
+      "id": "append.refuse_reserialized_row.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 0, \"hard_stop\": false, \"ok\": false, \"row_hashes\": []}",
+      "exit": 1,
+      "id": "append.refuse_secret_row",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"5de3288f462f50efc72eec29c0e1821b03500d5caf6b3fb7b75c469dee43ce2f\"]}",
+      "exit": 0,
+      "id": "append.refuse_secret_row.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"f32adc00144f2ccaf2f6779b5c8b9654ee3b0f4aeddccae4bd64fd2fe23523f6\"]}",
+      "exit": 0,
+      "id": "append.proposed_by_stored_inferred",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"295c4d8836c91a56ded86792cf93eb97410d9854176bc58e5afde576c914aca6\"]}",
+      "exit": 0,
+      "id": "append.proposed_by_stored_inferred.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"valid\": false}",
+      "exit": 1,
+      "id": "append.chain_previous_rewrite",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"valid\": true}",
+      "exit": 0,
+      "id": "append.chain_previous_rewrite.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"valid\": false}",
+      "exit": 1,
+      "id": "append.chain_previous_truncated",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"valid\": true}",
+      "exit": 0,
+      "id": "append.chain_previous_truncated.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 0, \"hard_stop\": false, \"ok\": false, \"row_hashes\": []}",
+      "exit": 2,
+      "id": "append.refuse_known_row_id",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"60883893381da4bc9eb12f7d3938c28f9791e7952f2ed683534164c5099edbfb\"]}",
+      "exit": 0,
+      "id": "append.refuse_known_row_id.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 0, \"hard_stop\": false, \"ok\": false, \"row_hashes\": []}",
+      "exit": 2,
+      "id": "append.refuse_empty_rows",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commits\": 1, \"hard_stop\": false, \"ok\": true, \"row_hashes\": [\"998631f2b895692ac6723078a2a4cb03c29285ab46befc0f206d65c2e2562650\"]}",
+      "exit": 0,
+      "id": "append.refuse_empty_rows.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"root\": \"aa5cd3a2973dac466402f09c45c8cc9f34b9d53d85a8937a34b962ed179c83de\", \"tips\": {\"cost\": \"cc15b544a23d7161447f6e25fa4e9275a247bfa57caf638a8b43d28f3d1999e0\", \"drill\": \"47254fde1689bb26d628d411",
+      "exit": 0,
+      "id": "root.part_tips",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"root\": \"44e961f4a3addaf3b90ee6047f295a52bd28afe8ea8683cd16ce77404d3eed9a\", \"tips\": {\"cost\": \"b3257a9d284365563694a5c5d07bd8f39545a4c27e72baacdb9df5ff5de186a5\", \"drill\": \"47254fde1689bb26d628d411",
+      "exit": 0,
+      "id": "root.part_tips.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"entry\": {\"hash\": \"7381e3007f21fc75b1968fb12c20c35760b5368274d3eeae15275d735ae93a73\", \"identity\": \"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\", \"uuid\": \"2ad9786",
+      "exit": 0,
+      "id": "root.anchor_signs_root",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"entry\": {\"hash\": \"7381e3007f21fc75b1968fb12c20c35760b5368274d3eeae15275d735ae93a70\", \"identity\": \"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\", \"uuid\": \"2ad9786",
+      "exit": 0,
+      "id": "root.anchor_signs_root.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"entry\": null, \"hard_stop\": true, \"ok\": false}",
+      "exit": 1,
+      "id": "root.unsignable_hard_stop",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"entry\": {\"hash\": \"7381e3007f21fc75b1968fb12c20c35760b5368274d3eeae15275d735ae93a73\", \"identity\": \"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\", \"uuid\": \"2ad9786",
+      "exit": 0,
+      "id": "root.unsignable_hard_stop.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [], \"valid\": true}",
+      "exit": 0,
+      "id": "root.verify_good",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"root_mismatch\"], \"valid\": false}",
+      "exit": 1,
+      "id": "root.verify_good.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"root_mismatch\"], \"valid\": false}",
+      "exit": 1,
+      "id": "root.verify_tip_moved",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [], \"valid\": true}",
+      "exit": 0,
+      "id": "root.verify_tip_moved.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"identity_mismatch\"], \"valid\": false}",
+      "exit": 1,
+      "id": "root.verify_identity_pin",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [], \"valid\": true}",
+      "exit": 0,
+      "id": "root.verify_identity_pin.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"entry_root_mismatch\"], \"valid\": false}",
+      "exit": 1,
+      "id": "root.verify_entry_other_root",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [], \"valid\": true}",
+      "exit": 0,
+      "id": "root.verify_entry_other_root.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"entry_missing\"], \"valid\": false}",
+      "exit": 1,
+      "id": "root.verify_entry_missing",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [], \"valid\": true}",
+      "exit": 0,
+      "id": "root.verify_entry_missing.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [], \"red\": [], \"revert\": false, \"verdict\": \"green\"}",
+      "exit": 0,
+      "id": "flaky.green_first_run",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [], \"red\": [], \"revert\": false, \"verdict\": \"rerun\"}",
+      "exit": 1,
+      "id": "flaky.green_first_run.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [], \"red\": [], \"revert\": false, \"verdict\": \"rerun\"}",
+      "exit": 1,
+      "id": "flaky.one_red_run_never_reverts",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [], \"red\": [], \"revert\": false, \"verdict\": \"green\"}",
+      "exit": 0,
+      "id": "flaky.one_red_run_never_reverts.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [], \"red\": [], \"revert\": false, \"verdict\": \"rerun\"}",
+      "exit": 1,
+      "id": "flaky.two_reruns_rerun",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [], \"red\": [\"test/rate.test.js\"], \"revert\": true, \"verdict\": \"red\"}",
+      "exit": 1,
+      "id": "flaky.two_reruns_rerun.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [], \"red\": [\"test/rate.test.js\"], \"revert\": true, \"verdict\": \"red\"}",
+      "exit": 1,
+      "id": "flaky.red_three_reruns",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [\"test/rate.test.js\"], \"red\": [], \"revert\": false, \"verdict\": \"flaky\"}",
+      "exit": 1,
+      "id": "flaky.red_three_reruns.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [\"test/scale.test.js\"], \"red\": [\"test/rate.test.js\"], \"revert\": true, \"verdict\": \"red\"}",
+      "exit": 1,
+      "id": "flaky.per_test_rule",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [\"test/rate.test.js\", \"test/scale.test.js\"], \"red\": [], \"revert\": false, \"verdict\": \"flaky\"}",
+      "exit": 1,
+      "id": "flaky.per_test_rule.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [], \"red\": [\"test/rate.test.js\"], \"revert\": true, \"verdict\": \"red\"}",
+      "exit": 1,
+      "id": "flaky.unread_run_not_checked",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [\"test/rate.test.js\"], \"red\": [], \"revert\": false, \"verdict\": \"flaky\"}",
+      "exit": 1,
+      "id": "flaky.unread_run_not_checked.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [], \"red\": [], \"revert\": false, \"verdict\": \"rerun\"}",
+      "exit": 1,
+      "id": "flaky.empty_runs_rerun",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"flaky\": [], \"red\": [], \"revert\": false, \"verdict\": \"green\"}",
+      "exit": 0,
+      "id": "flaky.empty_runs_rerun.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"test_regression\"}",
+      "exit": 0,
+      "id": "cause.test_regression",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"impact_miss\"}",
+      "exit": 0,
+      "id": "cause.test_regression.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"impact_miss\"}",
+      "exit": 0,
+      "id": "cause.impact_miss",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"test_regression\"}",
+      "exit": 0,
+      "id": "cause.impact_miss.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"build_break\"}",
+      "exit": 0,
+      "id": "cause.build_break_first",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"test_regression\"}",
+      "exit": 0,
+      "id": "cause.build_break_first.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"lint_regression\"}",
+      "exit": 0,
+      "id": "cause.lint_regression",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"unknown\"}",
+      "exit": 0,
+      "id": "cause.lint_regression.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"lint_regression\"}",
+      "exit": 0,
+      "id": "cause.lint_per_tool",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"unknown\"}",
+      "exit": 0,
+      "id": "cause.lint_per_tool.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"unknown\"}",
+      "exit": 0,
+      "id": "cause.unknown",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"cause\": \"test_regression\"}",
+      "exit": 0,
+      "id": "cause.unknown.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commitment_sha256\": \"671f2f6270a9b5a04e70c49fcf09615e91ed74ebb844dc82ab88cad597bb1509\"}",
+      "exit": 0,
+      "id": "revert_drill.commit_hmac_selection",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"commitment_sha256\": \"d53bb3cb99c313979f46c07e10292c86de163529ee9529c29ec886ae40c4e671\"}",
+      "exit": 0,
+      "id": "revert_drill.commit_hmac_selection.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"key\": {\"cause\": \"test_regression\", \"cycle_id\": \"41000000018\", \"instance_id\": \"rd-test\", \"selection\": \"b87d1dfe5accbf720f2d3ef86f4270cc63d5f73ac8dfbbf211a222e5cdd3c991\"}, \"revealed_sha256\": \"671f",
+      "exit": 0,
+      "id": "revert_drill.reveal_selects_by_hmac",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"key\": {\"cause\": \"lint_regression\", \"cycle_id\": \"41000000018\", \"instance_id\": \"rd-lint\", \"selection\": \"943aec309c18c883b8ecc2562f8e79139d5fd24f1f377621f2c0fd186be5ef44\"}, \"revealed_sha256\": \"8fe7",
+      "exit": 0,
+      "id": "revert_drill.reveal_selects_by_hmac.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [], \"verdict\": \"PASS\"}",
+      "exit": 0,
+      "id": "revert_drill.judge_pass",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"cause_mismatch\"], \"verdict\": \"FAIL\"}",
+      "exit": 1,
+      "id": "revert_drill.judge_pass.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"commitment_mismatch\"], \"verdict\": \"FAIL\"}",
+      "exit": 1,
+      "id": "revert_drill.tampered_key",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"cause_mismatch\"], \"verdict\": \"FAIL\"}",
+      "exit": 1,
+      "id": "revert_drill.tampered_key.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"cause_mismatch\", \"commitment_not_before_run\", \"instance_mismatch\"], \"verdict\": \"FAIL\"}",
+      "exit": 1,
+      "id": "revert_drill.commitment_after_plant",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"cause_mismatch\", \"commitment_not_before_run\"], \"verdict\": \"FAIL\"}",
+      "exit": 1,
+      "id": "revert_drill.commitment_after_plant.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"not_reverted\"], \"verdict\": \"FAIL\"}",
+      "exit": 1,
+      "id": "revert_drill.other_merge_reverted",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [], \"verdict\": \"PASS\"}",
+      "exit": 0,
+      "id": "revert_drill.other_merge_reverted.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"chain_broken\"], \"verdict\": \"FAIL\"}",
+      "exit": 1,
+      "id": "revert_drill.rewritten_commitment",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"commitment_mismatch\"], \"verdict\": \"FAIL\"}",
+      "exit": 1,
+      "id": "revert_drill.rewritten_commitment.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [], \"verdict\": \"PASS\"}",
+      "exit": 0,
+      "id": "revert_drill.last_of_several_drills",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"reasons\": [\"cause_mismatch\", \"commitment_mismatch\"], \"verdict\": \"FAIL\"}",
+      "exit": 1,
+      "id": "revert_drill.last_of_several_drills.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"dropped\": [], \"max_budget_usd\": \"0.500000\", \"prompt_sha256\": \"258103f55887ef71c3c7f1db172236443484fca7dc30e91d5f2f585752409662\", \"reasons\": [], \"send\": true}",
+      "exit": 0,
+      "id": "prompt.prompt_from_typed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"dropped\": [], \"max_budget_usd\": \"0.500000\", \"prompt_sha256\": \"746ba9a360e850c61b96bc18a5938648dbe4135386c4bcaef9910f38d3da7a73\", \"reasons\": [], \"send\": true}",
+      "exit": 0,
+      "id": "prompt.prompt_from_typed_input.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"dropped\": [\"instructions\"], \"max_budget_usd\": \"0.250000\", \"prompt_sha256\": \"258103f55887ef71c3c7f1db172236443484fca7dc30e91d5f2f585752409662\"}",
+      "exit": 0,
+      "id": "prompt.undeclared_field_dropped",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"dropped\": [], \"max_budget_usd\": \"0.250000\", \"prompt_sha256\": \"44128d6706faf2471d4d612d360de9ea5b212c337066df3821199aeace58381a\"}",
+      "exit": 0,
+      "id": "prompt.undeclared_field_dropped.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"prompt_sha256\": \"861560c0ee5179ddda27d13475a25320753bef156005a8f9988062da99a7ddaa\"}",
+      "exit": 0,
+      "id": "prompt.value_is_data",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"prompt_sha256\": \"c7474f130e8647f1915794b02a251fd20d64a5a4cf080dc2138d31ef7bb0568e\"}",
+      "exit": 0,
+      "id": "prompt.value_is_data.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"send\": false}",
+      "exit": 2,
+      "id": "prompt.wrong_type_unusable",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"send\": true}",
+      "exit": 0,
+      "id": "prompt.wrong_type_unusable.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"max_budget_usd\": null, \"reasons\": [\"secret_in_prompt\"], \"send\": false}",
+      "exit": 1,
+      "id": "prompt.secret_never_sent",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"max_budget_usd\": \"0.250000\", \"reasons\": [], \"send\": true}",
+      "exit": 0,
+      "id": "prompt.secret_never_sent.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"max_budget_usd\": null, \"reasons\": [\"stage_brake\"], \"send\": false}",
+      "exit": 1,
+      "id": "prompt.stage_brake",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"max_budget_usd\": \"0.000001\", \"reasons\": [], \"send\": true}",
+      "exit": 0,
+      "id": "prompt.stage_brake.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"base_age_s\": 21600, \"brake\": {\"cap_usd_micros\": 1000000, \"engaged\": false, \"spent_usd_micros\": 3500}, \"cycle_id\": \"41000000002\", \"edited\": false, \"event\": null, \"human_touches\": 2, \"last_decisio",
+      "exit": 0,
+      "id": "status.fields_from_ledger",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"base_age_s\": 21600, \"brake\": {\"cap_usd_micros\": 1000000, \"engaged\": false, \"spent_usd_micros\": 3500}, \"cycle_id\": \"41000000002\", \"edited\": false, \"event\": null, \"human_touches\": 3, \"last_decisio",
+      "exit": 0,
+      "id": "status.fields_from_ledger.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"edited\": true, \"event\": {\"kind\": \"status_edited\", \"payload\": {\"found_sha256\": \"dd2e6fc6c98fd277d3d563c472c6132ad26352510f5d849681168ec09ca75404\", \"recorded_sha256\": \"823f4b37127bd2c607b5ab46de76",
+      "exit": 1,
+      "id": "status.hand_edit_regenerated",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"edited\": false, \"event\": null}",
+      "exit": 0,
+      "id": "status.hand_edit_regenerated.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"edited\": false, \"event\": null}",
+      "exit": 0,
+      "id": "status.edit_outside_block",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"edited\": true, \"event\": {\"kind\": \"status_edited\", \"payload\": {\"found_sha256\": \"dd2e6fc6c98fd277d3d563c472c6132ad26352510f5d849681168ec09ca75404\", \"recorded_sha256\": \"823f4b37127bd2c607b5ab46de76",
+      "exit": 1,
+      "id": "status.edit_outside_block.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"edited\": true, \"event\": {\"kind\": \"status_edited\", \"payload\": {\"found_sha256\": null, \"recorded_sha256\": \"823f4b37127bd2c607b5ab46de76987919bcbd9eb0712aa44f70c2e38e0b4253\"}}}",
+      "exit": 1,
+      "id": "status.deleted_block_is_edit",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"edited\": false, \"event\": null}",
+      "exit": 0,
+      "id": "status.deleted_block_is_edit.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"brake\": {\"cap_usd_micros\": 3500, \"engaged\": true, \"spent_usd_micros\": 3500}}",
+      "exit": 0,
+      "id": "status.brake_engaged",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"brake\": {\"cap_usd_micros\": 3501, \"engaged\": false, \"spent_usd_micros\": 3500}}",
+      "exit": 0,
+      "id": "status.brake_engaged.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"edited\": false, \"event\": null}",
+      "exit": 0,
+      "id": "status.last_status_row",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"edited\": true, \"event\": {\"kind\": \"status_edited\", \"payload\": {\"found_sha256\": \"823f4b37127bd2c607b5ab46de76987919bcbd9eb0712aa44f70c2e38e0b4253\", \"recorded_sha256\": \"94de0a707479cbd35166dc11bb64",
+      "exit": 1,
+      "id": "status.last_status_row.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": false, \"ok\": true, \"payload\": {\"base_sha\": \"d72aefaeae8162032c73351e0cbf115d17253724\", \"facts_sha256\": \"b5479245d2eb9323448b6319fd3027f0a7b6248f0d72fcc43d92da7009876094\", \"import_lin",
+      "exit": 0,
+      "id": "genesis.toy_genesis_row",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": false, \"ok\": true, \"payload\": {\"base_sha\": \"d72aefaeae8162032c73351e0cbf115d17253724\", \"facts_sha256\": \"b5479245d2eb9323448b6319fd3027f0a7b6248f0d72fcc43d92da7009876094\", \"import_lin",
+      "exit": 0,
+      "id": "genesis.toy_genesis_row.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": false, \"ok\": true, \"payload\": {\"base_sha\": \"144de53f2ef6fbe655400a040fae3d95f7ad926b\", \"facts_sha256\": \"3ae99a73cfb16748b6ecc31f9af77a43fbe284afea00456ac2860d2ad9b16631\", \"import_lin",
+      "exit": 0,
+      "id": "genesis.copy_genesis_row",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": false, \"ok\": true, \"payload\": {\"base_sha\": \"144de53f2ef6fbe655400a040fae3d95f7ad926b\", \"facts_sha256\": \"3ae99a73cfb16748b6ecc31f9af77a43fbe284afea00456ac2860d2ad9b16631\", \"import_lin",
+      "exit": 0,
+      "id": "genesis.copy_genesis_row.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"payload\": {\"base_sha\": \"d72aefaeae8162032c73351e0cbf115d17253724\", \"facts_sha256\": \"b5479245d2eb9323448b6319fd3027f0a7b6248f0d72fcc43d92da7009876094\", \"import_line_sha256\": \"6fb3461d0296811ad22a",
+      "exit": 0,
+      "id": "genesis.recipe_canonical",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"payload\": {\"base_sha\": \"d72aefaeae8162032c73351e0cbf115d17253724\", \"facts_sha256\": \"b5479245d2eb9323448b6319fd3027f0a7b6248f0d72fcc43d92da7009876094\", \"import_line_sha256\": \"6fb3461d0296811ad22a",
+      "exit": 0,
+      "id": "genesis.recipe_canonical.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": true, \"ok\": false, \"payload\": null, \"reasons\": [\"copy_actions_enabled\"]}",
+      "exit": 1,
+      "id": "genesis.copy_actions_enabled",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": false, \"ok\": true, \"payload\": {\"base_sha\": \"144de53f2ef6fbe655400a040fae3d95f7ad926b\", \"facts_sha256\": \"3ae99a73cfb16748b6ecc31f9af77a43fbe284afea00456ac2860d2ad9b16631\", \"import_lin",
+      "exit": 0,
+      "id": "genesis.copy_actions_enabled.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": true, \"ok\": false, \"payload\": null, \"reasons\": [\"app_scope\", \"integration_check_not_writer\", \"integration_rules_missing\", \"main_writable\", \"state_rules_missing\", \"toy_workflows\"]}",
+      "exit": 1,
+      "id": "genesis.every_fault_named",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": false, \"ok\": true, \"payload\": {\"base_sha\": \"d72aefaeae8162032c73351e0cbf115d17253724\", \"facts_sha256\": \"b5479245d2eb9323448b6319fd3027f0a7b6248f0d72fcc43d92da7009876094\", \"import_lin",
+      "exit": 0,
+      "id": "genesis.every_fault_named.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": true, \"ok\": false, \"payload\": null, \"reasons\": [\"main_writable\", \"rules_bypassable\"]}",
+      "exit": 1,
+      "id": "genesis.bypass_named",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": false, \"ok\": true, \"payload\": {\"base_sha\": \"144de53f2ef6fbe655400a040fae3d95f7ad926b\", \"facts_sha256\": \"3ae99a73cfb16748b6ecc31f9af77a43fbe284afea00456ac2860d2ad9b16631\", \"import_lin",
+      "exit": 0,
+      "id": "genesis.bypass_named.changed_input",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": true, \"ok\": false, \"payload\": null, \"reasons\": [\"security_ledger_broken\"]}",
+      "exit": 1,
+      "id": "genesis.security_ledger_broken",
+      "ok": true,
+      "runner_fault": false
+    },
+    {
+      "detail": "got {\"hard_stop\": false, \"ok\": true, \"payload\": {\"base_sha\": \"d72aefaeae8162032c73351e0cbf115d17253724\", \"facts_sha256\": \"b5479245d2eb9323448b6319fd3027f0a7b6248f0d72fcc43d92da7009876094\", \"import_lin",
+      "exit": 0,
+      "id": "genesis.security_ledger_broken.changed_input",
+      "ok": true,
+      "runner_fault": false
+    }
+  ],
+  "verdict": "accepted",
+  "waived": [],
+  "warnings": []
+}

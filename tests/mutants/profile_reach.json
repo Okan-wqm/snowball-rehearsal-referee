@@ -1,0 +1,321 @@
+{
+ "mutants": [
+  {
+   "id": "reach_no_imports",
+   "file": "profile/fit.py",
+   "old": "        for name, ref in memo[entry]:\n",
+   "new": "        for name, ref in memo[entry][:0]:\n",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_no_alias",
+   "file": "profile/fit.py",
+   "old": "            targets.append((J.alias_path(ref, table), False))\n",
+   "new": "",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_no_link_by_import",
+   "file": "profile/fit.py",
+   "old": "                targets.append((linked(posixpath.dirname(name) or \".\", package), True))\n",
+   "new": "                pass\n",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_relative_from_entry",
+   "file": "profile/fit.py",
+   "old": "targets.append((posixpath.join(posixpath.dirname(name), ref), False))",
+   "new": "targets.append((posixpath.join(entry, ref), False))",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_not_transitive",
+   "file": "profile/fit.py",
+   "old": "                todo.append(unit)\n",
+   "new": "",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_seeds_ignored",
+   "file": "profile/fit.py",
+   "old": "    todo = list(have)\n",
+   "new": "    todo = [path]\n",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_no_extends",
+   "file": "profile/fit.py",
+   "old": "        refs = J.extends(text) if is_tsconfig else J.specifiers(text)\n",
+   "new": "        refs = [] if is_tsconfig else J.specifiers(text)\n",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_no_extension_try",
+   "file": "profile/fit.py",
+   "old": "    tries = [path] + [path + e for e in EXTENSIONS]\n",
+   "new": "    tries = [path]\n",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_symlink_followed",
+   "file": "profile/fit.py",
+   "old": "if os.path.lexists(os.path.join(tree, t)) and D._input_where(tree, t) == \"\"",
+   "new": "if os.path.exists(os.path.join(tree, t))",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_no_project_climb",
+   "file": "profile/fit.py",
+   "old": "        if any(_is_file(tree, posixpath.join(probe, m)) for m in PROJECT_MARKERS):\n",
+   "new": "        if False:\n",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_marker_behind_link",
+   "file": "profile/fit.py",
+   "old": "    return os.path.isfile(os.path.join(tree, path)) and D._input_where(tree, path) == \"\"",
+   "new": "    return os.path.isfile(os.path.join(tree, path))",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_root_not_short",
+   "file": "profile/fit.py",
+   "old": "    if path == \".\":\n        return []\n",
+   "new": "",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "reach_not_in_compose",
+   "file": "profile/fit.py",
+   "old": "+ reached(tree, path, lock, found[\"inputs\"], memo)),",
+   "new": "),",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "view_no_comments",
+   "file": "profile/jsimports.py",
+   "old": "        if text.startswith(\"//\", p) or text.startswith(\"/*\", p):",
+   "new": "        if False:",
+   "tests": [
+    "test_profile_jsimports.py",
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "view_no_strings",
+   "file": "profile/jsimports.py",
+   "old": "        elif c != \"/\" or last == \"\" or last in REGEX_AFTER or word in REGEX_WORDS:",
+   "new": "        elif c == \"`\" or (c == \"/\" and (last == \"\" or last in REGEX_AFTER or word in REGEX_WORDS)):",
+   "tests": [
+    "test_profile_jsimports.py",
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "view_no_regex",
+   "file": "profile/jsimports.py",
+   "old": "        elif c != \"/\" or last == \"\" or last in REGEX_AFTER or word in REGEX_WORDS:",
+   "new": "        elif c != \"/\":",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "view_regex_always",
+   "file": "profile/jsimports.py",
+   "old": "        elif c != \"/\" or last == \"\" or last in REGEX_AFTER or word in REGEX_WORDS:",
+   "new": "        elif True:",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "view_string_crosses_lines",
+   "file": "profile/jsimports.py",
+   "old": "_LITERAL_STOP = {\"'\": re.compile(r\"[\\\\\\n']\"), '\"': re.compile(r'[\\\\\\n\"]'),",
+   "new": "_LITERAL_STOP = {\"'\": re.compile(r\"[\\\\']\"), '\"': re.compile(r'[\\\\\"]'),",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "view_no_escape",
+   "file": "profile/jsimports.py",
+   "old": "                if d == \"\\\\\":\n                    j += 2\n",
+   "new": "                if d == \"\\\\\":\n                    j += 1\n",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "view_no_class",
+   "file": "profile/jsimports.py",
+   "old": "                    in_class = d == \"[\"\n",
+   "new": "                    pass\n",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "view_return_word",
+   "file": "profile/jsimports.py",
+   "old": "REGEX_WORDS = {\"return\", ",
+   "new": "REGEX_WORDS = {",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "spec_from_view",
+   "file": "profile/jsimports.py",
+   "old": "        out.append(text[m.start(group):m.end(group)])",
+   "new": "        out.append(m.group(group))",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "extends_list",
+   "file": "profile/jsimports.py",
+   "old": "    values = [value] if isinstance(value, str) else value if isinstance(value, list) else []",
+   "new": "    values = [value] if isinstance(value, str) else []",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "alias_exact_first",
+   "file": "profile/jsimports.py",
+   "old": "    return sorted(exact) + sorted(a for a in found if \"*\" in a[0])",
+   "new": "    return sorted(found)",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "alias_base_leaving",
+   "file": "profile/jsimports.py",
+   "old": " or base == \"..\" or base.startswith(\"../\") or base.startswith(\"/\") else base",
+   "new": " else base",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "package_scoped",
+   "file": "profile/jsimports.py",
+   "old": "        return \"/\".join(parts[:2]) if len(parts) >= 2 and len(parts[0]) > 1 and parts[1] else None",
+   "new": "        return parts[0]",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "package_builtin",
+   "file": "profile/jsimports.py",
+   "old": " or \":\" in spec",
+   "new": "",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "walk_follows_links",
+   "file": "profile/jsimports.py",
+   "old": "                if entry.is_symlink():\n                    continue\n",
+   "new": "",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "depmap_reads_comments",
+   "file": "status/depmap.py",
+   "old": "        for spec in J.specifiers(text):",
+   "new": "        for spec in [mm.group(2) or mm.group(4) or mm.group(6) or mm.group(8) for mm in J.SPECIFIER.finditer(text)]:",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "preset_not_followed",
+   "file": "profile/fit.py",
+   "old": "            refs += [p for p in [J.jest_preset(text)] if p]\n",
+   "new": "",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "preset_any_file",
+   "file": "profile/fit.py",
+   "old": "        if J.JEST_CONFIG.fullmatch(posixpath.basename(name)):",
+   "new": "        if True:",
+   "tests": [
+    "test_profile_fit.py"
+   ]
+  },
+  {
+   "id": "preset_root_dir_ignored",
+   "file": "profile/jsimports.py",
+   "old": "    if _in_code(ROOT_DIR, text, view):\n        return None\n",
+   "new": "",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "preset_in_strings",
+   "file": "profile/jsimports.py",
+   "old": "                 if code(m.start()) and code(m.start() + m.group(0).index(\":\"))), None)",
+   "new": "                 if code(m.start())), None)",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "preset_in_comments",
+   "file": "profile/jsimports.py",
+   "old": "                 if code(m.start()) and code(m.start() + m.group(0).index(\":\"))), None)",
+   "new": "                 if code(m.start() + m.group(0).index(\":\"))), None)",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  },
+  {
+   "id": "preset_longer_name",
+   "file": "profile/jsimports.py",
+   "old": "PRESET = re.compile(r\"\"\"(?<![\\w$.])",
+   "new": "PRESET = re.compile(r\"\"\"(?<![$])",
+   "tests": [
+    "test_profile_jsimports.py"
+   ]
+  }
+ ]
+}

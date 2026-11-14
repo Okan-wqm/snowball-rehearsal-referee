@@ -1,0 +1,619 @@
+{
+ "mutants": [
+  {
+   "id": "ch_zero_hash",
+   "file": "ledger/chain.py",
+   "old": "ZERO_HASH = \"0\" * 64",
+   "new": "ZERO_HASH = \"0\" * 63 + \"1\"",
+   "tests": [
+    "test_chain.VerifyCommand.test_v1_v2_chain_is_valid"
+   ]
+  },
+  {
+   "id": "ch_hex_upper",
+   "file": "ledger/chain.py",
+   "old": "HEX64 = re.compile(r\"[0-9a-f]{64}\\Z\")",
+   "new": "HEX64 = re.compile(r\"[0-9a-fA-F]{64}\\Z\")",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_bad_prev_hash_and_bad_input"
+   ]
+  },
+  {
+   "id": "ch_hex_end_dollar",
+   "file": "ledger/chain.py",
+   "old": "HEX64 = re.compile(r\"[0-9a-f]{64}\\Z\")",
+   "new": "HEX64 = re.compile(r\"[0-9a-f]{64}$\")",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_bad_prev_hash_and_bad_input"
+   ]
+  },
+  {
+   "id": "ch_hex_no_end",
+   "file": "ledger/chain.py",
+   "old": "HEX64 = re.compile(r\"[0-9a-f]{64}\\Z\")",
+   "new": "HEX64 = re.compile(r\"[0-9a-f]{64}\")",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_bad_prev_hash_and_bad_input"
+   ]
+  },
+  {
+   "id": "ch_max_int_ge",
+   "file": "ledger/chain.py",
+   "old": "if abs(value) > MAX_SAFE_INT:",
+   "new": "if abs(value) >= MAX_SAFE_INT:",
+   "tests": [
+    "test_chain.HashCommand.test_literals_and_integers"
+   ]
+  },
+  {
+   "id": "ch_max_int_no_abs",
+   "file": "ledger/chain.py",
+   "old": "if abs(value) > MAX_SAFE_INT:",
+   "new": "if value > MAX_SAFE_INT:",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_what_has_no_canonical_form"
+   ]
+  },
+  {
+   "id": "ch_max_int_value",
+   "file": "ledger/chain.py",
+   "old": "MAX_SAFE_INT = 2**53 - 1",
+   "new": "MAX_SAFE_INT = 2**53",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_what_has_no_canonical_form"
+   ]
+  },
+  {
+   "id": "ch_esc_quote",
+   "file": "ledger/chain.py",
+   "old": "'\"': '\\\\\"', ",
+   "new": "",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_esc_backslash",
+   "file": "ledger/chain.py",
+   "old": "\"\\\\\": \"\\\\\\\\\", ",
+   "new": "",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_esc_b",
+   "file": "ledger/chain.py",
+   "old": "\"\\b\": \"\\\\b\", ",
+   "new": "\"\\b\": \"\\\\u0008\", ",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_esc_t",
+   "file": "ledger/chain.py",
+   "old": "\"\\t\": \"\\\\t\", ",
+   "new": "",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_esc_n",
+   "file": "ledger/chain.py",
+   "old": "\"\\n\": \"\\\\n\", ",
+   "new": "",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_esc_f",
+   "file": "ledger/chain.py",
+   "old": "\"\\f\": \"\\\\f\", ",
+   "new": "",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_esc_r",
+   "file": "ledger/chain.py",
+   "old": ", \"\\r\": \"\\\\r\"}",
+   "new": "}",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_esc_solidus",
+   "file": "ledger/chain.py",
+   "old": "\"\\r\": \"\\\\r\"}",
+   "new": "\"\\r\": \"\\\\r\", \"/\": \"\\\\/\"}",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_ctrl_upper_hex",
+   "file": "ledger/chain.py",
+   "old": "\"\\\\u%04x\"",
+   "new": "\"\\\\u%04X\"",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_ctrl_bound",
+   "file": "ledger/chain.py",
+   "old": "elif ord(ch) < 0x20:",
+   "new": "elif ord(ch) < 0x1f:",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_ctrl_del",
+   "file": "ledger/chain.py",
+   "old": "elif ord(ch) < 0x20:",
+   "new": "elif ord(ch) < 0x20 or ord(ch) == 0x7f:",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_ascii_only",
+   "file": "ledger/chain.py",
+   "old": "        else:\n            parts.append(ch)\n",
+   "new": "        elif ord(ch) > 0x7e:\n            parts.append(\"\\\\u%04x\" % ord(ch))\n        else:\n            parts.append(ch)\n",
+   "tests": [
+    "test_chain.HashCommand.test_string_escapes"
+   ]
+  },
+  {
+   "id": "ch_surrogate_string",
+   "file": "ledger/chain.py",
+   "old": "            raise ChainError(\"lone surrogate in string\")",
+   "new": "            parts.append(\"\\\\u%04x\" % ord(ch))",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_what_has_no_canonical_form"
+   ]
+  },
+  {
+   "id": "ch_surrogate_low",
+   "file": "ledger/chain.py",
+   "old": "elif 0xD800 <= ord(ch) <= 0xDFFF:",
+   "new": "elif 0xD800 <= ord(ch) <= 0xDBFF:",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_what_has_no_canonical_form",
+    "test_chain.Library.test_canonical_refuses_values_json_has_no_form_for"
+   ]
+  },
+  {
+   "id": "ch_surrogate_key",
+   "file": "ledger/chain.py",
+   "old": "            _canon_string(key)  # refuses lone surrogates in keys before sorting\n",
+   "new": "",
+   "tests": [
+    "test_chain.Library.test_canonical_refuses_values_json_has_no_form_for"
+   ]
+  },
+  {
+   "id": "ch_sort_codepoint",
+   "file": "ledger/chain.py",
+   "old": "sorted(value, key=_utf16_key)",
+   "new": "sorted(value)",
+   "tests": [
+    "test_chain.HashCommand.test_keys_sort_by_utf16_code_units"
+   ]
+  },
+  {
+   "id": "ch_sort_none",
+   "file": "ledger/chain.py",
+   "old": "sorted(value, key=_utf16_key)",
+   "new": "list(value)",
+   "tests": [
+    "test_chain.HashCommand.test_key_order_whitespace_and_row_hash_do_not_matter"
+   ]
+  },
+  {
+   "id": "ch_true_as_int",
+   "file": "ledger/chain.py",
+   "old": "    elif value is True:\n        out.append(\"true\")\n",
+   "new": "",
+   "tests": [
+    "test_chain.HashCommand.test_literals_and_integers"
+   ]
+  },
+  {
+   "id": "ch_false_as_int",
+   "file": "ledger/chain.py",
+   "old": "    elif value is False:\n        out.append(\"false\")\n",
+   "new": "",
+   "tests": [
+    "test_chain.HashCommand.test_literals_and_integers"
+   ]
+  },
+  {
+   "id": "ch_null",
+   "file": "ledger/chain.py",
+   "old": "out.append(\"null\")",
+   "new": "out.append(\"None\")",
+   "tests": [
+    "test_chain.HashCommand.test_literals_and_integers"
+   ]
+  },
+  {
+   "id": "ch_float_accepted",
+   "file": "ledger/chain.py",
+   "old": "        raise ChainError(\"floating point number in a hashed row (tohum/26)\")",
+   "new": "        out.append(repr(value))",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_what_has_no_canonical_form"
+   ]
+  },
+  {
+   "id": "ch_float_int_valued",
+   "file": "ledger/chain.py",
+   "old": "        raise ChainError(\"floating point number in a hashed row (tohum/26)\")",
+   "new": "        if value != int(value):\n            raise ChainError(\"floating point number in a hashed row (tohum/26)\")\n        out.append(str(int(value)))",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_what_has_no_canonical_form"
+   ]
+  },
+  {
+   "id": "ch_list_sep",
+   "file": "ledger/chain.py",
+   "old": "                out.append(\",\")\n            _canon(item, out)",
+   "new": "                out.append(\", \")\n            _canon(item, out)",
+   "tests": [
+    "test_chain.HashCommand.test_literals_and_integers"
+   ]
+  },
+  {
+   "id": "ch_obj_sep",
+   "file": "ledger/chain.py",
+   "old": "                out.append(\",\")\n            out.append(_canon_string(key))",
+   "new": "                out.append(\", \")\n            out.append(_canon_string(key))",
+   "tests": [
+    "test_chain.HashCommand.test_v1_v2"
+   ]
+  },
+  {
+   "id": "ch_colon",
+   "file": "ledger/chain.py",
+   "old": "out.append(\":\")",
+   "new": "out.append(\": \")",
+   "tests": [
+    "test_chain.HashCommand.test_v1_v2"
+   ]
+  },
+  {
+   "id": "ch_nonstr_key",
+   "file": "ledger/chain.py",
+   "old": "                raise ChainError(\"object key is not a string\")",
+   "new": "                pass",
+   "tests": [
+    "test_chain.Library.test_canonical_refuses_values_json_has_no_form_for"
+   ]
+  },
+  {
+   "id": "ch_other_type",
+   "file": "ledger/chain.py",
+   "old": "        raise ChainError(\"type %s has no JSON form\" % type(value).__name__)",
+   "new": "        out.append(_canon_string(str(value)))",
+   "tests": [
+    "test_chain.Library.test_canonical_refuses_values_json_has_no_form_for"
+   ]
+  },
+  {
+   "id": "ch_canon_recursion",
+   "file": "ledger/chain.py",
+   "old": "    except RecursionError:\n        raise ChainError(\"value nested too deeply\") from None\n    return \"\".join(out)",
+   "new": "    except ZeroDivisionError:\n        raise ChainError(\"value nested too deeply\") from None\n    return \"\".join(out)",
+   "tests": [
+    "test_chain.Library.test_canonical_refuses_values_json_has_no_form_for"
+   ]
+  },
+  {
+   "id": "ch_dup_keys",
+   "file": "ledger/chain.py",
+   "old": "object_pairs_hook=_no_duplicates, ",
+   "new": "",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_what_has_no_canonical_form",
+    "test_chain.VerifyCommand.test_unusable_lines_are_broken_rows"
+   ]
+  },
+  {
+   "id": "ch_dup_last_wins",
+   "file": "ledger/chain.py",
+   "old": "        if key in obj:\n            raise ChainError(\"duplicate key %r\" % key)\n",
+   "new": "",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_what_has_no_canonical_form"
+   ]
+  },
+  {
+   "id": "ch_row_not_object",
+   "file": "ledger/chain.py",
+   "old": "    if not isinstance(row, dict):\n        raise ChainError(\"row is not a JSON object\")\n",
+   "new": "",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_bad_prev_hash_and_bad_input",
+    "test_chain.VerifyCommand.test_unusable_lines_are_broken_rows"
+   ]
+  },
+  {
+   "id": "ch_body_keeps_row_hash",
+   "file": "ledger/chain.py",
+   "old": "body = {k: v for k, v in row.items() if k != \"row_hash\"}",
+   "new": "body = dict(row)",
+   "tests": [
+    "test_chain.HashCommand.test_key_order_whitespace_and_row_hash_do_not_matter"
+   ]
+  },
+  {
+   "id": "ch_body_drops_prev",
+   "file": "ledger/chain.py",
+   "old": "body = {k: v for k, v in row.items() if k != \"row_hash\"}",
+   "new": "body = {k: v for k, v in row.items() if k not in (\"row_hash\", \"prev_hash\")}",
+   "tests": [
+    "test_chain.HashCommand.test_v1_v2"
+   ]
+  },
+  {
+   "id": "ch_prev_not_appended",
+   "file": "ledger/chain.py",
+   "old": "canonical(body) + prev.encode(\"ascii\")",
+   "new": "canonical(body)",
+   "tests": [
+    "test_chain.HashCommand.test_v1_v2"
+   ]
+  },
+  {
+   "id": "ch_prev_prepended",
+   "file": "ledger/chain.py",
+   "old": "canonical(body) + prev.encode(\"ascii\")",
+   "new": "prev.encode(\"ascii\") + canonical(body)",
+   "tests": [
+    "test_chain.HashCommand.test_v1_v2"
+   ]
+  },
+  {
+   "id": "ch_sha_upper",
+   "file": "ledger/chain.py",
+   "old": ".hexdigest()\n\n\n# ----",
+   "new": ".hexdigest().upper()\n\n\n# ----",
+   "tests": [
+    "test_chain.HashCommand.test_v1_v2"
+   ]
+  },
+  {
+   "id": "ch_name_nonstr_id",
+   "file": "ledger/chain.py",
+   "old": "isinstance(row.get(\"row_id\"), str)",
+   "new": "row.get(\"row_id\") is not None",
+   "tests": [
+    "test_chain.Library.test_row_id_that_is_not_a_string_names_the_line"
+   ]
+  },
+  {
+   "id": "ch_name_line_zero",
+   "file": "ledger/chain.py",
+   "old": "enumerate(lines, start=1)",
+   "new": "enumerate(lines)",
+   "tests": [
+    "test_chain.VerifyCommand.test_v3_edited_payload_breaks_r2_only"
+   ]
+  },
+  {
+   "id": "ch_lines_keep_final",
+   "file": "ledger/chain.py",
+   "old": "    if lines[-1] == b\"\":\n        lines.pop()\n",
+   "new": "",
+   "tests": [
+    "test_chain.VerifyCommand.test_v1_v2_chain_is_valid"
+   ]
+  },
+  {
+   "id": "ch_lines_strip_all",
+   "file": "ledger/chain.py",
+   "old": "    if lines[-1] == b\"\":\n        lines.pop()\n",
+   "new": "    while lines and lines[-1] == b\"\":\n        lines.pop()\n",
+   "tests": [
+    "test_chain.VerifyCommand.test_unusable_lines_are_broken_rows"
+   ]
+  },
+  {
+   "id": "ch_first_prev_any",
+   "file": "ledger/chain.py",
+   "old": "    expected_prev = ZERO_HASH\n    for lineno",
+   "new": "    expected_prev = None\n    for lineno",
+   "tests": [
+    "test_chain.VerifyCommand.test_broken_link_reorder_delete_and_first_prev"
+   ]
+  },
+  {
+   "id": "ch_link_unchecked",
+   "file": "ledger/chain.py",
+   "old": "            if row.get(\"prev_hash\") != expected_prev:",
+   "new": "            if False:",
+   "tests": [
+    "test_chain.VerifyCommand.test_broken_link_reorder_delete_and_first_prev"
+   ]
+  },
+  {
+   "id": "ch_hash_unchecked",
+   "file": "ledger/chain.py",
+   "old": "            if not isinstance(stored, str) or row_hash(row) != stored:",
+   "new": "            if not isinstance(stored, str):",
+   "tests": [
+    "test_chain.VerifyCommand.test_v3_edited_payload_breaks_r2_only"
+   ]
+  },
+  {
+   "id": "ch_hash_missing_ok",
+   "file": "ledger/chain.py",
+   "old": "            if not isinstance(stored, str) or row_hash(row) != stored:",
+   "new": "            if stored is not None and row_hash(row) != stored:",
+   "tests": [
+    "test_chain.VerifyCommand.test_broken_link_reorder_delete_and_first_prev"
+   ]
+  },
+  {
+   "id": "ch_link_to_computed",
+   "file": "ledger/chain.py",
+   "old": "        expected_prev = stored\n",
+   "new": "        expected_prev = row[\"prev_hash\"]\n",
+   "tests": [
+    "test_chain.VerifyCommand.test_v1_v2_chain_is_valid"
+   ]
+  },
+  {
+   "id": "ch_bad_line_skipped",
+   "file": "ledger/chain.py",
+   "old": "            return _result(False, \"line:%d\" % lineno, lineno, \"line is not UTF-8\")",
+   "new": "            continue",
+   "tests": [
+    "test_chain.VerifyCommand.test_unusable_lines_are_broken_rows"
+   ]
+  },
+  {
+   "id": "ch_chainerror_skipped",
+   "file": "ledger/chain.py",
+   "old": "            return _result(False, _row_name(row, lineno), lineno, cli.cause(exc))",
+   "new": "            continue",
+   "tests": [
+    "test_chain.VerifyCommand.test_unusable_lines_are_broken_rows"
+   ]
+  },
+  {
+   "id": "ch_append_unchecked",
+   "file": "ledger/chain.py",
+   "old": "    if previous is not None:\n        old = _lines(previous)",
+   "new": "    if False:\n        old = _lines(previous)",
+   "tests": [
+    "test_chain.VerifyCommand.test_append_only"
+   ]
+  },
+  {
+   "id": "ch_append_shrink_ok",
+   "file": "ledger/chain.py",
+   "old": "if lineno > len(lines) or lines[lineno - 1] != old_raw:",
+   "new": "if lineno <= len(lines) and lines[lineno - 1] != old_raw:",
+   "tests": [
+    "test_chain.VerifyCommand.test_append_only"
+   ]
+  },
+  {
+   "id": "ch_append_by_value",
+   "file": "ledger/chain.py",
+   "old": "lines[lineno - 1] != old_raw:",
+   "new": "parse_row(lines[lineno - 1].decode()) != parse_row(old_raw.decode()):",
+   "tests": [
+    "test_chain.VerifyCommand.test_same_rows_reserialised_is_not_append_only"
+   ]
+  },
+  {
+   "id": "ch_append_old_name",
+   "file": "ledger/chain.py",
+   "old": "                    name = _row_name(parse_row(old_raw.decode(\"utf-8\")), lineno)",
+   "new": "                    name = \"line:%d\" % lineno",
+   "tests": [
+    "test_chain.VerifyCommand.test_append_only"
+   ]
+  },
+  {
+   "id": "ch_hash_two_lines",
+   "file": "ledger/chain.py",
+   "old": "            if len(lines) != 1:",
+   "new": "            if len(lines) < 1:",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_bad_prev_hash_and_bad_input"
+   ]
+  },
+  {
+   "id": "ch_hash_exit",
+   "file": "ledger/chain.py",
+   "old": "            _emit({\"error\": cli.cause(exc)})\n            return 2",
+   "new": "            _emit({\"error\": cli.cause(exc)})\n            return 1",
+   "tests": [
+    "test_chain.HashCommand.test_refuses_bad_prev_hash_and_bad_input"
+   ]
+  },
+  {
+   "id": "ch_hash_extra_arg",
+   "file": "ledger/chain.py",
+   "old": "if argv[:1] == [\"hash\"] and len(argv) == 1:",
+   "new": "if argv[:1] == [\"hash\"]:",
+   "tests": [
+    "test_chain.Usage.test_bad_arguments"
+   ]
+  },
+  {
+   "id": "ch_verify_flag",
+   "file": "ledger/chain.py",
+   "old": "argv[2] == \"--previous\"",
+   "new": "argv[2].startswith(\"--prev\")",
+   "tests": [
+    "test_chain.Usage.test_bad_arguments"
+   ]
+  },
+  {
+   "id": "ch_verify_exit_broken",
+   "file": "ledger/chain.py",
+   "old": "        return 0 if result[\"valid\"] else 1",
+   "new": "        return 0",
+   "tests": [
+    "test_chain.VerifyCommand.test_v3_edited_payload_breaks_r2_only"
+   ]
+  },
+  {
+   "id": "ch_unreadable_exit",
+   "file": "ledger/chain.py",
+   "old": "            _emit({\"error\": \"cannot read: %s\" % cli.cause(exc)})\n            return 2",
+   "new": "            _emit({\"error\": \"cannot read: %s\" % cli.cause(exc)})\n            return 1",
+   "tests": [
+    "test_chain.VerifyCommand.test_unreadable_file"
+   ]
+  },
+  {
+   "id": "ch_previous_ignored",
+   "file": "ledger/chain.py",
+   "old": "result = verify_file(argv[1], argv[3] if len(argv) == 4 else None)",
+   "new": "result = verify_file(argv[1], None)",
+   "tests": [
+    "test_chain.VerifyCommand.test_rewrite_with_recomputed_hashes_is_refused"
+   ]
+  },
+  {
+   "id": "ch_usage_exit",
+   "file": "ledger/chain.py",
+   "old": "    _emit({\"error\": \"usage\"})\n    return 2",
+   "new": "    _emit({\"error\": \"usage\"})\n    return 1",
+   "tests": [
+    "test_chain.Usage.test_bad_arguments"
+   ]
+  },
+  {
+   "id": "ch_oserror_uncaught",
+   "file": "ledger/chain.py",
+   "old": "        except OSError as exc:\n            _emit({\"error\": \"cannot read: %s\" % cli.cause(exc)})\n            return 2\n",
+   "new": "        except ZeroDivisionError as exc:\n            _emit({\"error\": \"cannot read: %s\" % cli.cause(exc)})\n            return 2\n",
+   "tests": [
+    "test_chain.VerifyCommand.test_unreadable_file"
+   ]
+  },
+  {
+   "id": "ch_previous_unread",
+   "file": "ledger/chain.py",
+   "old": "    if previous_path is not None:\n        with open(previous_path",
+   "new": "    if previous_path is not None and __import__(\"os\").path.exists(previous_path):\n        with open(previous_path",
+   "tests": [
+    "test_chain.VerifyCommand.test_unreadable_file"
+   ]
+  }
+ ]
+}

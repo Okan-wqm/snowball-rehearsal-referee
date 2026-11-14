@@ -1,0 +1,121 @@
+{
+ "mutants": [
+  {
+   "id": "ar_cli_no_tarerror",
+   "file": "cli.py",
+   "old": "ARCHIVE_ERRORS = (tarfile.TarError, gzip.BadGzipFile, zlib.error, EOFError, zipfile.BadZipFile)  # rule 9",
+   "new": "ARCHIVE_ERRORS = (gzip.BadGzipFile, zlib.error, EOFError, zipfile.BadZipFile)  # rule 9",
+   "tests": [
+    "test_archives.Members.test_each_error_is_raised_by_its_library"
+   ]
+  },
+  {
+   "id": "ar_cli_no_badgzipfile",
+   "file": "cli.py",
+   "old": "ARCHIVE_ERRORS = (tarfile.TarError, gzip.BadGzipFile, zlib.error, EOFError, zipfile.BadZipFile)  # rule 9",
+   "new": "ARCHIVE_ERRORS = (tarfile.TarError, zlib.error, EOFError, zipfile.BadZipFile)  # rule 9",
+   "tests": [
+    "test_archives.Members.test_each_error_is_raised_by_its_library"
+   ]
+  },
+  {
+   "id": "ar_cli_no_error",
+   "file": "cli.py",
+   "old": "ARCHIVE_ERRORS = (tarfile.TarError, gzip.BadGzipFile, zlib.error, EOFError, zipfile.BadZipFile)  # rule 9",
+   "new": "ARCHIVE_ERRORS = (tarfile.TarError, gzip.BadGzipFile, EOFError, zipfile.BadZipFile)  # rule 9",
+   "tests": [
+    "test_archives.Members.test_each_error_is_raised_by_its_library"
+   ]
+  },
+  {
+   "id": "ar_cli_no_eoferror",
+   "file": "cli.py",
+   "old": "ARCHIVE_ERRORS = (tarfile.TarError, gzip.BadGzipFile, zlib.error, EOFError, zipfile.BadZipFile)  # rule 9",
+   "new": "ARCHIVE_ERRORS = (tarfile.TarError, gzip.BadGzipFile, zlib.error, zipfile.BadZipFile)  # rule 9",
+   "tests": [
+    "test_archives.Members.test_each_error_is_raised_by_its_library"
+   ]
+  },
+  {
+   "id": "ar_cli_no_badzipfile",
+   "file": "cli.py",
+   "old": "ARCHIVE_ERRORS = (tarfile.TarError, gzip.BadGzipFile, zlib.error, EOFError, zipfile.BadZipFile)  # rule 9",
+   "new": "ARCHIVE_ERRORS = (tarfile.TarError, gzip.BadGzipFile, zlib.error, EOFError)  # rule 9",
+   "tests": [
+    "test_archives.Members.test_each_error_is_raised_by_its_library"
+   ]
+  },
+  {
+   "id": "ar_accepted",
+   "file": "loop/accepted.py",
+   "old": "    except (*cli.ARCHIVE_ERRORS, RuntimeError, ValueError):  # cli rule 9",
+   "new": "    except (zipfile.BadZipFile, EOFError, RuntimeError, ValueError):  # cli rule 9",
+   "tests": [
+    "test_archives.Corpus.test_accepted_unpack"
+   ]
+  },
+  {
+   "id": "ar_treehash",
+   "file": "loop/treehash.py",
+   "old": "    except (OSError, *cli.ARCHIVE_ERRORS) as exc:",
+   "new": "    except (OSError, tarfile.TarError) as exc:",
+   "tests": [
+    "test_archives.Register.test_no_reader_writes_its_own_list"
+   ]
+  },
+  {
+   "id": "ar_treehash_zlib",
+   "file": "loop/treehash.py",
+   "old": "    except (OSError, *cli.ARCHIVE_ERRORS) as exc:",
+   "new": "    except (OSError, *cli.ARCHIVE_ERRORS[:2], *cli.ARCHIVE_ERRORS[3:]) as exc:",
+   "tests": [
+    "test_archives.Corpus.test_treehash"
+   ]
+  },
+  {
+   "id": "ar_derive",
+   "file": "profile/derive.py",
+   "old": "    except cli.ARCHIVE_ERRORS as exc:",
+   "new": "    except cli.ARCHIVE_ERRORS[:1] + cli.ARCHIVE_ERRORS[2:] as exc:",
+   "tests": [
+    "test_archives.Corpus.test_derive_read_tree"
+   ]
+  },
+  {
+   "id": "ar_derive_zlib",
+   "file": "profile/derive.py",
+   "old": "    except cli.ARCHIVE_ERRORS as exc:",
+   "new": "    except cli.ARCHIVE_ERRORS[:2] + cli.ARCHIVE_ERRORS[3:] as exc:",
+   "tests": [
+    "test_archives.Corpus.test_derive_read_tree"
+   ]
+  },
+  {
+   "id": "ar_deps_inspect_zlib",
+   "file": "runner/deps_npm.py",
+   "old": "    except cli.ARCHIVE_ERRORS:  # read in memory",
+   "new": "    except cli.ARCHIVE_ERRORS[:2] + cli.ARCHIVE_ERRORS[3:]:  # read in memory",
+   "tests": [
+    "test_archives.Corpus.test_deps_npm_tarballs"
+   ]
+  },
+  {
+   "id": "ar_deps_vector_zlib",
+   "file": "runner/deps_npm.py",
+   "old": "    except cli.ARCHIVE_ERRORS as exc:",
+   "new": "    except cli.ARCHIVE_ERRORS[:2] + cli.ARCHIVE_ERRORS[3:] as exc:",
+   "tests": [
+    "test_archives.Corpus.test_deps_npm_tarballs"
+   ]
+  },
+  {
+   "id": "ar_pulled_oserror",
+   "file": "loop/pulled.py",
+   "old": "    except (*cli.ARCHIVE_ERRORS, OSError):",
+   "new": "    except cli.ARCHIVE_ERRORS:",
+   "tests": [
+    "test_archives.Corpus.test_pulled_extract_tree"
+   ]
+  }
+ ]
+}

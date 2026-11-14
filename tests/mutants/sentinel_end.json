@@ -1,0 +1,94 @@
+{
+ "mutants": [
+  {
+   "id": "serial_end_not_finisher",
+   "file": "ledger/serial.py",
+   "old": "FINISHERS = ((\"events\", \"revert\"), (\"events\", \"sentinel\"))",
+   "new": "FINISHERS = ((\"events\", \"revert\"),)",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "serial_finished_twice_allowed",
+   "file": "ledger/serial.py",
+   "old": "            elif not open_[sha]:\n",
+   "new": "            elif False:\n",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "schema_end_takes_red",
+   "file": "ledger/schema.py",
+   "old": "SENTINEL_ENDS = (\"green\", \"flaky\")",
+   "new": "SENTINEL_ENDS = (\"green\", \"flaky\", \"red\")",
+   "tests": [
+    "test_schema.py"
+   ]
+  },
+  {
+   "id": "watch_no_sha",
+   "file": "loop/watch.py",
+   "old": "\"flaky\": doc[\"flaky\"], \"sha256\": entry[\"sha256\"]}",
+   "new": "\"flaky\": doc[\"flaky\"]}",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "job_green_not_passed",
+   "file": "loop/job.py",
+   "old": "        return {\"sentinel\": line}, seen, lint",
+   "new": "        return {\"sentinel\": line}, None, lint",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "write_no_end_row",
+   "file": "loop/write_cycle.py",
+   "old": "        elif end is not None:\n            out.append(events.sentinel(",
+   "new": "        elif False:\n            out.append(events.sentinel(",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "write_verdict_not_judged",
+   "file": "loop/write_cycle.py",
+   "old": "            if (judged[\"verdict\"], judged[\"flaky\"]) != (end[\"verdict\"], end[\"flaky\"]):",
+   "new": "            if False:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "write_flaky_not_judged",
+   "file": "loop/write_cycle.py",
+   "old": "            if (judged[\"verdict\"], judged[\"flaky\"]) != (end[\"verdict\"], end[\"flaky\"]):",
+   "new": "            if judged[\"verdict\"] != end[\"verdict\"]:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "write_rerun_ends",
+   "file": "loop/write_cycle.py",
+   "old": "            elif judged[\"verdict\"] not in schema.SENTINEL_ENDS:",
+   "new": "            elif False:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "write_end_any_merge",
+   "file": "loop/write_cycle.py",
+   "old": "if merge is not None or end[\"merge_sha\"] != art.heads[B.INTEGRATION]:",
+   "new": "if merge is not None:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  }
+ ]
+}

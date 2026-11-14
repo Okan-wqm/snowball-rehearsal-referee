@@ -1,0 +1,15 @@
+diff --git a/multi.js b/multi.js
+index 4da0c1d..7824d8f 100644
+--- a/multi.js
++++ b/multi.js
+@@ -1,7 +1,7 @@
+ function f(n) {
+-  const r = "a" +
+-    n +
+-    "b";
++  const r = `a${ 
++    n 
++    }b`;
+   return r;
+ }
+ function g() {

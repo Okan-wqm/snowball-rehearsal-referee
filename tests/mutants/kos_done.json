@@ -1,0 +1,31 @@
+{
+  "mutants": [
+    {
+      "id": "kos_not_ok",
+      "file": "loop/job.py",
+      "old": "    return dict(d3, ok=\"reason\" not in d3)",
+      "new": "    return dict(d3, ok=False, reason=\"cycle_not_wired\")",
+      "tests": [
+        "test_loop_kos.py"
+      ]
+    },
+    {
+      "id": "d7_never_done",
+      "file": "loop/job.py",
+      "old": "\"done\": [\"D3\", \"D7\"] if watch else [\"D3\"]",
+      "new": "\"done\": [\"D3\"]",
+      "tests": [
+        "test_loop_kos.py"
+      ]
+    },
+    {
+      "id": "d7_always_done",
+      "file": "loop/job.py",
+      "old": "\"done\": [\"D3\", \"D7\"] if watch else [\"D3\"]",
+      "new": "\"done\": [\"D3\", \"D7\"]",
+      "tests": [
+        "test_loop_kos.py"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1057 @@
+{
+ "mutants": [
+  {
+   "id": "wr_brain_heads",
+   "file": "target/write.py",
+   "old": "    if not isinstance(ref, str) or not ref.startswith(BRAIN):",
+   "new": "    if not isinstance(ref, str) or not ref.startswith(HEADS):",
+   "tests": [
+    "test_write.RefRule.test_cross_repository_head_is_refused"
+   ]
+  },
+  {
+   "id": "wr_brain_noslash",
+   "file": "target/write.py",
+   "old": "BRAIN = \"refs/heads/brain/\"",
+   "new": "BRAIN = \"refs/heads/brain\"",
+   "tests": [
+    "test_write.RefRule.test_cross_repository_head_is_refused"
+   ]
+  },
+  {
+   "id": "wr_branch_dotdot",
+   "file": "target/write.py",
+   "old": "    if not isinstance(name, str) or not _NAME.fullmatch(name) or \"..\" in name or name.endswith(\".\"):",
+   "new": "    if not isinstance(name, str) or not _NAME.fullmatch(name) or name.endswith(\".\"):",
+   "tests": [
+    "test_write.RefRule.test_git_name_rules"
+   ]
+  },
+  {
+   "id": "wr_branch_trailing_dot",
+   "file": "target/write.py",
+   "old": "    if not isinstance(name, str) or not _NAME.fullmatch(name) or \"..\" in name or name.endswith(\".\"):",
+   "new": "    if not isinstance(name, str) or not _NAME.fullmatch(name) or \"..\" in name:",
+   "tests": [
+    "test_write.RefRule.test_git_name_rules"
+   ]
+  },
+  {
+   "id": "wr_branch_empty_part",
+   "file": "target/write.py",
+   "old": "    return all(part and not part.startswith(\".\") and not part.endswith(\".lock\") for part in name.split(\"/\"))",
+   "new": "    return all(not part.startswith(\".\") and not part.endswith(\".lock\") for part in name.split(\"/\"))",
+   "tests": [
+    "test_write.RefRule.test_git_name_rules"
+   ]
+  },
+  {
+   "id": "wr_branch_dot_part",
+   "file": "target/write.py",
+   "old": "    return all(part and not part.startswith(\".\") and not part.endswith(\".lock\") for part in name.split(\"/\"))",
+   "new": "    return all(part and not part.endswith(\".lock\") for part in name.split(\"/\"))",
+   "tests": [
+    "test_write.RefRule.test_git_name_rules"
+   ]
+  },
+  {
+   "id": "wr_branch_lock",
+   "file": "target/write.py",
+   "old": "    return all(part and not part.startswith(\".\") and not part.endswith(\".lock\") for part in name.split(\"/\"))",
+   "new": "    return all(part and not part.startswith(\".\") for part in name.split(\"/\"))",
+   "tests": [
+    "test_write.RefRule.test_git_name_rules"
+   ]
+  },
+  {
+   "id": "wr_name_colon",
+   "file": "target/write.py",
+   "old": "_NAME = re.compile(r\"[A-Za-z0-9._/-]+\")",
+   "new": "_NAME = re.compile(r\"[A-Za-z0-9._/:-]+\")",
+   "tests": [
+    "test_write.RefRule.test_cross_repository_head_is_refused"
+   ]
+  },
+  {
+   "id": "wr_name_plus",
+   "file": "target/write.py",
+   "old": "_NAME = re.compile(r\"[A-Za-z0-9._/-]+\")",
+   "new": "_NAME = re.compile(r\"[A-Za-z0-9._/+-]+\")",
+   "tests": [
+    "test_write.RefRule.test_git_name_rules"
+   ]
+  },
+  {
+   "id": "wr_path_dotdot",
+   "file": "target/write.py",
+   "old": "            and all(part not in (\"\", \".\", \"..\") and part.lower() != \".git\" for part in path.split(\"/\")))",
+   "new": "            and all(part not in (\"\", \".\") and part.lower() != \".git\" for part in path.split(\"/\")))",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_path_dot",
+   "file": "target/write.py",
+   "old": "            and all(part not in (\"\", \".\", \"..\") and part.lower() != \".git\" for part in path.split(\"/\")))",
+   "new": "            and all(part not in (\"\", \"..\") and part.lower() != \".git\" for part in path.split(\"/\")))",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_path_empty",
+   "file": "target/write.py",
+   "old": "            and all(part not in (\"\", \".\", \"..\") and part.lower() != \".git\" for part in path.split(\"/\")))",
+   "new": "            and all(part not in (\".\", \"..\") and part.lower() != \".git\" for part in path.split(\"/\")))",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_path_git_case",
+   "file": "target/write.py",
+   "old": "            and all(part not in (\"\", \".\", \"..\") and part.lower() != \".git\" for part in path.split(\"/\")))",
+   "new": "            and all(part not in (\"\", \".\", \"..\") and part != \".git\" for part in path.split(\"/\")))",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_path_git",
+   "file": "target/write.py",
+   "old": "            and all(part not in (\"\", \".\", \"..\") and part.lower() != \".git\" for part in path.split(\"/\")))",
+   "new": "            and all(part not in (\"\", \".\", \"..\") for part in path.split(\"/\")))",
+   "tests": [
+    "test_write.StateCommit.test_outside_brain_and_bad_paths_are_refused_before_sending"
+   ]
+  },
+  {
+   "id": "wr_b64_canonical",
+   "file": "target/write.py",
+   "old": "        return isinstance(text, str) and base64.b64encode(base64.b64decode(text)).decode() == text",
+   "new": "        return isinstance(text, str) and base64.b64decode(text, validate=True) is not None",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_keys_extra",
+   "file": "target/write.py",
+   "old": "    return isinstance(body, dict) and required <= set(body) <= required | optional",
+   "new": "    return isinstance(body, dict) and required <= set(body)",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_keys_missing",
+   "file": "target/write.py",
+   "old": "    return isinstance(body, dict) and required <= set(body) <= required | optional",
+   "new": "    return isinstance(body, dict) and set(body) <= required | optional",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_sha_upper",
+   "file": "target/write.py",
+   "old": "_SHA = re.compile(r\"[0-9a-f]{40}\")",
+   "new": "_SHA = re.compile(r\"[0-9a-fA-F]{40}\")",
+   "tests": [
+    "test_write.WriterLoop.test_responses_that_do_not_answer_the_question"
+   ]
+  },
+  {
+   "id": "wr_sha_len",
+   "file": "target/write.py",
+   "old": "_SHA = re.compile(r\"[0-9a-f]{40}\")",
+   "new": "_SHA = re.compile(r\"[0-9a-f]{40,64}\")",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_repo_dotdot",
+   "file": "target/write.py",
+   "old": "        if not isinstance(repo, str) or not _REPO.fullmatch(repo) or \"..\" in repo:",
+   "new": "        if not isinstance(repo, str) or not _REPO.fullmatch(repo):",
+   "tests": [
+    "test_write.RouteRule.test_repo_must_be_one_name"
+   ]
+  },
+  {
+   "id": "wr_repo_slash",
+   "file": "target/write.py",
+   "old": "_REPO = re.compile(r\"[A-Za-z0-9._-]+/[A-Za-z0-9._-]+\")",
+   "new": "_REPO = re.compile(r\"[A-Za-z0-9._/-]+/[A-Za-z0-9._-]+\")",
+   "tests": [
+    "test_write.RouteRule.test_repo_must_be_one_name"
+   ]
+  },
+  {
+   "id": "wr_rest_query",
+   "file": "target/write.py",
+   "old": "        if re.search(r\"[?#%\\\\\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "new": "        if re.search(r\"[#%\\\\\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_rest_fragment",
+   "file": "target/write.py",
+   "old": "        if re.search(r\"[?#%\\\\\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "new": "        if re.search(r\"[?%\\\\\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_rest_percent",
+   "file": "target/write.py",
+   "old": "        if re.search(r\"[?#%\\\\\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "new": "        if re.search(r\"[?#\\\\\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_rest_backslash",
+   "file": "target/write.py",
+   "old": "        if re.search(r\"[?#%\\\\\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "new": "        if re.search(r\"[?#%\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_rest_space",
+   "file": "target/write.py",
+   "old": "        if re.search(r\"[?#%\\\\\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "new": "        if re.search(r\"[?#%\\\\]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_rest_dotdot",
+   "file": "target/write.py",
+   "old": "        if re.search(r\"[?#%\\\\\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "new": "        if re.search(r\"[?#%\\\\\\s]\", rest) or rest.endswith(\"/\") or \"//\" in rest:",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_rest_trailing",
+   "file": "target/write.py",
+   "old": "        if re.search(r\"[?#%\\\\\\s]\", rest) or \"..\" in rest or rest.endswith(\"/\") or \"//\" in rest:",
+   "new": "        if re.search(r\"[?#%\\\\\\s]\", rest) or \"..\" in rest or \"//\" in rest:",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_rest_double",
+   "file": "target/write.py",
+   "old": "rest.endswith(\"/\") or \"//\" in rest:",
+   "new": "rest.endswith(\"/\"):",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_get_body",
+   "file": "target/write.py",
+   "old": "            if body is not None:\n                return [\"body_invalid\"], []",
+   "new": "            if False:\n                return [\"body_invalid\"], []",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_get_ref_syntax",
+   "file": "target/write.py",
+   "old": "                return ([] if branch_syntax(m.group(1)) else [\"ref_invalid\"]), []",
+   "new": "                return [], []",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_get_commit_hex",
+   "file": "target/write.py",
+   "old": "            if re.fullmatch(r\"git/commits/[0-9a-f]{40}|pulls/\" + _N, rest):",
+   "new": "            if re.fullmatch(r\"git/commits/[0-9a-z]+|pulls/\" + _N, rest):",
+   "tests": [
+    "test_write.RouteRule.test_path_shapes"
+   ]
+  },
+  {
+   "id": "wr_pull_zero",
+   "file": "target/write.py",
+   "old": "_N = r\"[1-9][0-9]{0,9}\"",
+   "new": "_N = r\"[0-9]{1,10}\"",
+   "tests": [
+    "test_write.RouteRule.test_routes_outside_the_list"
+   ]
+  },
+  {
+   "id": "wr_refs_sha",
+   "file": "target/write.py",
+   "old": "            if not _keys(body, {\"ref\", \"sha\"}) or not _sha(body[\"sha\"]):",
+   "new": "            if not _keys(body, {\"ref\", \"sha\"}):",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_patch_branch",
+   "file": "target/write.py",
+   "old": "            reasons = branch_reasons(m.group(1))\n            if not _keys(body, {\"sha\"}, {\"force\"})",
+   "new": "            reasons = []\n            if not _keys(body, {\"sha\"}, {\"force\"})",
+   "tests": [
+    "test_write.RouteRule.test_main_and_outside_brain_refused_on_every_writing_route"
+   ]
+  },
+  {
+   "id": "wr_patch_sha",
+   "file": "target/write.py",
+   "old": "            if not _keys(body, {\"sha\"}, {\"force\"}) or not _sha(body[\"sha\"]):",
+   "new": "            if not _keys(body, {\"sha\"}, {\"force\"}):",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_patch_force_truthy",
+   "file": "target/write.py",
+   "old": "            elif \"force\" in body and body[\"force\"] is not False:",
+   "new": "            elif \"force\" in body and body[\"force\"] is True:",
+   "tests": [
+    "test_write.RouteRule.test_force_update_refused"
+   ]
+  },
+  {
+   "id": "wr_patch_force_none",
+   "file": "target/write.py",
+   "old": "            elif \"force\" in body and body[\"force\"] is not False:",
+   "new": "            elif False:",
+   "tests": [
+    "test_write.RouteRule.test_force_update_refused"
+   ]
+  },
+  {
+   "id": "wr_commit_parents3",
+   "file": "target/write.py",
+   "old": "                  and isinstance(body[\"parents\"], list) and len(body[\"parents\"]) <= 2",
+   "new": "                  and isinstance(body[\"parents\"], list) and len(body[\"parents\"]) <= 3",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_commit_message",
+   "file": "target/write.py",
+   "old": "            ok = (_keys(body, {\"message\", \"tree\", \"parents\"}) and _text(body[\"message\"]) and _sha(body[\"tree\"])",
+   "new": "            ok = (_keys(body, {\"message\", \"tree\", \"parents\"}) and _sha(body[\"tree\"])",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_commit_parent_sha",
+   "file": "target/write.py",
+   "old": "                  and all(_sha(p) for p in body[\"parents\"]))",
+   "new": "                  and True)",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_blob_encoding",
+   "file": "target/write.py",
+   "old": "            ok = _keys(body, {\"content\", \"encoding\"}) and body[\"encoding\"] == \"base64\" and _b64(body[\"content\"])",
+   "new": "            ok = _keys(body, {\"content\", \"encoding\"}) and _b64(body[\"content\"])",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_blob_content",
+   "file": "target/write.py",
+   "old": "            ok = _keys(body, {\"content\", \"encoding\"}) and body[\"encoding\"] == \"base64\" and _b64(body[\"content\"])",
+   "new": "            ok = _keys(body, {\"content\", \"encoding\"}) and body[\"encoding\"] == \"base64\"",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_tree_base_sha",
+   "file": "target/write.py",
+   "old": "            ok = (_keys(body, {\"tree\"}, {\"base_tree\"}) and (\"base_tree\" not in body or _sha(body[\"base_tree\"]))",
+   "new": "            ok = (_keys(body, {\"tree\"}, {\"base_tree\"})",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_tree_empty",
+   "file": "target/write.py",
+   "old": "                  and body[\"tree\"] and all(_keys(e, {\"path\", \"mode\", \"type\", \"sha\"}) and e[\"mode\"] == \"100644\"",
+   "new": "                  and all(_keys(e, {\"path\", \"mode\", \"type\", \"sha\"}) and e[\"mode\"] == \"100644\"",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_tree_mode",
+   "file": "target/write.py",
+   "old": "                  and body[\"tree\"] and all(_keys(e, {\"path\", \"mode\", \"type\", \"sha\"}) and e[\"mode\"] == \"100644\"",
+   "new": "                  and body[\"tree\"] and all(_keys(e, {\"path\", \"mode\", \"type\", \"sha\"}) and e[\"mode\"] in (\"100644\", \"100755\", \"120000\")",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_tree_type",
+   "file": "target/write.py",
+   "old": "                                           and e[\"type\"] == \"blob\" and _sha(e[\"sha\"]) and file_path(e[\"path\"])",
+   "new": "                                           and _sha(e[\"sha\"]) and file_path(e[\"path\"])",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_tree_entry_sha",
+   "file": "target/write.py",
+   "old": "                                           and e[\"type\"] == \"blob\" and _sha(e[\"sha\"]) and file_path(e[\"path\"])",
+   "new": "                                           and e[\"type\"] == \"blob\" and file_path(e[\"path\"])",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_tree_path",
+   "file": "target/write.py",
+   "old": "                                           and e[\"type\"] == \"blob\" and _sha(e[\"sha\"]) and file_path(e[\"path\"])",
+   "new": "                                           and e[\"type\"] == \"blob\" and _sha(e[\"sha\"])",
+   "tests": [
+    "test_write.StateCommit.test_outside_brain_and_bad_paths_are_refused_before_sending"
+   ]
+  },
+  {
+   "id": "wr_tree_distinct",
+   "file": "target/write.py",
+   "old": "                  and len({e[\"path\"] for e in body[\"tree\"]}) == len(body[\"tree\"]))",
+   "new": "                  and True)",
+   "tests": [
+    "test_write.StateCommit.test_object_routes"
+   ]
+  },
+  {
+   "id": "wr_pulls_title",
+   "file": "target/write.py",
+   "old": "            if not _keys(body, {\"title\", \"head\", \"base\"}, {\"body\"}) or not _text(body[\"title\"]) \\",
+   "new": "            if not _keys(body, {\"title\", \"head\", \"base\"}, {\"body\"}) \\",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_pulls_body_text",
+   "file": "target/write.py",
+   "old": "                    or not _text(body.get(\"body\", \"\"), empty=True):",
+   "new": "                    or False:",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_pulls_head",
+   "file": "target/write.py",
+   "old": "            return sorted(set(branch_reasons(body[\"head\"]) + branch_reasons(body[\"base\"]))), []",
+   "new": "            return sorted(set(branch_reasons(body[\"base\"]))), []",
+   "tests": [
+    "test_write.RouteRule.test_main_and_outside_brain_refused_on_every_writing_route"
+   ]
+  },
+  {
+   "id": "wr_pulls_base",
+   "file": "target/write.py",
+   "old": "            return sorted(set(branch_reasons(body[\"head\"]) + branch_reasons(body[\"base\"]))), []",
+   "new": "            return sorted(set(branch_reasons(body[\"head\"]))), []",
+   "tests": [
+    "test_write.RouteRule.test_main_and_outside_brain_refused_on_every_writing_route"
+   ]
+  },
+  {
+   "id": "wr_check_neutral",
+   "file": "target/write.py",
+   "old": "_CONCLUSIONS = (\"success\", \"failure\")",
+   "new": "_CONCLUSIONS = (\"success\", \"failure\", \"neutral\")",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_check_status",
+   "file": "target/write.py",
+   "old": "                  and _sha(body[\"head_sha\"]) and body[\"status\"] == \"completed\"",
+   "new": "                  and _sha(body[\"head_sha\"])",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_check_head_sha",
+   "file": "target/write.py",
+   "old": "                  and _sha(body[\"head_sha\"]) and body[\"status\"] == \"completed\"",
+   "new": "                  and body[\"status\"] == \"completed\"",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_check_name",
+   "file": "target/write.py",
+   "old": "            ok = (_keys(body, {\"name\", \"head_sha\", \"status\", \"conclusion\"}, {\"output\"}) and _text(body[\"name\"])",
+   "new": "            ok = (_keys(body, {\"name\", \"head_sha\", \"status\", \"conclusion\"}, {\"output\"})",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_check_output_keys",
+   "file": "target/write.py",
+   "old": "            and (\"output\" not in body or (_keys(body[\"output\"], {\"title\", \"summary\"})",
+   "new": "            and (\"output\" not in body or (isinstance(body[\"output\"], dict)",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_check_output_title",
+   "file": "target/write.py",
+   "old": "                                                and _text(body[\"output\"][\"title\"])\n",
+   "new": "\n",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_merge_method",
+   "file": "target/write.py",
+   "old": "            reasons = [] if body[\"merge_method\"] == \"merge\" else [\"merge_method\"]",
+   "new": "            reasons = [] if body[\"merge_method\"] in (\"merge\", \"squash\") else [\"merge_method\"]",
+   "tests": [
+    "test_write.RouteRule.test_merge_rules"
+   ]
+  },
+  {
+   "id": "wr_merge_sha",
+   "file": "target/write.py",
+   "old": "            if not _keys(body, {\"sha\", \"merge_method\"}, {\"commit_title\"}) or not _sha(body[\"sha\"]) \\",
+   "new": "            if not _keys(body, {\"sha\", \"merge_method\"}, {\"commit_title\"}) \\",
+   "tests": [
+    "test_write.RouteRule.test_bodies"
+   ]
+  },
+  {
+   "id": "wr_merge_title",
+   "file": "target/write.py",
+   "old": "                    or (\"commit_title\" in body and not _text(body[\"commit_title\"])):",
+   "new": "                    or False:",
+   "tests": [
+    "test_write.RouteRule.test_merge_rules"
+   ]
+  },
+  {
+   "id": "wr_merge_unknown",
+   "file": "target/write.py",
+   "old": "            if pull is None:\n                return reasons + [\"merge_unknown_pull\"], []",
+   "new": "            if pull is None:\n                pull = {\"base\": \"brain/integration\", \"head\": \"brain/x\", \"state\": \"open\", \"head_sha\": body[\"sha\"]}",
+   "tests": [
+    "test_write.RouteRule.test_merge_rules"
+   ]
+  },
+  {
+   "id": "wr_merge_base",
+   "file": "target/write.py",
+   "old": "            reasons += branch_reasons(pull.get(\"base\")) + branch_reasons(pull.get(\"head\"))",
+   "new": "            reasons += branch_reasons(pull.get(\"head\"))",
+   "tests": [
+    "test_write.RouteRule.test_main_and_outside_brain_refused_on_every_writing_route"
+   ]
+  },
+  {
+   "id": "wr_merge_headbranch",
+   "file": "target/write.py",
+   "old": "            reasons += branch_reasons(pull.get(\"base\")) + branch_reasons(pull.get(\"head\"))",
+   "new": "            reasons += branch_reasons(pull.get(\"base\"))",
+   "tests": [
+    "test_write.RouteRule.test_main_and_outside_brain_refused_on_every_writing_route"
+   ]
+  },
+  {
+   "id": "wr_merge_open",
+   "file": "target/write.py",
+   "old": "            if pull.get(\"state\") != \"open\":\n                reasons.append(\"merge_not_open\")",
+   "new": "            if False:\n                reasons.append(\"merge_not_open\")",
+   "tests": [
+    "test_write.RouteRule.test_merge_rules"
+   ]
+  },
+  {
+   "id": "wr_merge_moved",
+   "file": "target/write.py",
+   "old": "            if pull.get(\"head_sha\") != body[\"sha\"]:\n                reasons.append(\"merge_head_moved\")",
+   "new": "            if False:\n                reasons.append(\"merge_head_moved\")",
+   "tests": [
+    "test_write.RouteRule.test_merge_rules"
+   ]
+  },
+  {
+   "id": "wr_merge_written_head",
+   "file": "target/write.py",
+   "old": "            return reasons, ([] if reasons else [HEADS + pull[\"base\"]])",
+   "new": "            return reasons, ([] if reasons else [HEADS + pull[\"head\"]])",
+   "tests": [
+    "test_write.RouteRule.test_allowed_routes"
+   ]
+  },
+  {
+   "id": "wr_observe_number",
+   "file": "target/write.py",
+   "old": "        if pull[\"number\"] != int(rest.split(\"/\")[1]):",
+   "new": "        if False:",
+   "tests": [
+    "test_write.RouteRule.test_observe_records_pulls_only_from_pull_responses"
+   ]
+  },
+  {
+   "id": "wr_observe_get",
+   "file": "target/write.py",
+   "old": "        if rest is None or method != \"GET\" or not re.fullmatch(r\"pulls/\" + _N, rest):",
+   "new": "        if rest is None or not re.fullmatch(r\"pulls/\" + _N, rest):",
+   "tests": [
+    "test_write.RouteRule.test_observe_records_pulls_only_from_pull_responses"
+   ]
+  },
+  {
+   "id": "wr_pull_bool",
+   "file": "target/write.py",
+   "old": "    if not isinstance(number, int) or isinstance(number, bool) or not _sha(head_sha):",
+   "new": "    if not isinstance(number, int) or not _sha(head_sha):",
+   "tests": [
+    "test_write.RouteRule.test_observe_records_pulls_only_from_pull_responses"
+   ]
+  },
+  {
+   "id": "wr_pull_headsha",
+   "file": "target/write.py",
+   "old": "    if not isinstance(number, int) or isinstance(number, bool) or not _sha(head_sha):",
+   "new": "    if not isinstance(number, int) or isinstance(number, bool):",
+   "tests": [
+    "test_write.RouteRule.test_observe_records_pulls_only_from_pull_responses"
+   ]
+  },
+  {
+   "id": "wr_revert_not_head",
+   "file": "target/write.py",
+   "old": "    if merge != head:\n        return [\"revert_not_head\"], None",
+   "new": "    if False:\n        return [\"revert_not_head\"], None",
+   "tests": [
+    "test_write.Revert.test_pure_rule"
+   ]
+  },
+  {
+   "id": "wr_revert_not_merge",
+   "file": "target/write.py",
+   "old": "    if not isinstance(parents, list) or len(parents) != 2:",
+   "new": "    if not isinstance(parents, list) or not parents:",
+   "tests": [
+    "test_write.Revert.test_pure_rule"
+   ]
+  },
+  {
+   "id": "wr_revert_first_tree_sha",
+   "file": "target/write.py",
+   "old": "    if not isinstance(first, dict) or not _sha(first.get(\"tree\")):",
+   "new": "    if not isinstance(first, dict):",
+   "tests": [
+    "test_write.Revert.test_pure_rule"
+   ]
+  },
+  {
+   "id": "wr_call_send_before_check",
+   "file": "target/write.py",
+   "old": "        if reasons:\n            raise Refused(reasons)\n        self.sent.append((method, path, body))\n        status, data = self.transport(method, path, body)",
+   "new": "        self.sent.append((method, path, body))\n        status, data = self.transport(method, path, body)\n        if reasons:\n            raise Refused(reasons)",
+   "tests": [
+    "test_write.StateCommit.test_outside_brain_and_bad_paths_are_refused_before_sending"
+   ]
+  },
+  {
+   "id": "wr_call_3xx",
+   "file": "target/write.py",
+   "old": "        if not isinstance(status, int) or not 200 <= status < 300:",
+   "new": "        if not isinstance(status, int) or not 200 <= status < 400:",
+   "tests": [
+    "test_write.WriterLoop.test_responses_that_do_not_answer_the_question"
+   ]
+  },
+  {
+   "id": "wr_call_written_before",
+   "file": "target/write.py",
+   "old": "        self.sent.append((method, path, body))\n        status, data = self.transport(method, path, body)\n        if not isinstance(status, int) or not 200 <= status < 300:\n            raise ApiError(status, \"%s %s\" % (method, path))\n        self.written += refs",
+   "new": "        self.sent.append((method, path, body))\n        self.written += refs\n        status, data = self.transport(method, path, body)\n        if not isinstance(status, int) or not 200 <= status < 300:\n            raise ApiError(status, \"%s %s\" % (method, path))",
+   "tests": [
+    "test_write.CommandLine.test_unrecorded_call_is_unusable"
+   ]
+  },
+  {
+   "id": "wr_head_ref_check",
+   "file": "target/write.py",
+   "old": "        if data.get(\"ref\", HEADS + branch) != HEADS + branch or not _sha(sha):",
+   "new": "        if not _sha(sha):",
+   "tests": [
+    "test_write.WriterLoop.test_responses_that_do_not_answer_the_question"
+   ]
+  },
+  {
+   "id": "wr_head_sha_check",
+   "file": "target/write.py",
+   "old": "        if data.get(\"ref\", HEADS + branch) != HEADS + branch or not _sha(sha):",
+   "new": "        if data.get(\"ref\", HEADS + branch) != HEADS + branch:",
+   "tests": [
+    "test_write.WriterLoop.test_responses_that_do_not_answer_the_question"
+   ]
+  },
+  {
+   "id": "wr_read_commit_sha",
+   "file": "target/write.py",
+   "old": "        if data.get(\"sha\", sha) != sha or not _sha(tree) or not all(_sha(p) for p in parents):",
+   "new": "        if not _sha(tree) or not all(_sha(p) for p in parents):",
+   "tests": [
+    "test_write.WriterLoop.test_responses_that_do_not_answer_the_question"
+   ]
+  },
+  {
+   "id": "wr_commit_resp_sha",
+   "file": "target/write.py",
+   "old": "            raise ApiError(None, \"commit created without a sha\")",
+   "new": "            pass",
+   "tests": [
+    "test_write.WriterLoop.test_responses_that_do_not_answer_the_question"
+   ]
+  },
+  {
+   "id": "wr_state_branch_first",
+   "file": "target/write.py",
+   "old": "        reasons = branch_reasons(branch)\n        if reasons:\n            raise Refused(reasons)\n        if self.head(branch) != head:",
+   "new": "        if self.head(branch) != head:",
+   "tests": [
+    "test_write.StateCommit.test_outside_brain_and_bad_paths_are_refused_before_sending"
+   ]
+  },
+  {
+   "id": "wr_state_moved",
+   "file": "target/write.py",
+   "old": "        if self.head(branch) != head:\n            raise Refused([\"state_head_moved\"])",
+   "new": "        if False:\n            raise Refused([\"state_head_moved\"])",
+   "tests": [
+    "test_write.StateCommit.test_one_commit_on_the_read_head"
+   ]
+  },
+  {
+   "id": "wr_state_parent",
+   "file": "target/write.py",
+   "old": "        sha = self.commit(message, tree, [head])",
+   "new": "        sha = self.commit(message, tree, [])",
+   "tests": [
+    "test_write.StateCommit.test_one_commit_on_the_read_head"
+   ]
+  },
+  {
+   "id": "wr_exists_any_error",
+   "file": "target/write.py",
+   "old": "            if exc.status == 404:",
+   "new": "            if exc.status is not None and exc.status >= 400:",
+   "tests": [
+    "test_write.StateCommit.test_exists_reads_404_as_absent_and_raises_other_errors"
+   ]
+  },
+  {
+   "id": "wr_blob_resp_sha",
+   "file": "target/write.py",
+   "old": "            raise ApiError(None, \"blob created without a sha\")",
+   "new": "            pass",
+   "tests": [
+    "test_write.StateCommit.test_responses_without_a_sha"
+   ]
+  },
+  {
+   "id": "wr_tree_resp_sha",
+   "file": "target/write.py",
+   "old": "            raise ApiError(None, \"tree created without a sha\")",
+   "new": "            pass",
+   "tests": [
+    "test_write.StateCommit.test_responses_without_a_sha"
+   ]
+  },
+  {
+   "id": "wr_orphan_branch_first",
+   "file": "target/write.py",
+   "old": "        reasons = branch_reasons(branch)\n        if reasons:\n            raise Refused(reasons)\n        if not files:",
+   "new": "        if not files:",
+   "tests": [
+    "test_write.StateCommit.test_orphan_over_an_existing_branch_is_refused_before_any_object"
+   ]
+  },
+  {
+   "id": "wr_orphan_empty",
+   "file": "target/write.py",
+   "old": "        if not files:\n            raise Unusable(\"an orphan commit needs at least one file\")",
+   "new": "        if False:\n            raise Unusable(\"an orphan commit needs at least one file\")",
+   "tests": [
+    "test_write.StateCommit.test_orphan_over_an_existing_branch_is_refused_before_any_object"
+   ]
+  },
+  {
+   "id": "wr_orphan_exists",
+   "file": "target/write.py",
+   "old": "        if self.exists(branch):\n            raise Refused([\"branch_exists\"])",
+   "new": "        if False:\n            raise Refused([\"branch_exists\"])",
+   "tests": [
+    "test_write.StateCommit.test_orphan_over_an_existing_branch_is_refused_before_any_object"
+   ]
+  },
+  {
+   "id": "wr_open_pull_side",
+   "file": "target/write.py",
+   "old": "            if isinstance(got, dict) and got.get(\"ref\", want) != want:",
+   "new": "            if False:",
+   "tests": [
+    "test_write.WriterLoop.test_a_pull_created_elsewhere"
+   ]
+  },
+  {
+   "id": "wr_open_pull_bool",
+   "file": "target/write.py",
+   "old": "        return number if type(number) is int else None",
+   "new": "        return number if isinstance(number, int) else None",
+   "tests": [
+    "test_write.WriterLoop.test_a_pull_number_is_an_int_not_a_bool"
+   ]
+  },
+  {
+   "id": "wr_merge_pinned",
+   "file": "target/write.py",
+   "old": "        if head_sha is not None and head_sha != pinned:",
+   "new": "        if False:",
+   "tests": [
+    "test_write.WriterLoop.test_a_head_that_moved_is_refused"
+   ]
+  },
+  {
+   "id": "wr_merge_merged_true",
+   "file": "target/write.py",
+   "old": "        if not isinstance(data, dict) or data.get(\"merged\") is not True or not _sha(sha):",
+   "new": "        if not isinstance(data, dict) or not data.get(\"merged\") or not _sha(sha):",
+   "tests": [
+    "test_write.WriterLoop.test_a_merge_response_that_did_not_land"
+   ]
+  },
+  {
+   "id": "wr_merge_merged",
+   "file": "target/write.py",
+   "old": "        if not isinstance(data, dict) or data.get(\"merged\") is not True or not _sha(sha):",
+   "new": "        if not isinstance(data, dict) or not _sha(sha):",
+   "tests": [
+    "test_write.WriterLoop.test_a_merge_response_that_did_not_land"
+   ]
+  },
+  {
+   "id": "wr_revert_branch_first",
+   "file": "target/write.py",
+   "old": "        reasons = branch_reasons(revert_branch)\n        if reasons:\n            raise Refused(reasons)\n        commits = {merge: self.read_commit(merge)}",
+   "new": "        commits = {merge: self.read_commit(merge)}",
+   "tests": [
+    "test_write.Revert.test_revert_branch_outside_brain_is_refused_before_any_call"
+   ]
+  },
+  {
+   "id": "wr_redirect_followed",
+   "file": "target/write.py",
+   "old": "        self.opener = urllib.request.build_opener(_NoRedirect, *handlers)",
+   "new": "        self.opener = urllib.request.build_opener(*handlers)",
+   "tests": [
+    "test_write.Transport.test_no_redirect_is_followed"
+   ]
+  },
+  {
+   "id": "wr_token_newline",
+   "file": "target/write.py",
+   "old": "    if not isinstance(token, str) or not token or any(c in token for c in \"\\r\\n\"):",
+   "new": "    if not isinstance(token, str) or not token:",
+   "tests": [
+    "test_write.Transport.test_errors"
+   ]
+  },
+  {
+   "id": "wr_token_empty",
+   "file": "target/write.py",
+   "old": "    if not isinstance(token, str) or not token or any(c in token for c in \"\\r\\n\"):",
+   "new": "    if not isinstance(token, str) or any(c in token for c in \"\\r\\n\"):",
+   "tests": [
+    "test_write.Transport.test_errors"
+   ]
+  },
+  {
+   "id": "wr_api_http",
+   "file": "target/write.py",
+   "old": "API = \"https://api.github.com\"",
+   "new": "API = \"http://api.github.com\"",
+   "tests": [
+    "test_write.Transport.test_request_shape"
+   ]
+  },
+  {
+   "id": "wr_http_error_status",
+   "file": "target/write.py",
+   "old": "            raise ApiError(exc.code, \"%s %s\" % (method, path)) from None",
+   "new": "            raise ApiError(None, \"%s %s\" % (method, path)) from None",
+   "tests": [
+    "test_write.Transport.test_errors"
+   ]
+  },
+  {
+   "id": "wr_http_not_json",
+   "file": "target/write.py",
+   "old": "            raise ApiError(status, \"response is not JSON\") from None",
+   "new": "            return status, None",
+   "tests": [
+    "test_write.Transport.test_errors"
+   ]
+  },
+  {
+   "id": "wr_replay_404",
+   "file": "target/write.py",
+   "old": "        return (200, self.record[key]) if key in self.record else (404, {\"message\": \"Not Found\"})",
+   "new": "        return (200, self.record.get(key))",
+   "tests": [
+    "test_write.CommandLine.test_unrecorded_call_is_unusable"
+   ]
+  },
+  {
+   "id": "wr_req_sha",
+   "file": "target/write.py",
+   "old": "        if key in OPS[op] and not _sha(req[key]):",
+   "new": "        if False:",
+   "tests": [
+    "test_write.CommandLine.test_unusable"
+   ]
+  },
+  {
+   "id": "wr_req_ref_first",
+   "file": "target/write.py",
+   "old": "        reasons = ref_reasons(req[\"ref\"])\n        if reasons:  # before",
+   "new": "        reasons = []\n        if reasons:  # before",
+   "tests": [
+    "test_write.CommandLine.test_refuse_main_and_lookalikes"
+   ]
+  },
+  {
+   "id": "wr_req_pr_range",
+   "file": "target/write.py",
+   "old": "        if type(req[\"pr\"]) is not int or not 1 <= req[\"pr\"] < 10 ** 10:",
+   "new": "        if type(req[\"pr\"]) is not int:",
+   "tests": [
+    "test_write.CommandLine.test_unusable"
+   ]
+  },
+  {
+   "id": "wr_req_pr_bool",
+   "file": "target/write.py",
+   "old": "        if type(req[\"pr\"]) is not int or not 1 <= req[\"pr\"] < 10 ** 10:",
+   "new": "        if not isinstance(req[\"pr\"], int) or not 1 <= req[\"pr\"] < 10 ** 10:",
+   "tests": [
+    "test_write.CommandLine.test_unusable"
+   ]
+  },
+  {
+   "id": "wr_req_onto_bare",
+   "file": "target/write.py",
+   "old": "            wr.revert(req[\"merge_sha\"], _branch(req[\"onto\"], \"onto\", False), branch, message)",
+   "new": "            wr.revert(req[\"merge_sha\"], _branch(req[\"onto\"], \"onto\", True), branch, message)",
+   "tests": [
+    "test_write.CommandLine.test_unusable"
+   ]
+  },
+  {
+   "id": "wr_req_message",
+   "file": "target/write.py",
+   "old": "            if not _text(message):\n                raise Unusable(\"message must be a non-empty string\")",
+   "new": "            if False:\n                raise Unusable(\"message must be a non-empty string\")",
+   "tests": [
+    "test_write.CommandLine.test_unusable"
+   ]
+  },
+  {
+   "id": "wr_req_check",
+   "file": "target/write.py",
+   "old": "        if not _text(req[\"name\"]) or req[\"conclusion\"] not in _CONCLUSIONS:",
+   "new": "        if not _text(req[\"name\"]):",
+   "tests": [
+    "test_write.CommandLine.test_unusable"
+   ]
+  },
+  {
+   "id": "wr_out_forced",
+   "file": "target/write.py",
+   "old": "            \"forced\": any(method == \"PATCH\" and isinstance(body, dict) and body.get(\"force\") is True",
+   "new": "            \"forced\": any(method == \"PATCH\" and isinstance(body, dict) and \"force\" in body",
+   "tests": [
+    "test_write.CommandLine.test_forced_reports_what_was_sent"
+   ]
+  },
+  {
+   "id": "wr_out_writes_get",
+   "file": "target/write.py",
+   "old": "            \"writes\": [\"%s %s\" % (method, path) for method, path, _ in sent if method != \"GET\"],",
+   "new": "            \"writes\": [\"%s %s\" % (method, path) for method, path, _ in sent],",
+   "tests": [
+    "test_write.CommandLine.test_a_fault_after_a_write_reports_the_writes_and_the_type_only"
+   ]
+  },
+  {
+   "id": "wr_out_commit_first",
+   "file": "target/write.py",
+   "old": "            \"commit\": ({\"tree\": commits[-1][\"tree\"], \"parents\": commits[-1][\"parents\"]} if commits else None),",
+   "new": "            \"commit\": ({\"tree\": commits[0][\"tree\"], \"parents\": commits[0][\"parents\"]} if commits else None),",
+   "tests": [
+    "test_write.CommandLine.test_commit_is_the_last_commit_sent"
+   ]
+  },
+  {
+   "id": "wr_main_refused_exit",
+   "file": "target/write.py",
+   "old": "        _emit(dict(outcome(wr), ok=False, reasons=exc.reasons))\n        return 1",
+   "new": "        _emit(dict(outcome(wr), ok=False, reasons=exc.reasons))\n        return 2",
+   "tests": [
+    "test_write.CommandLine.test_revert_first_parent_tree"
+   ]
+  },
+  {
+   "id": "wr_main_api_cause",
+   "file": "target/write.py",
+   "old": "        cause = \"api: %s\" % cli.cause(exc)",
+   "new": "        cause = \"unusable input: %s\" % cli.cause(exc)",
+   "tests": [
+    "test_write.CommandLine.test_unrecorded_call_is_unusable"
+   ]
+  }
+ ]
+}

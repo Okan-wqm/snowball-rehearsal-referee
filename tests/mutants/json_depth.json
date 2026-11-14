@@ -1,0 +1,148 @@
+{
+ "mutants": [
+  {
+   "id": "jd_no_wrap",
+   "file": "cli.py",
+   "old": "    except RecursionError:\n        raise TooDeep(\"JSON nested too deeply\") from None",
+   "new": "    except TooDeep:\n        raise TooDeep(\"JSON nested too deeply\") from None",
+   "tests": [
+    "test_cli.LoadsDepth"
+   ]
+  },
+  {
+   "id": "jd_only_value",
+   "file": "cli.py",
+   "old": "class TooDeep(ValueError, RecursionError):",
+   "new": "class TooDeep(ValueError):",
+   "tests": [
+    "test_cli.LoadsDepth"
+   ]
+  },
+  {
+   "id": "jd_only_recursion",
+   "file": "cli.py",
+   "old": "class TooDeep(ValueError, RecursionError):",
+   "new": "class TooDeep(RecursionError):",
+   "tests": [
+    "test_cli.LoadsDepth"
+   ]
+  },
+  {
+   "id": "jd_options_dropped",
+   "file": "cli.py",
+   "old": "        value = json.loads(text, **options)",
+   "new": "        value = json.loads(text)",
+   "tests": [
+    "test_cli.LoadsDepth"
+   ]
+  },
+  {
+   "id": "jd_chained",
+   "file": "cli.py",
+   "old": "raise TooDeep(\"JSON nested too deeply\") from None",
+   "new": "raise TooDeep(\"JSON nested too deeply\")",
+   "tests": [
+    "test_cli.LoadsDepth"
+   ]
+  },
+  {
+   "id": "jd_load_bypass",
+   "file": "cli.py",
+   "old": "    return loads(stream.read(), **options)",
+   "new": "    return json.load(stream, **options)",
+   "tests": [
+    "test_cli.LoadsDepth"
+   ]
+  },
+  {
+   "id": "jd_register_load",
+   "file": "tests/test_cli.py",
+   "old": "node.func.attr in (\"load\", \"loads\")",
+   "new": "node.func.attr in (\"loads\",)",
+   "tests": [
+    "test_cli.Register"
+   ]
+  },
+  {
+   "id": "jd_register_from",
+   "file": "tests/test_cli.py",
+   "old": "        elif isinstance(node, ast.ImportFrom) and node.module == \"json\":",
+   "new": "        elif isinstance(node, ast.ImportFrom) and node.module == \"json.x\":",
+   "tests": [
+    "test_cli.Register"
+   ]
+  },
+  {
+   "id": "jd_register_alias",
+   "file": "tests/test_cli.py",
+   "old": "a.name == \"json\" and a.asname for a",
+   "new": "a.name == \"jsonx\" and a.asname for a",
+   "tests": [
+    "test_cli.Register"
+   ]
+  },
+  {
+   "id": "jd_site_depmap",
+   "file": "status/depmap.py",
+   "old": "            m = cli.loads(fh.read().decode(\"utf-8\"))",
+   "new": "            m = json.loads(fh.read().decode(\"utf-8\"))",
+   "tests": [
+    "test_cli.Register"
+   ]
+  },
+  {
+   "id": "jd_depth_off",
+   "file": "status/depmap.py",
+   "old": "    if _depth(m) > MAP_DEPTH:",
+   "new": "    if _depth(m) > MAP_DEPTH + 1:",
+   "tests": [
+    "test_depmap.Delta"
+   ]
+  },
+  {
+   "id": "jd_depth_ge",
+   "file": "status/depmap.py",
+   "old": "    if _depth(m) > MAP_DEPTH:",
+   "new": "    if _depth(m) >= MAP_DEPTH:",
+   "tests": [
+    "test_depmap.Delta"
+   ]
+  },
+  {
+   "id": "jd_depth_dicts_only",
+   "file": "status/depmap.py",
+   "old": "        if isinstance(item, (dict, list)):",
+   "new": "        if isinstance(item, dict):",
+   "tests": [
+    "test_depmap.Delta"
+   ]
+  },
+  {
+   "id": "jd_depth_values_only",
+   "file": "status/depmap.py",
+   "old": "(item.values() if isinstance(item, dict) else item)",
+   "new": "(item.values() if isinstance(item, dict) else [])",
+   "tests": [
+    "test_depmap.Delta"
+   ]
+  },
+  {
+   "id": "jd_depth_unchecked",
+   "file": "status/depmap.py",
+   "old": "    if _depth(m) > MAP_DEPTH:\n        raise",
+   "new": "    if False:\n        raise",
+   "tests": [
+    "test_depmap.CommandLine"
+   ]
+  },
+  {
+   "id": "jd_manifest_site",
+   "file": "status/depmap.py",
+   "old": "            value = cli.loads(_read(root, rel) or \"\")",
+   "new": "            value = json.loads(_read(root, rel) or \"\")",
+   "tests": [
+    "test_depmap.py"
+   ]
+  }
+ ]
+}
