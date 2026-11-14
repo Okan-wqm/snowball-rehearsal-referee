@@ -1,12 +1,13 @@
 {
-  "kill_switch": true,
+  "kill_switch": false,
   "budget_state": "ok",
   "waived_refutations": [
     "027465767d2d46dc"
   ],
   "reverted_exits": [
     "8ebecdbeb77969f76de6a6b787c26c88bd5e14c0",
-    "93f660cdabc40e20518a0e6b99886662c83ccfc1"
+    "93f660cdabc40e20518a0e6b99886662c83ccfc1",
+    "91bbd2781dbc7d8edba8a0dccf35ed3fff2ffe97"
   ],
   "loop_schedule": false,
   "merge_paused": false
