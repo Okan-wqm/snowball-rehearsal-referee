@@ -25,6 +25,22 @@
       "Zlib",
       "MPL-2.0"
     ],
-    "license_exceptions": {}
+    "license_exceptions": {},
+    "security_keywords": [
+      "auth",
+      "guard",
+      "security",
+      "session",
+      "token",
+      "secret",
+      "crypto",
+      "tenant",
+      "permission",
+      "role",
+      "policy",
+      "payment",
+      "billing",
+      "pii"
+    ]
   }
 }
