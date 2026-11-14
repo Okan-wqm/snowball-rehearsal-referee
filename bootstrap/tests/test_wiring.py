@@ -1710,6 +1710,25 @@ class MutationShardTest(unittest.TestCase):
 
     PER_SHARD = 15  # at three minutes a mutant, the worst seen (E502), a shard ends in 45 of its 60 minutes
 
+    def test_a_pages_only_push_runs_only_its_pages_mutants(self):  # pages_mode_skips_a_code_change
+        """Owner 2026-11-14: a seed epoch that changes only pages must not wait an hour of every mutant. A push of
+        pages runs the mutants anchored in them; one changed code, test or workflow path, or an unreadable push, runs
+        every mutant, since a changed test can stop killing a mutant anchored anywhere."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mutate", BOOT / "local" / "mutate.py")
+        mutate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mutate)
+        page = next(m for m in mutate.MUTANTS if m[1].startswith("spec/"))
+        code = next(m for m in mutate.MUTANTS if m[1].endswith(".py"))
+        self.assertEqual(mutate.mutants_for_changed([page, code], [page[1]]), [page])
+        self.assertEqual(mutate.mutants_for_changed([page, code], [page[1], "docs/eksik-kaydi.md"]), [page])
+        self.assertEqual(mutate.mutants_for_changed([page, code], [page[1], code[1]]), [page, code])
+        self.assertEqual(mutate.mutants_for_changed([page, code], ["seed/bootstrap/tests/test_wiring.py"]), [page, code])
+        self.assertEqual(mutate.mutants_for_changed([page, code], []), [page, code])
+        ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        self.assertIn("if: needs.mutation-plan.outputs.mode == 'full'", ci)
+        self.assertIn("python3 local/mutate.py --changed", ci)
+
     def test_the_shards_hold_every_mutant_inside_the_timeout(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("mutate", BOOT / "local" / "mutate.py")

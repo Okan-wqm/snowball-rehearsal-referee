@@ -392,6 +392,11 @@ MUTANTS = [
     ("unanswered_by_prefix", "seed/founder/launch.py", '+ re.escape(rid) + r"(?![\\w-])"', "+ re.escape(rid)",
      "E527: seed-04 reads as answered because seed-041 is named"),
     # E526: the one-command seed epoch delivery (seed/founder/deliver_epoch.py)
+    # CI: a pages-only push runs only its pages' mutants (owner 2026-11-14)
+    ("pages_mode_skips_a_code_change", "seed/bootstrap/local/mutate.py",
+     "    if not paths or any(not is_page(p) for p in paths):\n        return list(mutants)",
+     "    if not paths:\n        return list(mutants)",
+     "a push that changed code runs only the mutants of the pages it also changed"),
     # the Founder's reasoning effort (owner 2026-11-13)
     ("founder_effort_not_passed", "seed/founder/launch.py",
      '               *(["-e", f"FOUNDER_EFFORT={effort}"] if effort else []),', '',
@@ -3378,12 +3383,40 @@ def run_mutant(index: int, mutant: tuple[str, str, str, str, str] | None) -> tup
     return proc.returncode != 0, (killers[0] if killers else "(no test named)"), time.monotonic() - started
 
 
+PAGE_PREFIXES = ("spec/", "docs/")  # what a pages-only push may change; anything else is code and runs every mutant
+
+
+def is_page(path: str) -> bool:
+    """A path whose change cannot alter what the referee's code does: a spec or docs page, or any Markdown file."""
+    return path.startswith(PAGE_PREFIXES) or path.endswith(".md")
+
+
+def mutants_for_changed(mutants, paths: list[str]):
+    """The mutants a push must run, by the paths it changed: every mutant when any path is not a page (code, tests,
+    workflows: a test that changed can stop killing a mutant anchored anywhere), else only those anchored in a changed
+    page (a page's mutants are its wording that a test pins). An empty path list is a push nobody can read: all."""
+    if not paths or any(not is_page(p) for p in paths):
+        return list(mutants)
+    changed = set(paths)
+    return [m for m in mutants if m[1] in changed]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", help="run only the mutants with these names (comma-separated)")
     parser.add_argument("--list", action="store_true", help="list the mutants and what each stands for")
     parser.add_argument("--shard", help="K/N: run every N-th mutant starting at K, so N containers can share the list")
+    parser.add_argument("--changed", help="a file of the paths a push changed, one a line: a pages-only push runs only "
+                                          "the mutants anchored in its pages (`mutants_for_changed`)")
     args = parser.parse_args()
+    if args.changed:
+        paths = [line.strip() for line in Path(args.changed).read_text(encoding="utf-8").splitlines() if line.strip()]
+        names = {m[0] for m in mutants_for_changed(MUTANTS, paths)}
+        if not names:
+            stale = stale_anchors()
+            print("no mutant is anchored in the changed pages" + (f"; stale anchors: {'; '.join(stale)}" if stale else ""))
+            return 2 if stale else 0
+        args.only = ",".join(sorted(names))
     wanted = set(args.only.split(",")) if args.only else None
     if wanted and wanted - {m[0] for m in MUTANTS}:
         print(f"no such mutant: {', '.join(sorted(wanted - {m[0] for m in MUTANTS}))}", file=sys.stderr)
