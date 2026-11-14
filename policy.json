@@ -42,5 +42,56 @@
       "billing",
       "pii"
     ]
+  },
+  "operating": {
+    "unit_inputs_bytes": {
+      "value": 67108864,
+      "band": [
+        1048576,
+        268435456
+      ]
+    },
+    "deps_bytes": {
+      "value": 1610612736,
+      "band": [
+        1048576,
+        2147483648
+      ]
+    },
+    "worktree_bytes": {
+      "value": 4294967296,
+      "band": [
+        536870912,
+        8589934592
+      ]
+    },
+    "container_mem_bytes": {
+      "value": 4294967296,
+      "band": [
+        268435456,
+        8589934592
+      ]
+    },
+    "kos_wall_s": {
+      "value": 2400,
+      "band": [
+        300,
+        3600
+      ]
+    },
+    "test_total_s": {
+      "value": 1200,
+      "band": [
+        60,
+        1800
+      ]
+    },
+    "output_bytes": {
+      "value": 10485760,
+      "band": [
+        1048576,
+        104857600
+      ]
+    }
   }
 }
