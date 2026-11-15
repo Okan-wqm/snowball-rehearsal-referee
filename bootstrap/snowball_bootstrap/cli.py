@@ -17,8 +17,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from . import (canon, config, drillfixtures, exitchecks, ghapi, gitio, ledgercheck, licenses, parts, stagelock, stages,
-               state as st, wiring)
+from . import (canon, config, drillfixtures, exitchecks, ghapi, gitio, ledgercheck, licenses, parts, policyreads,
+               selfmap, stagelock, stages, state as st, wiring)
 from .classify import (LEDGER_FILE, REPORTS_DIR, SEED_DIRS, classify, is_founder_record, is_seed_path,
                        spec_stage_dirs)
 from .container import DockerRunner
@@ -486,27 +486,24 @@ def _base_done(repo: Path, base: str, table: stages.StageTable) -> set[int]:
     return set(found.done_mf)
 
 
-EXIT_MAY_CHANGE = ("candidates/", "targets/")  # what (B) may change after (A) (`asama-0/10a`, `asama-0/11`)
-
-
-def exit_freeze(prev: dict[str, Any], reverted: list[str], stage: int) -> tuple[bool, bool]:
-    """(frozen, released) for the accepted exit the signed state names (E333). From (A) the brain stays the one the
-    exit was accepted with, but for (B)'s candidates and targets, while Stage 0 is open (`asama-0/11`); the operator's
-    revert of the transfer after a red (B), named in ``control.json`` ``reverted_exits``, or a lock that opened a later
-    stage ends it, and the state forgets that exit (`asama-0/10a` "Başarısızlık": the corrected SHA goes through (A)
-    again)."""
+def exit_pin(prev: dict[str, Any], reverted: list[str], stage: int) -> tuple[str | None, bool]:
+    """(pinned SHA, released) for the accepted exit the signed state names (E333; the owner's decision of 2026-11-14,
+    E590, `tohum/29u`). (A) pins only the SHA it accepted, never `main`: the import takes that SHA from the signed
+    result and every later push is judged as any push. The operator's revert of the transfer after a red (B), named in
+    ``control.json`` ``reverted_exits``, or a lock that opened a later stage releases it, and the state forgets that
+    exit (`25a` "Başarısızlık": the corrected SHA goes through (A) again)."""
     sha = prev.get("exit_accepted_sha")
     if not sha:
-        return False, False
+        return None, False
     released = stage != 0 or sha in reverted
-    return not released, released
+    return (None if released else sha), released
 
 
 def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: config.Summary,
                    table: stages.StageTable, prev: dict[str, Any], repo: Path, base: str, head: str,
                    meta: dict[str, Any], out: Path, waived: list[str], reverted: list[str]) -> int:
     epoch = summary_cfg.epoch
-    frozen, meta["exit_released"] = exit_freeze(prev, reverted, table.stage)
+    pinned, meta["exit_released"] = exit_pin(prev, reverted, table.stage)
     if epoch is not None and head == epoch.commit:
         return _seed_update(repo, base, head, meta, out, waived)
     pre: list[str] = []
@@ -547,14 +544,10 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
         pre += reasons
         if EXIT_FILE in judged and not left_in_place:
             pre.append("exit_request_not_alone")
-    if frozen and kind in ("spec", "code", "exit"):
-        # After (A) the referee tree is the one the exit was accepted with: the import copies it and the loop runs
-        # it; only (B)'s candidates and targets may change, the Founder's memory beside them (`asama-0/10a`
-        # "Başarısızlık", `asama-0/11`, `25a` 8; E333).
-        moved = [p for p in own if not is_founder_record(p) and not p.startswith(EXIT_MAY_CHANGE)]
-        if any(p.startswith("referee/") for p in moved):
-            pre.append("referee_changed_after_exit")
-        pre += [f"changed_after_exit:{p}" for p in moved if not p.startswith("referee/")][:20]
+    if pinned and kind in ("spec", "code", "exit") and any(p.startswith("referee/") for p in own):
+        # After (A) the push is judged as any push (E590, `29u`); one that changes `referee/` while (B) runs the pinned
+        # SHA's referee tree is named, never refused: `main`'s referee code now differs from the one the import took.
+        meta["referee_ahead_of_exit"] = pinned
     if {"base_unreachable", "history_rewritten", "non_utf8_path", "unsafe_path"} & set(pre):  # nothing can be read safely
         kind = "rejected"
     pre += [f"not_regular_file:{x}" for x in gitio.special_entries(repo, head)][:20]
@@ -691,6 +684,9 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     if meta["run_tests"]:
         meta["state_repro"] = ([e["key"] for e in prev.get("open_refutations", []) if e["key"] not in waived]
                                + [c["id"] for c in prev.get("open_claims", []) if c["reproducer"] is not None])
+        # The brain's own map (`29t`, E585): read here, run in `kos`, judged in `decide`; never a pre-reason, so the
+        # tests and the rival still run and the push hears everything (as `exit_checks`).
+        meta["self_map"] = selfmap.read(tar_bytes)
     repro = bool(meta["state_repro"]) or (meta["reuse_rival"] and any("reproducer" in a for a in pending["rival"]["attempts"]))
     write_json(out / "meta.json", meta)
     (out / "brain.tar").write_bytes(tar_bytes)
@@ -766,6 +762,8 @@ def _kos(args: argparse.Namespace) -> Kos:
         asked=call_inputs(groups),
         units=[(k, t["id"]) for k, t in units(table, meta.get("module_less") or [], manifest["tests"])],
         lic=licenses.check_dir(Path(args.deps), policy.license_allowlist, policy.license_exceptions),
+        self_map=selfmap.to_run(meta.get("self_map")),
+        policy_reads=policyreads.plan(root / "vectors", table.stage),  # seed-053, E588: the loop's reads, asked
         missing=missing_groups(root / "vectors", done, table, tree=src))
     return Kos(boot, table, meta, tar_bytes, src, push)
 
@@ -782,7 +780,15 @@ def _run_part(args: argparse.Namespace, kos: Kos, part: int, count: int) -> dict
             lambda tree: _runner(boot, tree, Path(args.deps), vec, manifest["lockfiles"]),
             kos.tar_bytes, Path(args.work) / "module-less", kos.table, kos.meta.get("module_less") or [],
             manifest["tests"], boot.limits.test_timeout_s, boot.limits.max_tree_bytes, mine=mine)
-    return parts.run_part(kos.push, part, count, runner, boot.limits.test_timeout_s, module_less)
+
+    def self_map() -> dict[str, Any]:  # the tests' sandbox and time limit, on the pushed tree without the map (E585)
+        return selfmap.run(lambda where: _runner(boot, where, Path(args.deps), vec, manifest["lockfiles"]),
+                           kos.tar_bytes, Path(args.work) / "self-map", kos.push.self_map, boot.limits.test_timeout_s,
+                           boot.limits.max_tree_bytes)
+    def policy_reads() -> dict[str, Any]:  # the tests' sandbox, time limit and pushed tree (E588, `29v`)
+        return policyreads.run(runner, boot.limits.test_timeout_s)
+    return parts.run_part(kos.push, part, count, runner, boot.limits.test_timeout_s, module_less, self_map,
+                          policy_reads)
 
 
 def _write_run(out: Path, run: dict[str, Any]) -> int:

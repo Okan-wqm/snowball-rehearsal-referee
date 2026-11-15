@@ -177,7 +177,8 @@ jobs:
   kos_parca:
     # `kos` in parts (E440): each part runs the controls in its own sandbox and its share of the push, place mod N,
     # exactly as the single job runs it: the declared tests, the vector inputs (each asked once, by one part) and, when
-    # nothing it saw is red, module-less red. It judges nothing; `kos` joins the parts in the single job's order.
+    # nothing it saw is red, module-less red; the one part that owns it also runs the brain's own map generator
+    # (`29t`, E585). It judges nothing; `kos` joins the parts in the single job's order.
     needs: [cek, getir]
     if: needs.cek.outputs.run_tests == 'true'
     runs-on: ubuntu-24.04
@@ -209,7 +210,7 @@ jobs:
         run: python3 -m snowball_bootstrap control --root snap
       - name: Pull the pinned image
         run: docker pull "${{ needs.cek.outputs.image }}"
-      - name: Red controls, this part's founder tests, vector inputs and module-less red in sandboxed containers
+      - name: Red controls, this part's founder tests, vector inputs, module-less red, own map in sandboxed containers
         env:
           PART: ${{ matrix.part }}
           PARTS: ${{ strategy.job-total }}

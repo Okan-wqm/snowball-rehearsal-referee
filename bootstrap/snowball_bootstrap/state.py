@@ -53,9 +53,9 @@ KEYS_V1 = {"schema", "origin", "last_accepted_sha", "last_evaluated_sha", "froze
 KEYS_V2 = KEYS_V1 | {"outage_since", "outage_stop", "rival_side_streak", "open_refutations", "open_claims",
                      "pending_rival"}
 KEYS_V3 = KEYS_V2 | {"rejected_exit_request"}
-# The head whose exit request the referee accepted, (A) of `asama-0/10`: after it only (B)'s `candidates/` and
-# `targets/` may change, until the operator reverts its transfer or a later stage opens (`asama-0/10a`, `asama-0/11`,
-# E333; `cli.exit_freeze`).
+# The head whose exit request the referee accepted, (A) of `asama-0/10`: the SHA the import takes, pinned until the
+# operator reverts its transfer or a later stage opens; `main` stays free (E333, the owner's decision E590, `tohum/29u`;
+# `cli.exit_pin`).
 KEYS = KEYS_V3 | {"exit_accepted_sha"}
 SPEND_STAGE = "spend_stage"  # past a lock only: the stage whose rival spend the state counts (`for_stage`, E492)
 REFUTATION_KEYS = {"key", "claim", "evidence_refs", "reproducer", "first_head", "last_head"}

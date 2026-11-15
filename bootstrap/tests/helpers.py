@@ -82,7 +82,7 @@ def quiet_pilot(launch):
             self.cost_calls = [*self.cost_calls, (stamp, head, last_accepted)]
             return "stub"
 
-        def observe(self, head):
+        def observe(self, head, last_accepted=None):
             return {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40, "reports_open": [], "reports_unanswered": []}
 
         def memory_alone(self, prior, head):  # a clone of the brain; `CostRowTest` reads a mirror
@@ -91,8 +91,8 @@ def quiet_pilot(launch):
         def verdict_on(self, head):  # the referee's artifacts; `PreviousSessionTest` tests the look-up
             return None
 
-        def policy(self):  # the referee repo's policy.json, with no operating{}; `OperatingNoteTest` tests the read
-            return {"constitutional": {}}
+        def policy_raw(self):  # the referee repo's policy.json, with no operating{}; `OperatingNoteTest` and
+            return b'{"constitutional": {}}' + bytes([10])  # `PolicyNoteTest` test the read
     return Quiet
 
 

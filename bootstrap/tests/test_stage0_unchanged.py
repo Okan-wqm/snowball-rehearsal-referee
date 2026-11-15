@@ -13,6 +13,10 @@ the plain request is accepted and transferable once what the seed cannot check y
 import test does). A difference in any field of either document, for any shape, fails: the Stage 1 tooling may
 change nothing the bootstrap referee signs before `stage-open` wrote `setup/stage.json` (`asama-0/10a`: the Stage 1
 table holds only after the lock).
+
+One addition is set aside by name, and nothing else (E585, `29t`): the brain's own map check reads a plan into the meta
+(`self_map`) and, in Stage 0, only warns (`self_map_*` warnings). The recording stays the base's, byte for byte; every
+verdict, reason, exit condition and state field it holds is still compared.
 """
 
 import hashlib
@@ -57,6 +61,17 @@ SHAPES = {
     "missing_spec_batch": {"spec_sha256": DROP, "batch": "P1"},
     "not_an_object": {"RAW": "[0]"},
 }
+SELF_MAP = "self_map"  # the meta key and the warnings' prefix of the brain's own map check (E585)
+
+
+def without_self_map(found: dict) -> dict:
+    """``found`` without the map check's own additions: the meta's plan and the Stage 0 warnings, nothing else."""
+    meta = {k: v for k, v in found["meta"].items() if k != SELF_MAP}
+    kept = [w for w in found["result"]["warnings"] if not w.startswith(SELF_MAP + "_")]
+    result = dict(found["result"], warnings=kept)
+    return {"meta": meta, "result": result}
+
+
 COMPLETE = ("plain", "batch_str", "batch_null", "stage1", "stage1_batch", "wrong_sha_batch")
 HEX = re.compile(r"\b[0-9a-f]{40}(?:[0-9a-f]{24})?\b")
 
@@ -157,7 +172,10 @@ class Judge(Flow):
 class StageZeroUnchangedTest(Judge):
     def test_every_exit_request_shape_is_judged_as_the_base_judged_it(self):  # stage0_batch_key_allowed
         expected = json.loads(FIXTURE.read_text(encoding="utf-8"))
-        found = self.judge_all()
+        raw = self.judge_all()
+        # The fixture brain has no map: the transferable exit hears it as a Stage 0 warning and stays transferable.
+        self.assertIn("self_map_missing:docs/map/brain.md", raw["complete/plain"]["result"]["warnings"])
+        found = {name: without_self_map(doc) for name, doc in raw.items()}
         self.assertEqual(sorted(found), sorted(expected))
         for name in sorted(found):
             for doc in ("meta", "result"):

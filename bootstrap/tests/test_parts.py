@@ -287,7 +287,8 @@ class DifferentialTest(PartsTestCase):
         asked, by_part = Counter(), Counter()
         for sandbox in self.sandboxes:
             for (cmd, stdin), tries in sandbox.tries.items():
-                if not cmd.startswith(("exit ", "python -c", "touch ", "python -m unittest")):
+                # the policy reads are one part's, not vector inputs (`29v`, E588; `test_policyreads`)
+                if not cmd.startswith(("exit ", "python -c", "touch ", "python -m unittest", "python -m policy.reads ")):
                     asked[(cmd, stdin)] += tries
                     by_part[sandbox.part] += tries
         groups = vectors.applied(VECTORS, tuple(range(1, TABLE.count + 1)))

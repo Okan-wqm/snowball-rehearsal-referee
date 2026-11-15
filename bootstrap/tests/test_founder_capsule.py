@@ -441,23 +441,24 @@ class OperatingNoteTest(unittest.TestCase):
         self.launch = load_launch()
 
     def note(self, policy):
-        """The session folder's operating.json after one note with the referee's policy read as ``policy`` (an
-        exception is raised by the read), or None when no file was written; and the warnings said."""
+        """The session folder's operating.json after one note with the referee's policy read as ``policy`` (bytes as
+        they are, any other value as its JSON; an exception is raised by the read), or None when no file was written;
+        and the warnings said about operating.json."""
         launch = self.launch
 
         class Fake(launch.Pilot):
-            def policy(self):
+            def policy_raw(self):
                 if isinstance(policy, Exception):
                     raise policy
-                return policy
+                return policy if isinstance(policy, bytes) else json.dumps(policy).encode("utf-8")
 
         work = Path(tempfile.mkdtemp())
         pilot = Fake(work, "owner/brain", "owner/referee", "target")
         with mock.patch.object(launch, "say") as said:
-            pilot.operating_note("20261113T090000Z")
+            pilot.policy_notes("20261113T090000Z")
         path = work / "logs" / "20261113T090000Z" / launch.OPERATING_NOTE
         text = path.read_text(encoding="utf-8") if path.exists() else None
-        return text, [c.args[0] for c in said.call_args_list]
+        return text, [c.args[0] for c in said.call_args_list if launch.OPERATING_NOTE in c.args[0]]
 
     def test_the_operators_numbers_reach_the_session_in_the_shape_29g_names(self):  # operating_note_drops_the_wrapper
         text, said = self.note({"constitutional": {"monthly_cap_usd": 7}, "operating": self.GOOD})
@@ -503,7 +504,7 @@ class OperatingNoteTest(unittest.TestCase):
                 self.assertIsNone(self.note({"operating": operating})[0])
 
     def test_a_policy_that_cannot_be_read_leaves_no_file(self):  # operating_unreadable_as_empty
-        for failure in (self.launch.GitHubUnavailable("gh api: 502"), ValueError("Expecting value"), ["a"], "x"):
+        for failure in (self.launch.GitHubUnavailable("gh api: 502"), b"Expecting value", ["a"], "x"):
             with self.subTest(failure=failure):
                 text, said = self.note(failure)
                 self.assertIsNone(text)
@@ -524,10 +525,12 @@ class OperatingNoteTest(unittest.TestCase):
         pilot = launch.Pilot(work, "owner/brain", "owner/referee", "target")
         deep = mock.patch.object(launch, "gh_read", return_value=b"[" * 100000)
         with deep, mock.patch.object(launch, "say") as said:
-            pilot.operating_note("20261113T090000Z")
+            pilot.policy_notes("20261113T090000Z")
         self.assertFalse((work / "logs" / "20261113T090000Z" / launch.OPERATING_NOTE).exists())
-        self.assertEqual(len(said.call_args_list), 1)
-        self.assertIn("nests deeper than it can be read", said.call_args.args[0])
+        self.assertFalse((work / "logs" / "20261113T090000Z" / launch.POLICY_NOTE).exists())
+        self.assertEqual(len(said.call_args_list), 2)  # one per file, each its own reason
+        self.assertIn("nests deeper than it can be read", said.call_args_list[0].args[0])
+        self.assertIn("too_deep", said.call_args_list[1].args[0])
 
     def test_the_policy_is_read_from_the_referee_repo_at_each_note(self):  # operating_read_once
         """E579: the operator writes `operating{}` while the pilot runs; a second session reads the new numbers."""
@@ -542,12 +545,232 @@ class OperatingNoteTest(unittest.TestCase):
         work = Path(tempfile.mkdtemp())
         pilot = launch.Pilot(work, "owner/brain", "owner/referee", "target")
         with mock.patch.object(launch, "run", side_effect=fake_run), mock.patch.object(launch, "say"):
-            pilot.operating_note("20261113T090000Z")
-            pilot.operating_note("20261113T100000Z")
+            pilot.policy_notes("20261113T090000Z")
+            pilot.policy_notes("20261113T100000Z")
         self.assertEqual([c[-1] for c in calls], ["repos/owner/referee/contents/policy.json"] * 2)
         notes = [json.loads((work / "logs" / s / "operating.json").read_text(encoding="utf-8"))
                  for s in ("20261113T090000Z", "20261113T100000Z")]
         self.assertEqual(notes, [{}, {"operating": self.GOOD}])
+        copies = [(work / "logs" / s / "policy.json").read_bytes() for s in ("20261113T090000Z", "20261113T100000Z")]
+        self.assertEqual(copies, policies)  # the same single read gives both files (E588)
+
+
+class WipBranchesTest(unittest.TestCase):
+    """The owner's decision of 2026-11-14 (E592, `15` 9): the Founder's memory lives on `main` only; a `wip/` branch is
+    merged or closed with evidence. The launcher tells the operator, never the referee: a branch whose own commits
+    touch the ledger, `reports/` or `docs/map/`, and one with work `main` lacks that does not hold the last accepted
+    head. A branch `main` holds is merged and silent. Anything unread is "okunamadı", never "yok"."""
+
+    LAST = "c" * 40
+
+    def setUp(self):
+        self.launch = load_launch()
+
+    @staticmethod
+    def compares(table):
+        """``compare(base, head)`` answering from ``table[(base, head)]``; an Exception there is raised."""
+        def compare(base, head):
+            found = table[(base, head)]
+            if isinstance(found, Exception):
+                raise found
+            return found
+        return compare
+
+    def test_merged_fresh_stale_and_memory_branches(self):
+        # wip_check_lists_a_merged_branch wip_memory_path_unchecked wip_behind_unchecked
+        launch = self.launch
+        branches = [{"name": "merged", "sha": "1" * 40}, {"name": "fresh", "sha": "2" * 40},
+                    {"name": "stale", "sha": "3" * 40}, {"name": "notes", "sha": "4" * 40},
+                    {"name": "map", "sha": "5" * 40}, {"name": "code", "sha": "6" * 40}]
+        code = [{"filename": "referee/a.py"}, {"filename": "referee/reports/x.json"}]
+        table = {("main", "1" * 40): {"ahead_by": 0, "behind_by": 3, "files": []},
+                 ("main", "2" * 40): {"ahead_by": 2, "behind_by": 0, "files": code},
+                 (self.LAST, "2" * 40): {"ahead_by": 2, "behind_by": 0},
+                 ("main", "3" * 40): {"ahead_by": 1, "behind_by": 9, "files": code},
+                 (self.LAST, "3" * 40): {"ahead_by": 1, "behind_by": 4},
+                 ("main", "4" * 40): {"ahead_by": 1, "behind_by": 0, "files": [{"filename": "reports/r.json"}]},
+                 (self.LAST, "4" * 40): {"ahead_by": 1, "behind_by": 0},
+                 ("main", "5" * 40): {"ahead_by": 1, "behind_by": 0, "files": [{"filename": "docs/map/brain.md"}]},
+                 (self.LAST, "5" * 40): {"ahead_by": 1, "behind_by": 0},
+                 ("main", "6" * 40): {"ahead_by": 1, "behind_by": 0, "files": [{"filename": "founder-ledger.jsonl"}]},
+                 (self.LAST, "6" * 40): {"ahead_by": 1, "behind_by": 0}}
+        found = launch.wip_findings(branches, self.compares(table), self.LAST)
+        self.assertEqual(found, ["wip_memory_off_main:wip/code", "wip_memory_off_main:wip/map",
+                                 "wip_memory_off_main:wip/notes", "wip_unmerged_behind:wip/stale"])
+        self.assertTrue(launch.is_memory("founder-ledger.jsonl"))
+        self.assertFalse(launch.is_memory("referee/reports/x.json"))  # a nested reports/ is code (`29e`)
+
+    def test_a_cut_or_failed_read_is_unknown(self):  # wip_truncated_files_trusted wip_unreadable_listed_as_none
+        launch = self.launch
+        branch = [{"name": "big", "sha": "7" * 40}]
+        cut = {("main", "7" * 40): {"ahead_by": 1, "behind_by": 0,
+                                    "files": [{"filename": f"referee/f{n}.py"} for n in range(300)]},
+               (self.LAST, "7" * 40): {"ahead_by": 1, "behind_by": 0}}
+        with self.assertRaises(ValueError):
+            launch.wip_findings(branch, self.compares(cut), self.LAST)
+        pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+        with mock.patch.object(launch.Pilot, "wip_branches", return_value=branch), \
+                mock.patch.object(launch, "gh_json", side_effect=launch.GitHubUnavailable("gh api: 502")):
+            self.assertIsNone(pilot.wip(self.LAST))
+        with mock.patch.object(launch.Pilot, "wip_branches", return_value=None):
+            self.assertIsNone(pilot.wip(self.LAST))
+        with mock.patch.object(launch.Pilot, "wip_branches", return_value=[]):
+            self.assertEqual(pilot.wip(self.LAST), [])
+
+    def test_the_branches_are_read_in_one_page_or_not_at_all(self):  # wip_more_pages_trusted
+        launch = self.launch
+        pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+
+        def answer(more):
+            body = {"data": {"repository": {"refs": {"pageInfo": {"hasNextPage": more},
+                                                     "nodes": [{"name": "x", "target": {"oid": "8" * 40}}]}}}}
+            return subprocess.CompletedProcess([], 0, json.dumps(body), "")
+        with mock.patch.object(launch, "run", return_value=answer(False)) as ran:
+            self.assertEqual(pilot.wip_branches(), [{"name": "x", "sha": "8" * 40}])
+        self.assertIn("refs/heads/wip/", " ".join(ran.call_args.args))
+        with mock.patch.object(launch, "run", return_value=answer(True)):
+            self.assertIsNone(pilot.wip_branches())
+        with mock.patch.object(launch, "run", return_value=subprocess.CompletedProcess([], 1, "", "x")):
+            self.assertIsNone(pilot.wip_branches())
+
+    def test_the_rule_has_one_page_and_the_prompt_points_to_it(self):  # memory_page_drops_main_only
+        root = Path(__file__).resolve().parents[3]
+        page = " ".join(next((root / "spec" / "tohum").glob("15-*.md")).read_text(encoding="utf-8").split())
+        self.assertIn("**Kurucu'nun hafızası yalnız `main`'dedir** (sahibin kararı 2026-11-14, kesin; E592)", page)
+        for fact in ("(`founder-ledger.jsonl`, `reports/`, `docs/map/`)", "yan dal yalnız `main`'e ait olmayan işi tutar",
+                     "Her `wip/` dalı ya `main`'e merge edilir ya da kanıtla kapanır", "kayıtlı nedeni olmadan silinmez"):
+            self.assertIn(fact, page)
+        prompt = " ".join((root / "seed" / "founder" / "prompt.md").read_text(encoding="utf-8").split())
+        self.assertIn("dallar için kural `spec/tohum/15` 9'dadır", prompt)
+
+    def test_the_cycle_log_names_them_or_says_unknown(self):  # wip_note_not_in_the_log
+        launch = self.launch
+        for wip, line in ((["wip_unmerged_behind:wip/stale"], "`wip_unmerged_behind:wip/stale`"),
+                          ([], "- WIP dalları (operatör; `15` 9): yok"), (None, "- WIP dalları (operatör): okunamadı")):
+            with self.subTest(wip=wip):
+                seen = {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40, "reports_open": [],
+                        "reports_unanswered": [], "wip": wip}
+                _pilot, metrics, report = CycleRecordTest().cycle(observed=seen)
+                self.assertIn(line, report)
+                self.assertEqual(metrics["wip"], wip)
+
+
+class PolicyNoteTest(unittest.TestCase):
+    """Seed-053 (a), E588: the referee repo's `policy.json` reaches each session as `/work/logs/policy.json`, byte for
+    byte, from the same single read as `operating.json` (`24a` 3, `29v`). The file holds thresholds and brakes, no
+    secret; one that is not a strict JSON object, too large, or carries a secret's shape or a target's name is not
+    copied, and the warning names the class only. Each of the two files is written or withheld on its own."""
+
+    POLICY = (b'{\n "constitutional": {"stage_budgets": {"asama_0": {"canary_usd": 1}}},\n'
+              b' "operating": {"kos_wall_s": {"value": 1800, "band": [600, 3600]}}\n}\n')
+
+    def setUp(self):
+        self.launch = load_launch()
+
+    def notes(self, raw, withheld=()):
+        """(policy.json's bytes or None, operating.json's text or None, warnings) after one session's notes."""
+        launch = self.launch
+
+        class Fake(launch.Pilot):
+            def policy_raw(self):
+                if isinstance(raw, Exception):
+                    raise raw
+                return raw
+
+        work = Path(tempfile.mkdtemp())
+        pilot = Fake(work, "owner/brain", "owner/referee", "target")
+        pilot.withheld = list(withheld)
+        with mock.patch.object(launch, "say") as said:
+            pilot.policy_notes("20261114T090000Z")
+        folder = work / "logs" / "20261114T090000Z"
+        copy = (folder / launch.POLICY_NOTE).read_bytes() if (folder / launch.POLICY_NOTE).exists() else None
+        op = (folder / launch.OPERATING_NOTE).read_text(encoding="utf-8") if (folder / launch.OPERATING_NOTE).exists() \
+            else None
+        return copy, op, [c.args[0] for c in said.call_args_list]
+
+    def test_the_session_gets_the_referees_file_byte_for_byte(self):  # policy_note_not_the_bytes policy_note_not_written
+        copy, op, said = self.notes(self.POLICY)
+        self.assertEqual(copy, self.POLICY)
+        self.assertEqual(json.loads(op), {"operating": {"kos_wall_s": {"value": 1800, "band": [600, 3600]}}})
+        self.assertEqual(said, [])
+        self.assertEqual(self.launch.POLICY_NOTE, "policy.json")
+
+    def test_a_file_that_is_no_strict_json_object_is_not_copied(self):
+        # policy_note_duplicate_key_passes policy_note_non_finite_passes policy_note_size_unbounded
+        launch = self.launch
+        cases = {
+            b'{"constitutional": {"a": 1, "a": 2}}': "duplicate_key",
+            b'{"operating": {}, "operating": {}}': "duplicate_key",
+            b'{"constitutional": {"cap": NaN}}': "non_finite",
+            b'{"constitutional": {"cap": -Infinity}}': "non_finite",
+            b'[1, 2]': "not_an_object",
+            b'not json': "not_json",
+            b'\xff\xfe{}': "not_utf8",
+            b'[' * 100000: "too_deep",
+            b'{"x": "' + b"a" * (launch.POLICY_NOTE_MAX) + b'"}': "too_large",
+        }
+        for raw, why in cases.items():
+            with self.subTest(why=why):
+                copy, _op, said = self.notes(raw)
+                self.assertIsNone(copy)
+                mine = [s for s in said if s.startswith(launch.POLICY_NOTE)]
+                self.assertEqual(len(mine), 1)
+                self.assertIn(why, mine[0])
+        exact = b'{"x": "' + b"a" * (launch.POLICY_NOTE_MAX - 9) + b'"}'
+        self.assertEqual(len(exact), launch.POLICY_NOTE_MAX)
+        self.assertEqual(self.notes(exact)[0], exact)  # the limit itself is still a file of thresholds
+
+    def test_a_secret_shape_or_a_targets_name_keeps_the_whole_file_out(self):
+        # policy_note_passes_a_secret_shape policy_note_passes_a_target_name
+        launch = self.launch
+        secret = b'{"constitutional": {"note": "ghp_' + b"A" * 36 + b'"}}'
+        copy, _op, said = self.notes(secret)
+        self.assertIsNone(copy)
+        self.assertIn("secret_shape", said[-1])
+        self.assertNotIn("ghp_", " ".join(said))
+        names = launch.target_names((launch.config.target({
+            "id": "copy", "repo": "o/r", "kind": "copy", "base_sha": None, "identifiers": ["Zorbalix"],
+            "excluded_paths": [], "unit_candidates": []}, "t"),))
+        for raw in (b'{"constitutional": {"note": "the ZORBALIX lane"}}', b'{"constitutional": {"zorbalix_cap": 1}}'):
+            with self.subTest(raw=raw):
+                copy, _op, said = self.notes(raw, names)
+                self.assertIsNone(copy)
+                self.assertIn("target_name", said[-1])
+                self.assertNotIn("zorbalix", " ".join(said).casefold())
+        self.assertEqual(self.notes(self.POLICY, names)[0], self.POLICY)
+
+    def test_each_file_is_written_or_withheld_on_its_own(self):  # policy_note_withheld_with_operating
+        """A policy whose `operating` is not `26c`'s shape still gives the session its real file: that is the file's
+        point (seed-053). A policy the copy refuses still gives the session its `operating.json`."""
+        bad_operating = b'{"operating": {"kos_wall_s": "1800"}}'
+        copy, op, said = self.notes(bad_operating)
+        self.assertEqual((copy, op), (bad_operating, None))
+        self.assertEqual(len(said), 1)
+        twice = b'{"operating": {"kos_wall_s": {"value": 1, "band": [0, 2]}}, "constitutional": {}, "constitutional": {}}'
+        copy, op, said = self.notes(twice)
+        self.assertIsNone(copy)
+        self.assertEqual(json.loads(op), {"operating": {"kos_wall_s": {"value": 1, "band": [0, 2]}}})
+        copy, op, said = self.notes(self.launch.GitHubUnavailable("gh api: 502"))
+        self.assertEqual((copy, op, len(said)), (None, None, 1))
+        self.assertIn("not written", said[0])
+
+    def test_the_preflight_keeps_the_targets_names_for_the_copy(self):  # policy_note_names_never_kept
+        launch = self.launch
+        row = {"id": "copy", "repo": "o/r", "kind": "copy", "base_sha": None, "identifiers": ["Zorbalix"],
+               "excluded_paths": [], "unit_candidates": []}
+        rows = launch.target_rows({"targets": [row]})
+        self.assertEqual([t.id for t in rows], ["copy"])
+        self.assertEqual(launch.target_rows({}), ())
+        work = Path(tempfile.mkdtemp())
+        (work / "snowball-founder.env").write_text("x" * 64, encoding="utf-8")
+        (work / "target").mkdir()
+        pilot = launch.Pilot(work, "o/brain", "o/referee", "target")
+        ok = subprocess.CompletedProcess([], 0, b"", b"")
+        with mock.patch.object(launch, "run", return_value=ok), \
+                mock.patch.object(launch.Pilot, "summary", return_value={"targets": [row], "seed_commit": "a" * 40}):
+            pilot.preflight()
+        self.assertEqual(pilot.withheld, launch.target_names(rows))
+        self.assertTrue(pilot.withheld)
 
 
 class BuildContextTest(unittest.TestCase):
@@ -1099,8 +1322,8 @@ class CycleRecordTest(unittest.TestCase):
             def write(self, text):
                 report.append(text)
 
-            def observe(self, head):
-                return observed or super().observe(head)
+            def observe(self, head, last_accepted=None):
+                return observed or super().observe(head, last_accepted)
 
         pilot = Fake(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
         pilot.idle, pilot.seed = 0, before
@@ -1127,12 +1350,14 @@ class CycleRecordTest(unittest.TestCase):
 
     def test_each_session_folder_gets_the_targets_note(self):  # targets_note_not_written operating_note_not_written
         """seed-049, E571: the cycle writes `targets.json` into the session's folder before the session starts;
-        seed-050, E577: and `operating.json` beside it (the stubbed policy has no operating{}: `{}`)."""
+        seed-050, E577: and `operating.json` beside it (the stubbed policy has no operating{}: `{}`); seed-053, E588:
+        and `policy.json`, the stubbed policy's bytes."""
         pilot, _, _ = self.cycle()
         notes = sorted(pilot.logs.glob("*/targets.json"))
         self.assertEqual(len(notes), 1)
         self.assertEqual(json.loads(notes[0].read_text(encoding="utf-8")), [])
         self.assertEqual(json.loads((notes[0].parent / "operating.json").read_text(encoding="utf-8")), {})
+        self.assertTrue((notes[0].parent / "policy.json").is_file())
 
     def test_no_rival_block_is_no_rival_configuration_and_a_timeout_is_named(self):
         _, m, _ = self.cycle(sess={"exit": -1, "minutes": 180.2, "timed_out": True})
@@ -1205,10 +1430,13 @@ class CycleRecordTest(unittest.TestCase):
                 mock.patch.object(launch.Pilot, "seed_changelogs", return_value=["`seed-040` → `29b:30`"]), \
                 mock.patch.object(launch.Pilot, "owed_reports", return_value=[]), \
                 mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
-                mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40):
-            seen_now = pilot.observe("b" * 40)
+                mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40), \
+                mock.patch.object(launch.Pilot, "wip", return_value=["wip_unmerged_behind:wip/x"]) as wip:
+            seen_now = pilot.observe("b" * 40, "d" * 40)
         self.assertEqual(seen_now, {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40,
-                                    "reports_open": [("seed-040", 0)], "reports_unanswered": []})
+                                    "reports_open": [("seed-040", 0)], "reports_unanswered": [],
+                                    "wip": ["wip_unmerged_behind:wip/x"]})
+        wip.assert_called_once_with("d" * 40)  # the last accepted head the cycle read (E592)
         self.assertIn("seed-040", json.loads((pilot.work / launch.REPORTS_SEEN).read_text(encoding="utf-8")))
         _, _, text = self.cycle()
         self.assertIn("- Açık raporlar (0, beyin `bbbbbbb`", text)
@@ -1248,13 +1476,15 @@ class CycleRecordTest(unittest.TestCase):
                 mock.patch.object(launch.Pilot, "owed_reports", lambda self, head, reps, ages, texts:
                                   launch.unanswered_reports(ages, texts, unchanged)), \
                 mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
-                mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40):
+                mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40), \
+                mock.patch.object(launch.Pilot, "wip", return_value=[]):  # no live GitHub call from a test
             unanswered = pilot.observe("b" * 40)["reports_unanswered"]
         self.assertEqual(sorted(unanswered), [("seed-04", 0), ("seed-040-d1-inputs", 0)])
         with mock.patch.object(launch.Pilot, "open_reports", return_value=reports), \
                 mock.patch.object(launch.Pilot, "seed_changelogs", return_value=None), \
                 mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
-                mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40):
+                mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40), \
+                mock.patch.object(launch.Pilot, "wip", return_value=[]):
             self.assertIsNone(pilot.observe("b" * 40)["reports_unanswered"])
         observed = {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40,
                     "reports_open": [("seed-040-d1-inputs", 30), ("seed-041", 5)],
@@ -1901,6 +2131,20 @@ class ImageAndEntrypointTest(unittest.TestCase):
         self.assertIn("--no-session-persistence", self.entry)
         self.assertIn('CLAUDE_CONFIG_DIR="$(mktemp -d)"', self.entry)
         self.assertNotIn("ANTHROPIC_API_KEY", self.entry + self.dockerfile)
+
+    def test_commits_carry_no_claude_trailer(self):
+        """Owner rule: on GitHub only the brain's own identity appears. The CLI writes a co-author trailer naming
+        itself; a global commit-msg hook baked into the image drops that line and nothing else. Run for real here."""
+        self.assertIn("git config --global core.hooksPath /opt/founder/git-hooks", self.entry)
+        self.assertIn("COPY founder/git-hooks/commit-msg /opt/founder/git-hooks/commit-msg", self.dockerfile)
+        hook = (FOUNDER / "git-hooks" / "commit-msg").read_text(encoding="utf-8")
+        sed = re.search(r"sed -i '([^']*)'", hook)
+        self.assertIsNotNone(sed)
+        pattern = re.compile(sed.group(1).strip("/").removesuffix("/d"))
+        msg = ["Ledger f1: a row", "", "Body names Claude in prose.", "Co-Authored-By: Claude <noreply@anthropic.com>",
+               "co-authored-by: Claude Opus <noreply@anthropic.com>", "Co-Authored-By: Okan-wqm <x@users.noreply.github.com>"]
+        kept = [line for line in msg if not pattern.search(line)]
+        self.assertEqual(kept, msg[:3] + msg[5:])
 
     def test_four_tools_are_denied_and_no_other_is_narrowed(self):  # E380
         """RemoteTrigger is the one default tool whose effect can outlive the capsule; the Cron tools die with the

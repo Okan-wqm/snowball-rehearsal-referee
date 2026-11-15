@@ -5,16 +5,18 @@ every claim in it against the code and the spec, so that a renamed flag, a delet
 nobody documented or a stale instruction fails a test instead of the first real run.
 """
 
+import inspect
 import io
 import json
 import os
 import re
 import shlex
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-from snowball_bootstrap import cli, config, exitchecks, rival, stages, vectors, wiring
+from snowball_bootstrap import cli, config, exitchecks, rival, stagelock, stages, vectors, wiring
 
 from helpers import kos_part_count, workflow_job
 
@@ -372,7 +374,7 @@ class SpecPagesTest(unittest.TestCase):
             with self.subTest(page=rel):
                 self.assertIn(f"| `{rel}` | {lines[0].removeprefix('# ')} | {okunma} |", index)
         task = next(line for line in spec_page("tohum", "00b").splitlines() if line.startswith("| Hakem bileşeni yazma"))
-        for prefix in ("29b", "29e", "29p", "29r"):
+        for prefix in ("29b", "29e", "29p", "29r", "29t"):
             spec_page("tohum", prefix)
             self.assertIn(f"`{prefix}`", task)
 
@@ -713,13 +715,13 @@ class LoopReportsPageTest(unittest.TestCase):
         the answer, and answers seed-044's 2026-11-03 update in the form the panel agreed (2026-11-05, O4): the decline
         stands, its pointers are the earlier decline's and the report's own (`29j:53-60`, `asama-0/10a:26`), and it
         names no single line of `29j` (29j:56 alone would point at what separates the Founder's code from the drill)."""
-        page = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")
+        page = (ROOT / "spec" / "tohum" / "CHANGELOG-6.md").read_text(encoding="utf-8")  # moved by the cap (E588)
         entry = changelog_entry(page, "2026-11-05, E550")
         answer = entry[entry.index("`referee-049-rival-budget-consumes-commit` →"):entry.index("declined (11-03")]
         says = {("29e", 42, 53): ("**Bütçe durması**", "`budget_stop {brake, allowed_usd_micros}`", "`per_run`"),
                 ("29e", 26, 26): ("(`request_rejected` dışında) commit değerlendirilmemiş kalır",),
                 ("29b", 76, 77): ("Rakip freni dolunca baş tüketilmez", "kendiliğinden yargılanır (`29e`)"),
-                ("18a", 59, 59): ("`stage_budgets.asama_0.rival_usd`", "2026-11-05'ten 1000 USD"),
+                ("18a", 59, 59): ("`constitutional.stage_budgets.asama_0.rival_usd`", "2026-11-05'ten 1000 USD"),
                 ("29e", 53, 53): ("yeniden açılmaz",)}
         for (prefix, first, last), words in says.items():
             ref = f"`{prefix}:{first}`" if first == last else f"`{prefix}:{first}-{last}`"
@@ -824,11 +826,34 @@ class ReportAnswerPagesTest(unittest.TestCase):
     def test_29b_lets_an_evidenced_founder_report_revert_an_exit_before_the_import(self):  # revert_before_import_dropped
         """Seed-052 (E576, the owner's decision of 2026-11-13): a defect the Founder proves between (A) and (B) has a
         path other than a red (B). The page says the operator may name that head in `reverted_exits` before the import,
-        and the referee releases the freeze on that list alone (`exit_freeze`), with no import row asked."""
+        and the referee releases the pin on that list alone (`exit_pin`), with no import row asked."""
         page = spec_page("tohum", "29b")
         self.assertIn("o başı aktarmadan `reverted_exits`'e yazabilir", page)
-        self.assertEqual(cli.exit_freeze({"exit_accepted_sha": "a" * 40}, ["a" * 40], 0), (False, True))
-        self.assertEqual(cli.exit_freeze({"exit_accepted_sha": "a" * 40}, [], 0), (True, False))
+        self.assertEqual(cli.exit_pin({"exit_accepted_sha": "a" * 40}, ["a" * 40], 0), (None, True))
+        self.assertEqual(cli.exit_pin({"exit_accepted_sha": "a" * 40}, [], 0), ("a" * 40, False))
+
+    def test_after_the_exit_only_its_sha_is_pinned_on_every_page_that_says_so(self):
+        # exit_page_restores_the_freeze exit_pointer_dropped d1_page_reads_the_accepted_heads_tree
+        """The owner's decision of 2026-11-14 (E590): `29u` is the one page of what holds after (A); `29b` "Çıkıştan
+        sonra" points at it, and no live tohum page names the retired reasons or a freeze of the exit. The loop's tree
+        check (`asama-0/01` D1, frozen) is restated on `29u` at the import row's SHA (WHAT, not how)."""
+        page = flat(spec_page("tohum", "29u"))
+        self.assertIn("sabitlenen yalnız kabul edilen SHA'dır, `main` değildir", page)
+        self.assertIn("her push olağan yargılanır", page)
+        self.assertIn("`changed_after_exit` ve `referee_changed_after_exit` yazılmaz", page)
+        self.assertIn("`referee_ahead_of_exit:<sabit SHA'nın ilk 7 hanesi>`", page)
+        self.assertIn("Koşan hakem ağacı son aktarım satırının `brain_sha`'sındaki `referee/`'dir", page)
+        self.assertIn("aktarılandan farklı olması durdurma nedeni değildir", page)
+        self.assertIn("`stage-open` beyni okumaz", page)
+        self.assertNotIn("brain", str(inspect.signature(stagelock.open_stage)))
+        line = spec_page("tohum", "29b").splitlines()[72]
+        self.assertIn("**Çıkıştan sonra** sabitlenen yalnız (A)'nın kabul edilen SHA'sıdır, `main` değil;", line)
+        self.assertIn("sonrası `29u`'dadır", line)
+        for prefix in [p.name.split("-")[0] for p in sorted((ROOT / "spec" / "tohum").glob("*.md"))
+                       if not p.name.startswith(("CHANGELOG", "29u"))]:
+            text = spec_page("tohum", prefix)
+            for retired in ("changed_after_exit", "dondurması sürer", "dondurması kalkar", "donmuş çıkış"):
+                self.assertNotIn(retired, text, f"{prefix}: {retired}")
 
     def test_29e_defines_the_founders_records_by_the_paths_the_classifier_uses(self):
         """Seed-005 (E391, E148's text): what a push of the Founder's records is, said where `29b` "Çıkıştan sonra"
@@ -1351,7 +1376,7 @@ class ExitOrderPromptTest(unittest.TestCase):
         homes = [p for base in (ROOT / "spec", ROOT / "seed" / "founder") for p in sorted(base.rglob("*.md"))
                  if key in flat(p.read_text(encoding="utf-8")) and not p.name.startswith("CHANGELOG")]
         self.assertEqual(homes, [self.PROMPT])  # one source
-        page = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")
+        page = (ROOT / "spec" / "tohum" / "CHANGELOG-6.md").read_text(encoding="utf-8")  # moved by the cap (E588)
         entry = changelog_entry(page, "2026-11-06, E560")
         self.assertIn('`seed/founder/prompt.md` "Çıkış sırası"', entry)
         self.assertIn("`seed-046-pass-row-unnamed`'in sonraki düzenlemesi bir ilerleme notudur", entry)
@@ -1728,6 +1753,36 @@ class MutationShardTest(unittest.TestCase):
         ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
         self.assertIn("if: needs.mutation-plan.outputs.mode == 'full'", ci)
         self.assertIn("python3 local/mutate.py --changed", ci)
+
+    def test_each_mutants_copy_holds_every_root_file_a_test_reads(self):  # mutate_root_file_not_copied
+        """The K verifier's finding: a test read `.gitattributes`, the mutant's copy lacked it, so the baseline failed
+        and every mutation shard went red. The copy is run here over a stand-in root; the files at the root the tests
+        read (a name right under ``ROOT``) are derived from the tests, never listed by hand."""
+        import importlib.util
+        import subprocess
+        spec = importlib.util.spec_from_file_location("mutate", BOOT / "local" / "mutate.py")
+        mutate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mutate)
+        read = set()
+        for test in (BOOT / "tests").glob("*.py"):
+            read.update(re.findall(r'ROOT / "([^"/]+)"(?!\s*/)', test.read_text(encoding="utf-8")))
+        read -= {"seed", "spec", "docs", ".github"}  # the folders the copy takes whole
+        self.assertIn(".gitattributes", read)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for folder in ("seed/bootstrap/tests", "spec", ".github/workflows", "docs"):
+                (root / folder).mkdir(parents=True)
+            for name in read:
+                (root / name).write_text("x\n", encoding="utf-8")
+            seen = {}
+
+            def run(argv, cwd, **kw):
+                work = Path(cwd).parents[1]
+                seen.update({name: (work / name).is_file() for name in read})
+                return subprocess.CompletedProcess(argv, 0, "", "")
+            with mock.patch.object(mutate, "ROOT", root), mock.patch.object(mutate.subprocess, "run", run):
+                mutate.run_mutant(-1, None)
+        self.assertEqual(seen, {name: True for name in read})
 
     def test_the_shards_hold_every_mutant_inside_the_timeout(self):
         import importlib.util

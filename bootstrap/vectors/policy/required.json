@@ -1,0 +1,15 @@
+{
+ "0": [
+  "constitutional.license_allowlist",
+  "constitutional.license_exceptions",
+  "constitutional.security_keywords",
+  "constitutional.stage_budgets.asama_0.canary_usd",
+  "operating.container_mem_bytes",
+  "operating.deps_bytes",
+  "operating.kos_wall_s",
+  "operating.output_bytes",
+  "operating.test_total_s",
+  "operating.unit_inputs_bytes",
+  "operating.worktree_bytes"
+ ]
+}

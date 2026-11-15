@@ -553,7 +553,7 @@ if __name__ == "__main__":
 def spec_allowlist() -> frozenset[str]:
     """The recommended allowlist as `tohum/18a` writes it: the backticked ids before the first ';'."""
     row = next(line for line in POLICY_DEFAULTS.read_text(encoding="utf-8").splitlines()
-               if line.startswith("| `license_allowlist` |"))
+               if line.startswith("| `constitutional.license_allowlist` |"))
     return frozenset(re.findall(r"`([^`]+)`", row.split("|")[2].split(";")[0]))
 
 

@@ -14,7 +14,7 @@ import datetime
 import hashlib
 from typing import Any
 
-from . import config, exitchecks, ledgercheck, secretscan, stages
+from . import config, exitchecks, ledgercheck, policyreads, secretscan, selfmap, stages
 from .reproduce import reproducer_key
 from .rival import REPRODUCER_FIELDS
 from .state import MAX_OPEN_CLAIMS, MAX_OPEN_REFUTATIONS
@@ -326,6 +326,8 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
         broken = [c["id"] for c in controls if not c["ok"]]
         if not broken and (any(t.get("exit") == DOCKER_ERROR for t in tests)
                            or any(v.get("runner_fault") for v in vectors)  # E141: docker failed under a vector
+                           or selfmap.runner_fault(run.get("self_map"))
+                           or policyreads.runner_fault(run.get("policy_reads"))
                            or any(m.get("runner_fault") for m in module_less)):
             broken = ["docker"]
         if broken:  # the sandbox itself failed: nothing it printed is evidence about the push
@@ -355,6 +357,25 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
                 reasons.append(_reason("infra", ref="kos:module_less_incomplete"))
                 evaluate = False
                 outage = True
+            # The brain's own map (`29t`, E585), red or green and at the exit too: a warning in Stage 0, so neither the
+            # verdict nor the signed exit moves; a reason the Founder can fix once the lock opened Stage 1. A plan the
+            # run does not answer is the referee's gap, never the Founder's (E05).
+            plan = meta.get("self_map")
+            if selfmap.to_run(plan) is not None and not selfmap.complete(plan, run.get("self_map")):
+                reasons.append(_reason("infra", ref="kos:self_map_incomplete"))
+                evaluate = False
+                outage = True
+            elif (found := selfmap.finding(plan, run.get("self_map"))) is not None:
+                if table.stage == 0:
+                    warnings.append(f"{found[0]}:{selfmap.MAP_PATH}")
+                else:
+                    reasons.append(_reason(found[0], ref=selfmap.MAP_PATH, detail=found[1]))
+            # The loop's policy reads (`29v`, E588), judged at the join: the self map's stage rule, red or green.
+            for name, path, detail in (run.get("policy_reads") or {}).get("findings") or []:
+                if table.stage:
+                    reasons.append(_reason(name, ref=path, detail=detail))
+                else:
+                    warnings.append(f"{name}:{path}")
         if kind != "exit":
             warnings += [f"vector_group_missing:{g}" for g in groups_missing]
 
@@ -564,16 +585,19 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
         refuted_here = any(r["kind"] in REFUTATION_KINDS for r in reasons)
         state["rival_artifacts"].append({"sha": head, "outcome": "refuted" if refuted_here else "survived"})
 
-    if meta.get("exit_released"):  # the operator reverted its transfer, or a later stage opened (`cli.exit_freeze`)
+    if meta.get("exit_released"):  # the operator reverted its transfer, or a later stage opened (`cli.exit_pin`)
         state["exit_accepted_sha"] = None
     if kind == "exit" and accepted:
-        state["exit_accepted_sha"] = head  # (A): from here only (B)'s candidates and targets may change (E333)
+        state["exit_accepted_sha"] = head  # (A): the SHA the import takes; later pushes never move it (E333, E590)
         exit_block["transferable"] = True
         exit_block["referee_tree_sha256"] = meta["referee_tree_sha256"]
         exit_block["toy_tree_sha256"] = meta["toy_tree_sha256"]  # `asama-0/10` #agac; the import's #oyuncak (`10a`)
         exit_block["brain_sha"] = head
         if table.stage:  # the batch the import transfers and writes on its counter row (`26c` stage, batch)
             exit_block["stage"], exit_block["batch"] = table.stage, table.batch
+    ahead = meta.get("referee_ahead_of_exit")  # `main`'s referee/ moved past the pinned SHA's (E590, `29u`)
+    if ahead:  # a warning, never a reason: the verdict and the streaks are the push's own
+        warnings.append(f"referee_ahead_of_exit:{str(ahead)[:7]}")
     if kind == "exit":
         exit_block["repeat_events"] = state["repeat_events"]
         # Listed, never proven here (E260): no rival runs on an exit head, so the operator, who owns the exit's (B) part,

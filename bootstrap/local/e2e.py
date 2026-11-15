@@ -90,6 +90,9 @@ def timeless(run: dict) -> dict:
     for m in run["module_less"]:
         m.pop("output_sha256", None)
         m.pop("output_tail", None)
+    for key in ("self_map", "policy_reads"):  # the brain's map generator and policy reads: their own runs' durations
+        for r in (run.get(key) or {}).get("runs") or []:
+            r.pop("duration_ms", None)
     return run
 
 
