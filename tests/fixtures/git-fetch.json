@@ -1,0 +1,83 @@
+{
+ "argv": [
+  [
+   "git",
+   "init",
+   "--bare",
+   "--quiet",
+   "<git_dir>"
+  ],
+  [
+   "git",
+   "-c",
+   "protocol.allow=never",
+   "-c",
+   "protocol.https.allow=always",
+   "-c",
+   "gc.auto=0",
+   "-c",
+   "maintenance.auto=false",
+   "--git-dir=<git_dir>",
+   "fetch",
+   "--quiet",
+   "--no-tags",
+   "--no-recurse-submodules",
+   "--depth=1",
+   "--no-write-fetch-head",
+   "--",
+   "<url>",
+   "<sha>:refs/pulled"
+  ]
+ ],
+ "cases": {
+  "file_transport": {
+   "exits": [
+    0,
+    128
+   ],
+   "prompt_script_ran": false
+  },
+  "no_repository": {
+   "exits": [
+    0,
+    128
+   ],
+   "prompt_script_ran": false,
+   "sha": "e4dc54a40cc668935e6e732976875d8913174b63",
+   "url": "https://github.com/Okan-wqm/no-such-repository-snowball"
+  },
+  "no_repository_prompt_kept": {
+   "exits": [
+    0,
+    128
+   ],
+   "prompt_script_ran": true,
+   "sha": "e4dc54a40cc668935e6e732976875d8913174b63",
+   "url": "https://github.com/Okan-wqm/no-such-repository-snowball"
+  },
+  "public": {
+   "entries": 336,
+   "exits": [
+    0,
+    0
+   ],
+   "prompt_script_ran": false,
+   "ref": "e4dc54a40cc668935e6e732976875d8913174b63",
+   "sha": "e4dc54a40cc668935e6e732976875d8913174b63",
+   "shallow": [
+    "e4dc54a40cc668935e6e732976875d8913174b63"
+   ],
+   "url": "https://github.com/Okan-wqm/snowball-rehearsal-brain"
+  },
+  "unknown_commit": {
+   "exits": [
+    0,
+    128
+   ],
+   "prompt_script_ran": false,
+   "sha": "0123456789abcdef0123456789abcdef01234567",
+   "url": "https://github.com/Okan-wqm/snowball-rehearsal-brain"
+  }
+ },
+ "git": "git version 2.47.3"
+}
