@@ -206,6 +206,8 @@
         "infrastructure/monitoring/prometheus/alerts/aria-alerts.yml"
       ],
       "unit_candidates": [
+        "platform/libs/outbox",
+        "libs/storage",
         "web/modules/messaging-module",
         "web/modules/hr-module"
       ]
