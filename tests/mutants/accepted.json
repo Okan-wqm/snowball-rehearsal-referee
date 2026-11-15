@@ -1,0 +1,922 @@
+{
+ "mutants": [
+  {
+   "id": "ac_artifact_name",
+   "file": "loop/accepted.py",
+   "old": "ARTIFACT = \"bootstrap-state\"",
+   "new": "ARTIFACT = \"bootstrap-stat\"",
+   "tests": [
+    "test_accepted.Choose.test_the_newest_whatever_the_order"
+   ]
+  },
+  {
+   "id": "ac_result_name",
+   "file": "loop/accepted.py",
+   "old": "RESULT = \"result.json\"\n",
+   "new": "RESULT = \"result.jsn\"\n",
+   "tests": [
+    "test_accepted.Verify.test_the_command"
+   ]
+  },
+  {
+   "id": "ac_bundle_name",
+   "file": "loop/accepted.py",
+   "old": "BUNDLE = \"result.json.sigstore.json\"",
+   "new": "BUNDLE = \"result.sigstore.json\"",
+   "tests": [
+    "test_accepted.Verify.test_the_command"
+   ]
+  },
+  {
+   "id": "ac_maxfile_up",
+   "file": "loop/accepted.py",
+   "old": "MAX_FILE = 16 * 1024 * 1024",
+   "new": "MAX_FILE = 17 * 1024 * 1024",
+   "tests": [
+    "test_accepted.ReadState.test_every_page_then_the_newest"
+   ]
+  },
+  {
+   "id": "ac_issuer",
+   "file": "loop/accepted.py",
+   "old": "ISSUER = \"https://token.actions.githubusercontent.com\"",
+   "new": "ISSUER = \"https://token.actions.githubusercontent.co\"",
+   "tests": [
+    "test_accepted.Verify.test_the_command"
+   ]
+  },
+  {
+   "id": "ac_identity_branch",
+   "file": "loop/accepted.py",
+   "old": "IDENTITY = \"https://github.com/%s/.github/workflows/%s@refs/heads/main\"",
+   "new": "IDENTITY = \"https://github.com/%s/.github/workflows/%s@refs/heads/\"",
+   "tests": [
+    "test_accepted.Verify.test_the_command"
+   ]
+  },
+  {
+   "id": "ac_identity_host",
+   "file": "loop/accepted.py",
+   "old": "IDENTITY = \"https://github.com/%s/.github/workflows/%s@refs/heads/main\"",
+   "new": "IDENTITY = \"https://github.co/%s/.github/workflows/%s@refs/heads/main\"",
+   "tests": [
+    "test_accepted.Verify.test_the_command"
+   ]
+  },
+  {
+   "id": "ac_bootstrap_wf",
+   "file": "loop/accepted.py",
+   "old": "BOOTSTRAP_WORKFLOW = \"bootstrap.yml\"",
+   "new": "BOOTSTRAP_WORKFLOW = \"loop.yml\"",
+   "tests": [
+    "test_accepted.Verify.test_the_command"
+   ]
+  },
+  {
+   "id": "ac_loop_wf",
+   "file": "loop/accepted.py",
+   "old": "LOOP_WORKFLOW = \"loop.yml\"",
+   "new": "LOOP_WORKFLOW = \"bootstrap.yml\"",
+   "tests": [
+    "test_accepted.Verify.test_the_loop_identity"
+   ]
+  },
+  {
+   "id": "ac_repo_owner_len",
+   "file": "loop/accepted.py",
+   "old": "(?:[A-Za-z0-9-]{0,38})/",
+   "new": "(?:[A-Za-z0-9-]{0,39})/",
+   "tests": [
+    "test_accepted.Verify.test_an_unsafe_repository_name"
+   ]
+  },
+  {
+   "id": "ac_repo_owner_first",
+   "file": "loop/accepted.py",
+   "old": "REPO = re.compile(r\"[A-Za-z0-9](?:",
+   "new": "REPO = re.compile(r\"[A-Za-z0-9-](?:",
+   "tests": [
+    "test_accepted.Verify.test_an_unsafe_repository_name"
+   ]
+  },
+  {
+   "id": "ac_repo_name_len",
+   "file": "loop/accepted.py",
+   "old": "/[A-Za-z0-9._-]{1,100}\")",
+   "new": "/[A-Za-z0-9._-]{1,101}\")",
+   "tests": [
+    "test_accepted.Verify.test_an_unsafe_repository_name"
+   ]
+  },
+  {
+   "id": "ac_repo_name_slash",
+   "file": "loop/accepted.py",
+   "old": "/[A-Za-z0-9._-]{1,100}\")",
+   "new": "/[A-Za-z0-9._/-]{1,100}\")",
+   "tests": [
+    "test_accepted.Verify.test_an_unsafe_repository_name"
+   ]
+  },
+  {
+   "id": "ac_sha40_upper",
+   "file": "loop/accepted.py",
+   "old": "SHA40 = re.compile(r\"[0-9a-f]{40}\")",
+   "new": "SHA40 = re.compile(r\"[0-9a-fA-F]{40}\")",
+   "tests": [
+    "test_accepted.Verify.test_an_invalid_result"
+   ]
+  },
+  {
+   "id": "ac_sha40_len",
+   "file": "loop/accepted.py",
+   "old": "SHA40 = re.compile(r\"[0-9a-f]{40}\")",
+   "new": "SHA40 = re.compile(r\"[0-9a-f]{40,}\")",
+   "tests": [
+    "test_accepted.Verify.test_an_invalid_result"
+   ]
+  },
+  {
+   "id": "ac_hex64_upper",
+   "file": "loop/accepted.py",
+   "old": "HEX64 = re.compile(r\"[0-9a-f]{64}\")",
+   "new": "HEX64 = re.compile(r\"[0-9a-fA-F]{64}\")",
+   "tests": [
+    "test_accepted.Imports.test_broken_none_invalid"
+   ]
+  },
+  {
+   "id": "ac_hex64_len",
+   "file": "loop/accepted.py",
+   "old": "HEX64 = re.compile(r\"[0-9a-f]{64}\")",
+   "new": "HEX64 = re.compile(r\"[0-9a-f]{40,64}\")",
+   "tests": [
+    "test_accepted.Imports.test_broken_none_invalid"
+   ]
+  },
+  {
+   "id": "ac_stamp_z",
+   "file": "loop/accepted.py",
+   "old": "\\d{2}:\\d{2}:\\d{2}Z\")",
+   "new": "\\d{2}:\\d{2}:\\d{2}Z?\")",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_stamp_frac",
+   "file": "loop/accepted.py",
+   "old": "\\d{2}:\\d{2}:\\d{2}Z\")",
+   "new": "\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z\")",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_per_page",
+   "file": "loop/accepted.py",
+   "old": "PER_PAGE = 100",
+   "new": "PER_PAGE = 30",
+   "tests": [
+    "test_accepted.ReadState.test_every_page_then_the_newest"
+   ]
+  },
+  {
+   "id": "ac_max_pages",
+   "file": "loop/accepted.py",
+   "old": "MAX_PAGES = 100",
+   "new": "MAX_PAGES = 1000",
+   "tests": [
+    "test_accepted.ReadState.test_the_listing_pages"
+   ]
+  },
+  {
+   "id": "ac_api_host",
+   "file": "loop/accepted.py",
+   "old": "API = \"https://api.github.com\"",
+   "new": "API = \"http://api.github.com\"",
+   "tests": [
+    "test_accepted.Http.test_the_token_goes_to_the_api_only"
+   ]
+  },
+  {
+   "id": "ac_reasons_details",
+   "file": "loop/accepted.py",
+   "old": "self.reasons = [reason] + list(details or [])",
+   "new": "self.reasons = [reason]",
+   "tests": [
+    "test_accepted.CheckTree.test_refused"
+   ]
+  },
+  {
+   "id": "ac_repo_url",
+   "file": "loop/accepted.py",
+   "old": "return \"https://github.com/%s\" % repo_name(repo)",
+   "new": "return \"https://github.com/%s\" % repo",
+   "tests": [
+    "test_accepted.Verify.test_an_unsafe_repository_name"
+   ]
+  },
+  {
+   "id": "ac_repo_dot",
+   "file": "loop/accepted.py",
+   "old": "repo.split(\"/\")[1] not in (\".\", \"..\")",
+   "new": "repo.split(\"/\")[1] not in (\"..\",)",
+   "tests": [
+    "test_accepted.Verify.test_an_unsafe_repository_name"
+   ]
+  },
+  {
+   "id": "ac_repo_dotdot",
+   "file": "loop/accepted.py",
+   "old": "repo.split(\"/\")[1] not in (\".\", \"..\")",
+   "new": "repo.split(\"/\")[1] not in (\".\",)",
+   "tests": [
+    "test_accepted.Verify.test_an_unsafe_repository_name"
+   ]
+  },
+  {
+   "id": "ac_repo_fullmatch",
+   "file": "loop/accepted.py",
+   "old": "REPO.fullmatch(repo) and",
+   "new": "REPO.match(repo) and",
+   "tests": [
+    "test_accepted.Verify.test_an_unsafe_repository_name"
+   ]
+  },
+  {
+   "id": "ac_repo_str",
+   "file": "loop/accepted.py",
+   "old": "if not (isinstance(repo, str) and REPO.fullmatch",
+   "new": "if not (REPO.fullmatch",
+   "tests": [
+    "test_accepted.Verify.test_an_unsafe_repository_name"
+   ]
+  },
+  {
+   "id": "ac_usable_dict",
+   "file": "loop/accepted.py",
+   "old": "    if not isinstance(entry, dict):\n        return False\n    run",
+   "new": "    run",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_usable_name",
+   "file": "loop/accepted.py",
+   "old": "return (isinstance(entry.get(\"name\"), str) and ",
+   "new": "return (",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_usable_expired",
+   "file": "loop/accepted.py",
+   "old": "isinstance(entry.get(\"expired\"), bool)\n",
+   "new": "True\n",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_usable_id_bool",
+   "file": "loop/accepted.py",
+   "old": "type(entry.get(\"id\")) is int",
+   "new": "isinstance(entry.get(\"id\"), int)",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_usable_created",
+   "file": "loop/accepted.py",
+   "old": "and type(entry.get(\"id\")) is int and isinstance(entry.get(\"created_at\"), str)",
+   "new": "and type(entry.get(\"id\")) is int",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_usable_stamp",
+   "file": "loop/accepted.py",
+   "old": "and bool(STAMP.fullmatch(entry[\"created_at\"])) and isinstance(run, dict)",
+   "new": "and isinstance(run, dict)",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_usable_stamp_match",
+   "file": "loop/accepted.py",
+   "old": "bool(STAMP.fullmatch(entry[\"created_at\"]))",
+   "new": "bool(STAMP.match(entry[\"created_at\"]))",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_usable_run",
+   "file": "loop/accepted.py",
+   "old": "and isinstance(run, dict)\n",
+   "new": "and run is not None\n",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_usable_branch_none",
+   "file": "loop/accepted.py",
+   "old": "isinstance(run.get(\"head_branch\"), (str, type(None)))",
+   "new": "isinstance(run.get(\"head_branch\"), str)",
+   "tests": [
+    "test_accepted.Choose.test_others_are_passed_over"
+   ]
+  },
+  {
+   "id": "ac_usable_branch_any",
+   "file": "loop/accepted.py",
+   "old": "and isinstance(run.get(\"head_branch\"), (str, type(None)))\n",
+   "new": "\n",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_usable_repo_id",
+   "file": "loop/accepted.py",
+   "old": "and type(run.get(\"repository_id\")) is int and",
+   "new": "and",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_usable_head_repo_id",
+   "file": "loop/accepted.py",
+   "old": "and type(run.get(\"head_repository_id\")) is int)",
+   "new": ")",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_choose_list",
+   "file": "loop/accepted.py",
+   "old": "if not isinstance(artifacts, list) or not all",
+   "new": "if not all",
+   "tests": [
+    "test_accepted.Choose.test_a_malformed_entry_stops_the_read"
+   ]
+  },
+  {
+   "id": "ac_choose_all",
+   "file": "loop/accepted.py",
+   "old": "not all(_usable(a) for a in artifacts)",
+   "new": "not any(_usable(a) for a in artifacts)",
+   "tests": [
+    "test_accepted.Choose.test_none"
+   ]
+  },
+  {
+   "id": "ac_choose_name",
+   "file": "loop/accepted.py",
+   "old": "found = [a for a in artifacts if a[\"name\"] == ARTIFACT and not a[\"expired\"]",
+   "new": "found = [a for a in artifacts if not a[\"expired\"]",
+   "tests": [
+    "test_accepted.Choose.test_others_are_passed_over"
+   ]
+  },
+  {
+   "id": "ac_choose_expired",
+   "file": "loop/accepted.py",
+   "old": "a[\"name\"] == ARTIFACT and not a[\"expired\"]",
+   "new": "a[\"name\"] == ARTIFACT",
+   "tests": [
+    "test_accepted.Choose.test_others_are_passed_over"
+   ]
+  },
+  {
+   "id": "ac_choose_main",
+   "file": "loop/accepted.py",
+   "old": "             and a[\"workflow_run\"][\"head_branch\"] == \"main\"\n",
+   "new": "",
+   "tests": [
+    "test_accepted.Choose.test_others_are_passed_over"
+   ]
+  },
+  {
+   "id": "ac_choose_fork",
+   "file": "loop/accepted.py",
+   "old": "             and a[\"workflow_run\"][\"head_repository_id\"] == a[\"workflow_run\"][\"repository_id\"]]",
+   "new": "]",
+   "tests": [
+    "test_accepted.Choose.test_others_are_passed_over"
+   ]
+  },
+  {
+   "id": "ac_choose_max_id",
+   "file": "loop/accepted.py",
+   "old": "key=lambda a: (a[\"created_at\"], a[\"id\"]))",
+   "new": "key=lambda a: a[\"created_at\"])",
+   "tests": [
+    "test_accepted.Choose.test_a_tie_takes_the_larger_id"
+   ]
+  },
+  {
+   "id": "ac_choose_min",
+   "file": "loop/accepted.py",
+   "old": "return max(found, key=",
+   "new": "return min(found, key=",
+   "tests": [
+    "test_accepted.Choose.test_the_newest_whatever_the_order"
+   ]
+  },
+  {
+   "id": "ac_choose_id_first",
+   "file": "loop/accepted.py",
+   "old": "key=lambda a: (a[\"created_at\"], a[\"id\"]))",
+   "new": "key=lambda a: (a[\"id\"], a[\"created_at\"]))",
+   "tests": [
+    "test_accepted.Choose.test_a_tie_takes_the_larger_id"
+   ]
+  },
+  {
+   "id": "ac_unpack_names",
+   "file": "loop/accepted.py",
+   "old": "if sorted(i.filename for i in infos) != sorted([RESULT, BUNDLE]):",
+   "new": "if not {RESULT, BUNDLE} <= {i.filename for i in infos}:",
+   "tests": [
+    "test_accepted.Unpack.test_anything_else"
+   ]
+  },
+  {
+   "id": "ac_unpack_dup",
+   "file": "loop/accepted.py",
+   "old": "if sorted(i.filename for i in infos) != sorted([RESULT, BUNDLE]):",
+   "new": "if set(i.filename for i in infos) != {RESULT, BUNDLE}:",
+   "tests": [
+    "test_accepted.Unpack.test_a_name_twice"
+   ]
+  },
+  {
+   "id": "ac_unpack_read_all",
+   "file": "loop/accepted.py",
+   "old": "body = fh.read(MAX_FILE + 1)",
+   "new": "body = fh.read()",
+   "tests": [
+    "test_accepted.Unpack.test_a_large_file_is_not_read_whole"
+   ]
+  },
+  {
+   "id": "ac_unpack_len",
+   "file": "loop/accepted.py",
+   "old": "                if len(body) > MAX_FILE:\n                    raise StateError(\"state_unreadable\")\n                files",
+   "new": "                files",
+   "tests": [
+    "test_accepted.Unpack.test_a_file_over_the_limit"
+   ]
+  },
+  {
+   "id": "ac_identity_argv_issuer",
+   "file": "loop/accepted.py",
+   "old": "\"--cert-oidc-issuer\", ISSUER, artifact]",
+   "new": "artifact]",
+   "tests": [
+    "test_accepted.Verify.test_the_command"
+   ]
+  },
+  {
+   "id": "ac_identity_argv_order",
+   "file": "loop/accepted.py",
+   "old": "\"--bundle\", bundle, \"--cert-identity\", identity,",
+   "new": "\"--bundle\", bundle, \"--cert-identity-regexp\", identity,",
+   "tests": [
+    "test_accepted.Verify.test_the_command"
+   ]
+  },
+  {
+   "id": "ac_verify_argv_files",
+   "file": "loop/accepted.py",
+   "old": "os.path.join(directory, BUNDLE), workflow_identity(repo, BOOTSTRAP_WORKFLOW),\n                         os.path.join(directory, RESULT))",
+   "new": "os.path.join(directory, RESULT), workflow_identity(repo, BOOTSTRAP_WORKFLOW),\n                         os.path.join(directory, BUNDLE))",
+   "tests": [
+    "test_accepted.Verify.test_the_command"
+   ]
+  },
+  {
+   "id": "ac_run_verifier_127",
+   "file": "loop/accepted.py",
+   "old": "    except OSError:\n        return 127",
+   "new": "    except OSError:\n        return 0",
+   "tests": [
+    "test_accepted.Verify.test_the_default_verifier_runs_a_program"
+   ]
+  },
+  {
+   "id": "ac_run_verifier_stdin",
+   "file": "loop/accepted.py",
+   "old": "subprocess.run(argv, stdin=subprocess.DEVNULL, stdout=2, check=False)",
+   "new": "subprocess.run(argv, stdout=2, check=False)",
+   "tests": [
+    "test_accepted.Verify.test_the_verifier_reads_no_input"
+   ]
+  },
+  {
+   "id": "ac_open_nonzero",
+   "file": "loop/accepted.py",
+   "old": "if verifier(verify_argv(sigstore, repo, tmp)) != 0:",
+   "new": "if verifier(verify_argv(sigstore, repo, tmp)) == 1:",
+   "tests": [
+    "test_accepted.Verify.test_the_default_verifier_runs_a_program"
+   ]
+  },
+  {
+   "id": "ac_open_nonzero2",
+   "file": "loop/accepted.py",
+   "old": "if verifier(verify_argv(sigstore, repo, tmp)) != 0:",
+   "new": "if verifier(verify_argv(sigstore, repo, tmp)) < 0:",
+   "tests": [
+    "test_accepted.Verify.test_an_unverified_result_is_not_parsed"
+   ]
+  },
+  {
+   "id": "ac_open_parse_before",
+   "file": "loop/accepted.py",
+   "old": "    try:\n        doc = cli.loads(result.decode(\"utf-8\"))\n    except (UnicodeDecodeError, ValueError, RecursionError):\n        doc = None\n",
+   "new": "    try:\n        doc = cli.loads(result.decode(\"utf-8\", \"replace\"))\n    except (UnicodeDecodeError, ValueError, RecursionError):\n        doc = None\n",
+   "tests": [
+    "test_accepted.Verify.test_an_invalid_result"
+   ]
+  },
+  {
+   "id": "ac_open_state_dict",
+   "file": "loop/accepted.py",
+   "old": "sha = state.get(\"last_accepted_sha\") if isinstance(state, dict) else None",
+   "new": "sha = state.get(\"last_accepted_sha\") if state else None",
+   "tests": [
+    "test_accepted.Verify.test_an_invalid_result"
+   ]
+  },
+  {
+   "id": "ac_open_sha_str",
+   "file": "loop/accepted.py",
+   "old": "if not (isinstance(sha, str) and SHA40.fullmatch(sha)):",
+   "new": "if not (sha and SHA40.fullmatch(str(sha))):",
+   "tests": [
+    "test_accepted.Verify.test_an_invalid_result"
+   ]
+  },
+  {
+   "id": "ac_open_sha_match",
+   "file": "loop/accepted.py",
+   "old": "and SHA40.fullmatch(sha)):",
+   "new": "and SHA40.match(sha)):",
+   "tests": [
+    "test_accepted.Verify.test_an_invalid_result"
+   ]
+  },
+  {
+   "id": "ac_open_hash",
+   "file": "loop/accepted.py",
+   "old": "\"result_sha256\": hashlib.sha256(result).hexdigest()}",
+   "new": "\"result_sha256\": hashlib.sha256(bundle).hexdigest()}",
+   "tests": [
+    "test_accepted.Verify.test_the_verifier_sees_both_files_first"
+   ]
+  },
+  {
+   "id": "ac_capture_302",
+   "file": "loop/accepted.py",
+   "old": "        if code == 302:\n            self.location = newurl",
+   "new": "        if code in (301, 302, 303, 307, 308):\n            self.location = newurl",
+   "tests": [
+    "test_accepted.Http.test_only_a_302_names_the_zip"
+   ]
+  },
+  {
+   "id": "ac_capture_follow",
+   "file": "loop/accepted.py",
+   "old": "            self.location = newurl\n        return None",
+   "new": "            self.location = newurl\n        return super().redirect_request(req, fp, code, msg, headers, newurl)",
+   "tests": [
+    "test_accepted.Http.test_the_token_goes_to_the_api_only"
+   ]
+  },
+  {
+   "id": "ac_token_empty",
+   "file": "loop/accepted.py",
+   "old": "if not isinstance(token, str) or not token or any",
+   "new": "if not isinstance(token, str) or any",
+   "tests": [
+    "test_accepted.Http.test_a_token_that_is_not_one_line"
+   ]
+  },
+  {
+   "id": "ac_token_cr",
+   "file": "loop/accepted.py",
+   "old": "any(c in token for c in \"\\r\\n\")",
+   "new": "any(c in token for c in \"\\n\")",
+   "tests": [
+    "test_accepted.Http.test_a_token_that_is_not_one_line"
+   ]
+  },
+  {
+   "id": "ac_token_lf",
+   "file": "loop/accepted.py",
+   "old": "any(c in token for c in \"\\r\\n\")",
+   "new": "any(c in token for c in \"\\r\")",
+   "tests": [
+    "test_accepted.Http.test_a_token_that_is_not_one_line"
+   ]
+  },
+  {
+   "id": "ac_req_auth",
+   "file": "loop/accepted.py",
+   "old": "req.add_header(\"Authorization\", \"Bearer \" + self.token)",
+   "new": "req.add_header(\"Authorization\", \"token \" + self.token)",
+   "tests": [
+    "test_accepted.Http.test_the_token_goes_to_the_api_only"
+   ]
+  },
+  {
+   "id": "ac_json_limit",
+   "file": "loop/accepted.py",
+   "old": "return cli.loads(resp.read(MAX_FILE))",
+   "new": "return cli.loads(resp.read())",
+   "tests": [
+    "test_accepted.Http.test_an_answer_that_is_no_json_or_too_long"
+   ]
+  },
+  {
+   "id": "ac_json_except",
+   "file": "loop/accepted.py",
+   "old": "        except (urllib.error.URLError, OSError, ValueError):\n            raise StateError(\"actions_unreadable\") from None\n\n    def redirect",
+   "new": "        except (urllib.error.URLError, OSError):\n            raise StateError(\"actions_unreadable\") from None\n\n    def redirect",
+   "tests": [
+    "test_accepted.Http.test_an_answer_that_is_no_json_or_too_long"
+   ]
+  },
+  {
+   "id": "ac_redirect_https",
+   "file": "loop/accepted.py",
+   "old": "if capture.location is None or not capture.location.startswith(\"https://\"):",
+   "new": "if capture.location is None:",
+   "tests": [
+    "test_accepted.Http.test_nothing_is_followed"
+   ]
+  },
+  {
+   "id": "ac_redirect_capture_opener",
+   "file": "loop/accepted.py",
+   "old": "with urllib.request.build_opener(capture, *self.handlers).open(self._req(path), timeout=self.timeout):",
+   "new": "with self.opener.open(self._req(path), timeout=self.timeout):",
+   "tests": [
+    "test_accepted.Http.test_the_token_goes_to_the_api_only"
+   ]
+  },
+  {
+   "id": "ac_blob_https",
+   "file": "loop/accepted.py",
+   "old": "        if not url.startswith(\"https://\"):\n            raise StateError(\"actions_unreadable\")\n        try:",
+   "new": "        try:",
+   "tests": [
+    "test_accepted.Http.test_nothing_is_followed"
+   ]
+  },
+  {
+   "id": "ac_blob_token",
+   "file": "loop/accepted.py",
+   "old": "with self.opener.open(urllib.request.Request(url), timeout=self.timeout) as resp:",
+   "new": "with self.opener.open(self._req(url[len(API):]) if url.startswith(API) else urllib.request.Request(url, headers={\"Authorization\": \"Bearer \" + self.token}), timeout=self.timeout) as resp:",
+   "tests": [
+    "test_accepted.Http.test_the_token_goes_to_the_api_only"
+   ]
+  },
+  {
+   "id": "ac_blob_read",
+   "file": "loop/accepted.py",
+   "old": "body = resp.read(limit + 1)",
+   "new": "body = resp.read()",
+   "tests": [
+    "test_accepted.Http.test_a_blob_is_read_up_to_its_limit"
+   ]
+  },
+  {
+   "id": "ac_blob_gt",
+   "file": "loop/accepted.py",
+   "old": "        if len(body) > limit:\n            raise StateError(\"state_unreadable\")\n        return body",
+   "new": "        if len(body) > limit + 1:\n            raise StateError(\"state_unreadable\")\n        return body",
+   "tests": [
+    "test_accepted.Http.test_a_blob_over_the_limit"
+   ]
+  },
+  {
+   "id": "ac_list_total_type",
+   "file": "loop/accepted.py",
+   "old": "type(doc.get(\"total_count\")) is int",
+   "new": "isinstance(doc.get(\"total_count\"), int)",
+   "tests": [
+    "test_accepted.ReadState.test_the_listing_pages"
+   ]
+  },
+  {
+   "id": "ac_list_artifacts_type",
+   "file": "loop/accepted.py",
+   "old": "and isinstance(doc.get(\"artifacts\"), list)):",
+   "new": "):",
+   "tests": [
+    "test_accepted.ReadState.test_the_listing_pages"
+   ]
+  },
+  {
+   "id": "ac_list_total_last",
+   "file": "loop/accepted.py",
+   "old": "total = doc[\"total_count\"] if total is None else total",
+   "new": "total = doc[\"total_count\"]",
+   "tests": [
+    "test_accepted.ReadState.test_the_listing_pages"
+   ]
+  },
+  {
+   "id": "ac_list_ge",
+   "file": "loop/accepted.py",
+   "old": "if len(out) >= total:",
+   "new": "if len(out) > total:",
+   "tests": [
+    "test_accepted.ReadState.test_unverified_stops"
+   ]
+  },
+  {
+   "id": "ac_list_empty_break",
+   "file": "loop/accepted.py",
+   "old": "        if not doc[\"artifacts\"]:\n            break\n",
+   "new": "",
+   "tests": [
+    "test_accepted.ReadState.test_the_listing_pages"
+   ]
+  },
+  {
+   "id": "ac_list_empty_return",
+   "file": "loop/accepted.py",
+   "old": "        if not doc[\"artifacts\"]:\n            break\n",
+   "new": "        if not doc[\"artifacts\"]:\n            return out\n",
+   "tests": [
+    "test_accepted.ReadState.test_a_short_listing_or_a_bad_page"
+   ]
+  },
+  {
+   "id": "ac_list_pages",
+   "file": "loop/accepted.py",
+   "old": "for page in range(1, MAX_PAGES + 1):",
+   "new": "for page in range(1, MAX_PAGES):",
+   "tests": [
+    "test_accepted.ReadState.test_the_listing_pages"
+   ]
+  },
+  {
+   "id": "ac_list_page0",
+   "file": "loop/accepted.py",
+   "old": "for page in range(1, MAX_PAGES + 1):",
+   "new": "for page in range(0, MAX_PAGES + 1):",
+   "tests": [
+    "test_accepted.ReadState.test_unverified_stops"
+   ]
+  },
+  {
+   "id": "ac_list_query",
+   "file": "loop/accepted.py",
+   "old": "query = urllib.parse.urlencode({\"name\": ARTIFACT, \"per_page\": PER_PAGE})",
+   "new": "query = urllib.parse.urlencode({\"per_page\": PER_PAGE})",
+   "tests": [
+    "test_accepted.ReadState.test_every_page_then_the_newest"
+   ]
+  },
+  {
+   "id": "ac_read_blob_limit",
+   "file": "loop/accepted.py",
+   "old": "unpack(http.blob(url, 4 * MAX_FILE))",
+   "new": "unpack(http.blob(url, 4 * MAX_FILE * 1024))",
+   "tests": [
+    "test_accepted.ReadState.test_every_page_then_the_newest"
+   ]
+  },
+  {
+   "id": "ac_read_artifact_id",
+   "file": "loop/accepted.py",
+   "old": "artifact_id=entry[\"id\"])",
+   "new": "artifact_id=str(entry[\"id\"]))",
+   "tests": [
+    "test_accepted.ReadState.test_every_page_then_the_newest"
+   ]
+  },
+  {
+   "id": "ac_imports_verify",
+   "file": "loop/accepted.py",
+   "old": "    if not C.verify_bytes(data)[\"valid\"]:\n        raise StateError(\"imports_broken\")\n",
+   "new": "",
+   "tests": [
+    "test_accepted.Imports.test_broken_none_invalid"
+   ]
+  },
+  {
+   "id": "ac_imports_first",
+   "file": "loop/accepted.py",
+   "old": "row, line = transfers[-1]",
+   "new": "row, line = transfers[0]",
+   "tests": [
+    "test_accepted.Imports.test_the_last_transfer_row"
+   ]
+  },
+  {
+   "id": "ac_imports_key",
+   "file": "loop/accepted.py",
+   "old": "if \"referee_tree_sha256\" in row]",
+   "new": "if row.get(\"referee_tree_sha256\")]",
+   "tests": [
+    "test_accepted.Imports.test_broken_none_invalid"
+   ]
+  },
+  {
+   "id": "ac_imports_str",
+   "file": "loop/accepted.py",
+   "old": "if not (isinstance(row[\"referee_tree_sha256\"], str) and HEX64.fullmatch",
+   "new": "if not (HEX64.fullmatch",
+   "tests": [
+    "test_accepted.Imports.test_broken_none_invalid"
+   ]
+  },
+  {
+   "id": "ac_imports_match",
+   "file": "loop/accepted.py",
+   "old": "and HEX64.fullmatch(row[\"referee_tree_sha256\"])):",
+   "new": "and HEX64.match(row[\"referee_tree_sha256\"])):",
+   "tests": [
+    "test_accepted.Imports.test_broken_none_invalid"
+   ]
+  },
+  {
+   "id": "ac_tree_details",
+   "file": "loop/accepted.py",
+   "old": "raise StateError(\"referee_tree_refused\", exc.reasons) from None",
+   "new": "raise StateError(\"referee_tree_refused\") from None",
+   "tests": [
+    "test_accepted.CheckTree.test_refused"
+   ]
+  },
+  {
+   "id": "ac_tree_pulled",
+   "file": "loop/accepted.py",
+   "old": "raise StateError(\"referee_tree_refused\", [\"brain:%s\" % r for r in exc.reasons]) from None",
+   "new": "raise StateError(\"referee_tree_refused\", exc.reasons) from None",
+   "tests": [
+    "test_accepted.CheckTree.test_refused"
+   ]
+  },
+  {
+   "id": "ac_tree_pulled_code",
+   "file": "loop/accepted.py",
+   "old": "    except PulledError as exc:\n        raise StateError(\"referee_tree_refused\", [\"brain:%s\" % r for r in exc.reasons]) from None\n",
+   "new": "",
+   "tests": [
+    "test_accepted.CheckTree.test_refused"
+   ]
+  },
+  {
+   "id": "ac_tree_neq",
+   "file": "loop/accepted.py",
+   "old": "if got != imported[\"referee_tree_sha256\"]:",
+   "new": "if got[:40] != imported[\"referee_tree_sha256\"][:40]:",
+   "tests": [
+    "test_accepted.CheckTree.test_different"
+   ]
+  },
+  {
+   "id": "ac_except_shared",
+   "file": "loop/accepted.py",
+   "old": "    except (*cli.ARCHIVE_ERRORS, RuntimeError, ValueError):  # cli rule 9",
+   "new": "    except (zipfile.BadZipFile, RuntimeError, ValueError):  # cli rule 9",
+   "tests": [
+    "test_archives.Corpus.test_accepted_unpack"
+   ]
+  },
+  {
+   "id": "ac_except_runtime",
+   "file": "loop/accepted.py",
+   "old": "    except (*cli.ARCHIVE_ERRORS, RuntimeError, ValueError):  # cli rule 9",
+   "new": "    except (*cli.ARCHIVE_ERRORS, NotImplementedError, ValueError):  # cli rule 9",
+   "tests": [
+    "test_accepted.Unpack.test_a_zip_python_cannot_read"
+   ]
+  },
+  {
+   "id": "ac_except_value",
+   "file": "loop/accepted.py",
+   "old": "    except (*cli.ARCHIVE_ERRORS, RuntimeError, ValueError):  # cli rule 9",
+   "new": "    except (*cli.ARCHIVE_ERRORS, RuntimeError):  # cli rule 9",
+   "tests": [
+    "test_accepted.Unpack.test_a_zip_python_cannot_read"
+   ]
+  }
+ ]
+}

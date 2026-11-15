@@ -1,0 +1,229 @@
+{
+ "mutants": [
+  {
+   "id": "never_judged",
+   "file": "loop/drill.py",
+   "old": "            out[\"judged\"] = dict(RD.judge(ledger, answer), key=answer)",
+   "new": "            pass",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "plants_beside_unfinished",
+   "file": "loop/drill.py",
+   "old": "        elif unfinished or merging:",
+   "new": "        elif merging:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "plants_beside_candidate",
+   "file": "loop/drill.py",
+   "old": "        elif unfinished or merging:",
+   "new": "        elif unfinished:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "commitment_not_checked",
+   "file": "loop/drill.py",
+   "old": "        if RD.commit_payload(answer) != last[\"payload\"]:",
+   "new": "        if False:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "key_of_this_run",
+   "file": "loop/drill.py",
+   "old": "        answer = RD.key(inp[\"seed\"], committed_by(rows, drills[-1]), inp[\"catalog\"])",
+   "new": "        answer = RD.key(inp[\"seed\"], RD.cycle(this_run), inp[\"catalog\"])",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "planted_not_waited",
+   "file": "loop/drill.py",
+   "old": "        if last[\"payload\"].get(\"merge_sha\") in unfinished:",
+   "new": "        if False:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "misfits_ignored",
+   "file": "loop/drill.py",
+   "old": "    misfits = sorted(i for i, patch in inp[\"patches\"].items() if land.applied(tree, patch)[\"reasons\"])",
+   "new": "    misfits = []",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "no_ratchet_on_plant",
+   "file": "loop/write_cycle.py",
+   "old": "        if merge is not None or planted:\n            out.append(events.ratchet_base",
+   "new": "        if merge is not None:\n            out.append(events.ratchet_base",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "plant_beside_merge",
+   "file": "loop/write_cycle.py",
+   "old": "    if planted and (merge is not None or end is not None):",
+   "new": "    if planted and end is not None:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "plant_beside_end",
+   "file": "loop/write_cycle.py",
+   "old": "    if planted and (merge is not None or end is not None):",
+   "new": "    if planted and merge is not None:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "any_action",
+   "file": "loop/write_cycle.py",
+   "old": "    if action not in DRILL_ACTIONS:",
+   "new": "    if False:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "planted_lint_before_none",
+   "file": "ledger/serial.py",
+   "old": "            return counts\n",
+   "new": "            return counts if _type(row) == (\"events\", \"decision\") else None\n",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "fail_not_red",
+   "file": "loop/job.py",
+   "old": "    if d8.get(\"judged\", {}).get(\"verdict\") == \"FAIL\":",
+   "new": "    if False:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "d8_always_done",
+   "file": "loop/job.py",
+   "old": "([] if d8[\"action\"] == \"off\" else [\"D8\"])",
+   "new": "[\"D8\"]",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "plant_said_gate",
+   "file": "target/land.py",
+   "old": "    return \"planted by exit.drill (revert) for cycle %s; not a gate decision\" % cycle_id",
+   "new": "    return \"gate: merge\"",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "fixtures_import_unbound",
+   "file": "loop/drill.py",
+   "old": "    if doc[\"import_line_sha256\"] != hashlib.sha256(line).hexdigest():",
+   "new": "    if False:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "fixtures_absent_unusable",
+   "file": "loop/drill.py",
+   "old": "        return {\"off\": \"fixtures_absent\"}",
+   "new": "        raise Unusable(\"drill: no fixtures\")",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "fixtures_not_canonical",
+   "file": "loop/drill.py",
+   "old": "    if not canonical:",
+   "new": "    if False:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "fixtures_id_any_text",
+   "file": "loop/drill.py",
+   "old": " and isinstance(item[\"id\"], str)\n                and HEX32.match(item[\"id\"])",
+   "new": " and isinstance(item[\"id\"], str)\n                and item[\"id\"]",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "fixtures_any_cause",
+   "file": "loop/drill.py",
+   "old": "and item[\"cause\"] in CAUSES",
+   "new": "and isinstance(item[\"cause\"], str)",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "fixtures_unbalanced",
+   "file": "loop/drill.py",
+   "old": "    if len(set(counts.values())) != 1 or not counts[CAUSES[0]]:",
+   "new": "    if not counts[CAUSES[0]]:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "fixtures_repeated_id",
+   "file": "loop/drill.py",
+   "old": "    if len({item[\"id\"] for item in items}) != len(items):",
+   "new": "    if False:",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "fixtures_extra_key",
+   "file": "loop/drill.py",
+   "old": "    if sorted(doc) != sorted(FIXTURE_KEYS) or",
+   "new": "    if not set(FIXTURE_KEYS) <= set(doc) or",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "fixtures_message_names_id",
+   "file": "loop/drill.py",
+   "old": "            raise Unusable(\"drill: %s's instance %d is not {id: 32 hex, cause, patch}\" % (FIXTURES_ENV, n))",
+   "new": "            raise Unusable(\"drill: %s's instance %r is not {id: 32 hex, cause, patch}\" % (FIXTURES_ENV, item))",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "yaz_fixtures_secret_dropped",
+   "file": "loop/job.py",
+   "old": ",\n                DR.FIXTURES_ENV: \"${{ secrets.DRILL_FIXTURES }}\"},",
+   "new": "},",
+   "tests": [
+    "test_loop_workflow.py"
+   ]
+  }
+ ]
+}

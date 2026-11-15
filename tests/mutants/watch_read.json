@@ -1,0 +1,292 @@
+{
+ "mutants": [
+  {
+   "id": "watch_bytes_dir_raises",
+   "file": "loop/watch.py",
+   "old": "    except (FileNotFoundError, NotADirectoryError, IsADirectoryError):",
+   "new": "    except (FileNotFoundError, NotADirectoryError):",
+   "tests": [
+    "test_watch.Read.test_the_file_by_its_hash"
+   ]
+  },
+  {
+   "id": "watch_bytes_notdir_raises",
+   "file": "loop/watch.py",
+   "old": "    except (FileNotFoundError, NotADirectoryError, IsADirectoryError):",
+   "new": "    except (FileNotFoundError, IsADirectoryError):",
+   "tests": [
+    "test_watch.Read.test_the_entry_must_name_the_watched_merge"
+   ]
+  },
+  {
+   "id": "watch_index_bad_json_raises",
+   "file": "loop/watch.py",
+   "old": "        doc = cli.loads(raw) if raw is not None else None\n    except ValueError:\n        doc = None",
+   "new": "        doc = cli.loads(raw) if raw is not None else None\n    except KeyError:\n        doc = None",
+   "tests": [
+    "test_watch.BaseBuild.test_none_without_a_readable_base"
+   ]
+  },
+  {
+   "id": "watch_index_non_dict_taken",
+   "file": "loop/watch.py",
+   "old": "    return doc if isinstance(doc, dict) else {}",
+   "new": "    return doc if doc is not None else {}",
+   "tests": [
+    "test_watch.Read.test_the_entry_must_name_the_watched_merge"
+   ]
+  },
+  {
+   "id": "watch_missing_entry_not_dict",
+   "file": "loop/watch.py",
+   "old": "if not isinstance(entry, dict) or entry.get(\"merge_sha\") != watch:",
+   "new": "if entry.get(\"merge_sha\") != watch:",
+   "tests": [
+    "test_watch.Read.test_the_entry_must_name_the_watched_merge"
+   ]
+  },
+  {
+   "id": "watch_null_verdict_reasons_dropped",
+   "file": "loop/watch.py",
+   "old": "\"verdict\": None, \"reasons\": entry.get(\"reasons\")}",
+   "new": "\"verdict\": None, \"reasons\": []}",
+   "tests": [
+    "test_watch.Read.test_no_verdict_is_passed_on"
+   ]
+  },
+  {
+   "id": "watch_null_verdict_goes_on",
+   "file": "loop/watch.py",
+   "old": "    if entry.get(\"verdict\") is None:\n        return",
+   "new": "    if False:\n        return",
+   "tests": [
+    "test_watch.Read.test_no_verdict_is_passed_on"
+   ]
+  },
+  {
+   "id": "watch_doc_keys_subset",
+   "file": "loop/watch.py",
+   "old": "set(doc) == DOC_KEYS",
+   "new": "set(doc) >= DOC_KEYS",
+   "tests": [
+    "test_watch.Read.test_the_document_shape_and_merge"
+   ]
+  },
+  {
+   "id": "watch_doc_keys_dropped",
+   "file": "loop/watch.py",
+   "old": " and set(doc) == DOC_KEYS and",
+   "new": " and",
+   "tests": [
+    "test_watch.Read.test_the_document_shape_and_merge"
+   ]
+  },
+  {
+   "id": "watch_doc_not_dict",
+   "file": "loop/watch.py",
+   "old": "isinstance(doc, dict) and set(doc)",
+   "new": "True and set(doc)",
+   "tests": [
+    "test_watch.Read.test_the_document_shape_and_merge"
+   ]
+  },
+  {
+   "id": "watch_bad_json_not_caught",
+   "file": "loop/watch.py",
+   "old": "    except ValueError:  # S.Unusable is one",
+   "new": "    except S.Unusable:",
+   "tests": [
+    "test_watch.Read.test_the_document_shape_and_merge"
+   ]
+  },
+  {
+   "id": "watch_nothing_caught",
+   "file": "loop/watch.py",
+   "old": "    except ValueError:  # S.Unusable is one",
+   "new": "    except KeyError:",
+   "tests": [
+    "test_watch.Read.test_the_document_shape_and_merge"
+   ]
+  },
+  {
+   "id": "watch_red_not_compared",
+   "file": "loop/watch.py",
+   "old": "(judged[\"verdict\"], judged[\"red\"], judged[\"flaky\"]) != (doc[\"verdict\"], doc[\"red\"], doc[\"flaky\"])",
+   "new": "(judged[\"verdict\"], judged[\"flaky\"]) != (doc[\"verdict\"], doc[\"flaky\"])",
+   "tests": [
+    "test_watch.Read.test_the_verdict_is_mf12s_on_the_runs"
+   ]
+  },
+  {
+   "id": "watch_flaky_not_compared",
+   "file": "loop/watch.py",
+   "old": "(judged[\"verdict\"], judged[\"red\"], judged[\"flaky\"]) != (doc[\"verdict\"], doc[\"red\"], doc[\"flaky\"])",
+   "new": "(judged[\"verdict\"], judged[\"red\"]) != (doc[\"verdict\"], doc[\"red\"])",
+   "tests": [
+    "test_watch.Read.test_the_verdict_is_mf12s_on_the_runs"
+   ]
+  },
+  {
+   "id": "watch_answer_runs_dropped",
+   "file": "loop/watch.py",
+   "old": "\"runs\": doc[\"runs\"], \"red\": doc[\"red\"],",
+   "new": "\"runs\": [], \"red\": doc[\"red\"],",
+   "tests": [
+    "test_watch.Read.test_verified_verdicts"
+   ]
+  },
+  {
+   "id": "watch_answer_red_dropped",
+   "file": "loop/watch.py",
+   "old": "\"red\": doc[\"red\"],\n",
+   "new": "\"red\": [],\n",
+   "tests": [
+    "test_watch.Read.test_verified_verdicts"
+   ]
+  },
+  {
+   "id": "watch_answer_flaky_dropped",
+   "file": "loop/watch.py",
+   "old": "\"flaky\": doc[\"flaky\"], \"sha256\"",
+   "new": "\"flaky\": [], \"sha256\"",
+   "tests": [
+    "test_watch.Read.test_verified_verdicts"
+   ]
+  },
+  {
+   "id": "watch_base_run_raw_missing",
+   "file": "loop/watch.py",
+   "old": "    return None if raw is None or not isinstance(sha, str) else (raw, sha)",
+   "new": "    return None if not isinstance(sha, str) else (raw or b\"\", sha)",
+   "tests": [
+    "test_watch.BaseLint.test_none_when_it_cannot_be_read"
+   ]
+  },
+  {
+   "id": "watch_base_lint_unusable_raises",
+   "file": "loop/watch.py",
+   "old": "    except check.Unusable:\n        return None\n    return None if got",
+   "new": "    except KeyError:\n        return None\n    return None if got",
+   "tests": [
+    "test_watch.BaseLint.test_none_when_it_cannot_be_read"
+   ]
+  },
+  {
+   "id": "watch_base_lint_sha_from_got",
+   "file": "loop/watch.py",
+   "old": "{\"base_run_sha256\": sha, \"counts\"",
+   "new": "{\"base_run_sha256\": None, \"counts\"",
+   "tests": [
+    "test_watch.BaseLint.test_the_counts_of_a_verified_base"
+   ]
+  },
+  {
+   "id": "watch_reasons_not_list",
+   "file": "loop/watch.py",
+   "old": "    if not (isinstance(reasons, list) and all(isinstance(r, str) for r in reasons)):",
+   "new": "    if reasons is None:",
+   "tests": [
+    "test_watch.BaseBuild.test_none_without_a_readable_base"
+   ]
+  },
+  {
+   "id": "watch_reasons_items_not_str",
+   "file": "loop/watch.py",
+   "old": "isinstance(reasons, list) and all(isinstance(r, str) for r in reasons)",
+   "new": "isinstance(reasons, list)",
+   "tests": [
+    "test_watch.BaseBuild.test_none_without_a_readable_base"
+   ]
+  },
+  {
+   "id": "watch_base_not_dict",
+   "file": "loop/watch.py",
+   "old": "reasons = base.get(\"reasons\") if isinstance(base, dict) else None",
+   "new": "reasons = base.get(\"reasons\") if base is not None else None",
+   "tests": [
+    "test_watch.BaseBuild.test_none_without_a_readable_base"
+   ]
+  },
+  {
+   "id": "watch_fatal_prefix_anywhere",
+   "file": "loop/watch.py",
+   "old": "any(r.startswith(FATAL) for r in reasons)",
+   "new": "any(FATAL in r for r in reasons)",
+   "tests": [
+    "test_watch.BaseBuild.test_none_when_the_lint_told_nothing_about_parsing"
+   ]
+  },
+  {
+   "id": "watch_fatal_any_reason",
+   "file": "loop/watch.py",
+   "old": "any(r.startswith(FATAL) for r in reasons)",
+   "new": "bool(reasons)",
+   "tests": [
+    "test_watch.BaseBuild.test_none_when_the_lint_told_nothing_about_parsing"
+   ]
+  },
+  {
+   "id": "watch_impact_unsorted",
+   "file": "loop/watch.py",
+   "old": "impact = sorted({r[\"id\"]",
+   "new": "impact = list({r[\"id\"]",
+   "tests": [
+    "test_watch.Facts.test_impact_build_and_lint"
+   ]
+  },
+  {
+   "id": "watch_impact_dupes",
+   "file": "loop/watch.py",
+   "old": "impact = sorted({r[\"id\"] for run in sentinel[\"runs\"] for r in run[\"results\"]})",
+   "new": "impact = sorted([r[\"id\"] for run in sentinel[\"runs\"] for r in run[\"results\"]])",
+   "tests": [
+    "test_watch.Facts.test_impact_build_and_lint"
+   ]
+  },
+  {
+   "id": "watch_lint_before_other_merge",
+   "file": "loop/watch.py",
+   "old": "serial.lint_before(ledger, sentinel[\"merge_sha\"])",
+   "new": "serial.lint_before(ledger, None)",
+   "tests": [
+    "test_watch.Facts.test_impact_build_and_lint"
+   ]
+  },
+  {
+   "id": "watch_lint_unsorted_tools",
+   "file": "loop/watch.py",
+   "old": "for tool in sorted(set(before) | set(after[\"counts\"]))}",
+   "new": "for tool in (set(before) | set(after[\"counts\"]))}",
+   "tests": [
+    "test_watch.Facts.test_impact_build_and_lint"
+   ]
+  },
+  {
+   "id": "watch_lint_before_default",
+   "file": "loop/watch.py",
+   "old": "\"before\": before.get(tool, 0)",
+   "new": "\"before\": before.get(tool)",
+   "tests": [
+    "test_watch.Facts.test_impact_build_and_lint"
+   ]
+  },
+  {
+   "id": "watch_lint_after_default",
+   "file": "loop/watch.py",
+   "old": "\"after\": after[\"counts\"].get(tool, 0)",
+   "new": "\"after\": after[\"counts\"].get(tool)",
+   "tests": [
+    "test_watch.Facts.test_impact_build_and_lint"
+   ]
+  },
+  {
+   "id": "watch_lint_none_after_only",
+   "file": "loop/watch.py",
+   "old": "    if before is not None and after is not None:",
+   "new": "    if after is not None and before:",
+   "tests": [
+    "test_watch.Facts.test_an_empty_ratchet_base_counts_every_tool_from_zero"
+   ]
+  }
+ ]
+}
