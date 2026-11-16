@@ -460,6 +460,11 @@ class RivalOutcome:
     duration_ms: int = 0
     # Where a secret-shaped string kept the request from leaving: file paths only, never the value (E164).
     secret_paths: list[str] = field(default_factory=list)
+    # seed-055: the request's size in Unicode code points, the part of it that is the diff, and the limit it is held
+    # to (`bootstrap.json` `limits.max_prompt_chars`, `29b` "Rakip çağrısı"); None when not measured, never 0.
+    prompt_chars: int | None = None
+    prompt_diff_chars: int | None = None
+    prompt_max_chars: int | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -470,6 +475,8 @@ class RivalOutcome:
             "reproducer_count": sum(1 for a in self.attempts if "reproducer" in a),
             "cli_version": self.cli_version, "effort": self.effort, "prompt_sha256": self.prompt_sha256,
             "tokens": dict(self.tokens), "duration_ms": self.duration_ms, "secret_paths": list(self.secret_paths),
+            "prompt_chars": self.prompt_chars, "prompt_diff_chars": self.prompt_diff_chars,
+            "prompt_max_chars": self.prompt_max_chars,
         }
 
 
@@ -746,7 +753,8 @@ def run_rival(cfg: RivalConfig, *, claude_bin: str | None, seat_prompt: str, con
     pinned = pinned_cli_version() if pinned_version is None else pinned_version
     system_text = seat_prompt + PROTOCOL
     out.prompt_sha256 = hashlib.sha256((system_text + "\n" + context).encode("utf-8", "replace")).hexdigest()
-    if len(system_text) + len(context) > max_prompt_chars:
+    out.prompt_chars, out.prompt_max_chars = len(system_text) + len(context), max_prompt_chars  # before every check
+    if out.prompt_chars > out.prompt_max_chars:
         out.reasons.append("prompt_too_large")
         return out
     leaked = secretscan.scan(system_text + "\n" + context)

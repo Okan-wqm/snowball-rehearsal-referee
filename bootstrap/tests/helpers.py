@@ -93,6 +93,10 @@ def quiet_pilot(launch):
 
         def policy_raw(self):  # the referee repo's policy.json, with no operating{}; `OperatingNoteTest` and
             return b'{"constitutional": {}}' + bytes([10])  # `PolicyNoteTest` test the read
+
+        def loop_runs(self):  # the referee repo's loop runs (`29y`); `test_loop_runs` tests the reads
+            return [{"kind": "read", "read_at": "2026-11-15T00:00:00Z", "state": "no_loop", "why": None,
+                     "workflow_state": None}]
     return Quiet
 
 

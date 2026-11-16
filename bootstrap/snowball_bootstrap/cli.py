@@ -852,10 +852,10 @@ def cmd_rival(args: argparse.Namespace) -> int:
     extract(tar_bytes, tree, boot.limits.max_tree_bytes)
     seat = extract_seat_prompt((root / "seats" / SEATS_FILE).read_text(encoding="utf-8"))
     changed = [p for p in meta["changed"] if not hidden(p)]  # the Founder's ledger is not the rival's to see (E10)
-    context = build_context(meta["kind"], meta["base"], meta["head"], changed,
-                            (pulled / "diff.patch").read_text(encoding="utf-8"), _pages(tar_bytes, meta["kind"], stage),
-                            open_claims=meta["state"].get("open_claims", []))
-    outcome = RivalOutcome()
+    diff = (pulled / "diff.patch").read_text(encoding="utf-8")
+    context = build_context(meta["kind"], meta["base"], meta["head"], changed, diff,
+                            _pages(tar_bytes, meta["kind"], stage), open_claims=meta["state"].get("open_claims", []))
+    outcome = RivalOutcome(prompt_diff_chars=len(diff))  # seed-055: the diff's share of the request, in code points
     try:
         run_rival(boot.rival, claude_bin=resolve_claude(args.claude), seat_prompt=seat, context=context,
                   tree_root=tree,

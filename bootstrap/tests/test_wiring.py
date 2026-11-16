@@ -374,7 +374,7 @@ class SpecPagesTest(unittest.TestCase):
             with self.subTest(page=rel):
                 self.assertIn(f"| `{rel}` | {lines[0].removeprefix('# ')} | {okunma} |", index)
         task = next(line for line in spec_page("tohum", "00b").splitlines() if line.startswith("| Hakem bileşeni yazma"))
-        for prefix in ("29b", "29e", "29p", "29r", "29t"):
+        for prefix in ("29b", "29e", "29p", "29r", "29t", "29y"):
             spec_page("tohum", prefix)
             self.assertIn(f"`{prefix}`", task)
 
@@ -1475,7 +1475,7 @@ class GeneralityReadingTest(unittest.TestCase):
                           {"id": "copy", "kind": "copy", "base_sha": "c" * 40, "unit_candidates": []}])
 
     def test_seed_049_is_answered_by_lines_that_say_it(self):  # changelog_drops_seed_049
-        page = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")
+        page = (ROOT / "spec" / "tohum" / "CHANGELOG-7.md").read_text(encoding="utf-8")  # moved by the cap (E594)
         entry = changelog_entry(page, "2026-11-12, E569")
         answer = entry[entry.index("`seed-049-genellik-text-rule-and-names-unreadable` → "):]
         says = {("29e", 60, 62): ("NUL (U+0000) taşımayan dosyadır", "`referee_file_not_text:<yol>`",

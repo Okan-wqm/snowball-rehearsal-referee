@@ -697,12 +697,14 @@ class PolicyNoteTest(unittest.TestCase):
 
     def test_a_file_that_is_no_strict_json_object_is_not_copied(self):
         # policy_note_duplicate_key_passes policy_note_non_finite_passes policy_note_size_unbounded
+        # overflow_float_passes
         launch = self.launch
         cases = {
             b'{"constitutional": {"a": 1, "a": 2}}': "duplicate_key",
             b'{"operating": {}, "operating": {}}': "duplicate_key",
             b'{"constitutional": {"cap": NaN}}': "non_finite",
             b'{"constitutional": {"cap": -Infinity}}': "non_finite",
+            b'{"constitutional": {"cap": 1e999}}': "non_finite",
             b'[1, 2]': "not_an_object",
             b'not json': "not_json",
             b'\xff\xfe{}': "not_utf8",
