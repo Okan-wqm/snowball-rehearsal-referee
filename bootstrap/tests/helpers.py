@@ -38,6 +38,15 @@ STATS, DRILL = (1, 2), (3,)
 BOOTSTRAP_YML = (Path(__file__).resolve().parents[1] / "workflow" / "bootstrap.yml").read_text(encoding="utf-8")
 
 
+GREEN_CANARY = "ok"  # the `kanarya` job's output when the exit's canary is green (seed-058, `tohum/29z`)
+
+
+def with_green_canary(meta: dict, jobs: dict) -> dict:
+    """``jobs`` with a `kanarya` job that succeeded, on an exit request that names none: what the tests of other exit
+    conditions decide beside. The canary's own rules are `test_exit_canary`'s."""
+    return dict(jobs, kanarya="success") if meta.get("kind") == "exit" and "kanarya" not in jobs else jobs
+
+
 def workflow_job(name: str, text: str = BOOTSTRAP_YML) -> str:
     """One job of the referee's `bootstrap.yml`, its key line left out."""
     import re

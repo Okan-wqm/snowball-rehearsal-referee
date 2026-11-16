@@ -24,6 +24,7 @@ from snowball_bootstrap.decide import decide
 from snowball_bootstrap.treehash import TreeError, tree_hash
 
 import test_flow
+from helpers import GREEN_CANARY, with_green_canary
 from helpers import GIT_IDENTITY, LOOP_YML, bare_repo, commit, ledger_bytes, ledger_rows, main_of, make_repo, plumbed
 
 A, B = "a" * 40, "b" * 40
@@ -310,7 +311,8 @@ class ExitDecision(unittest.TestCase):
 
     def run_(self, meta):
         return decide(meta, {"controls": [], "tests": [{"id": "T13", "cmd_sha256": "c", "ok": True}], "vectors": [],
-                             "licenses": [], "green": True}, None, None, EXIT_JOBS, 2, 3)
+                             "licenses": [], "green": True}, None, None, with_green_canary(meta, EXIT_JOBS), 2, 3,
+                      canary=GREEN_CANARY)
 
     @staticmethod
     def ok():

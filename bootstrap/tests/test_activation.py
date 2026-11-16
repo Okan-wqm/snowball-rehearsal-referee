@@ -31,6 +31,7 @@ from snowball_bootstrap.manifest import check_stage, parse_manifest
 from snowball_bootstrap.treehash import tree_hash
 
 import test_exit_checks
+from helpers import GREEN_CANARY, with_green_canary
 from helpers import (GIT_IDENTITY, LOOP_YML, FakeRunner, bare_repo, commit, git_in, install_fake_claude, main_of,
                      make_repo, ok_result, plumbed, posix_only, sh, submit, tree_files)
 from test_exit_checks import tar_of
@@ -2638,8 +2639,9 @@ class BatchExitDecisionTest(unittest.TestCase):
 
     def run_(self, meta, table=None):
         return decide(meta, {"controls": [], "tests": [{"id": "T51", "cmd_sha256": "c", "ok": True}], "vectors": [],
-                             "licenses": [], "green": True}, None, None, {"getir": "success", "kos": "success"}, 2, 3,
-                      table=table or stages.load(1))
+                             "licenses": [], "green": True}, None, None,
+                      with_green_canary(meta, {"getir": "success", "kos": "success"}), 2, 3,
+                      table=table or stages.load(1), canary=GREEN_CANARY)
 
     def test_the_open_batchs_request_is_transferable_and_names_its_batch(self):  # batch_exit_takes_the_stage_conditions batch_exit_unnamed
         """The narrow form: the batch's own micro-features, the tests, vectors and rival, the archive's checks of the
@@ -2692,7 +2694,8 @@ class BatchExitDecisionTest(unittest.TestCase):
                                                                                 "ok": True}],
                                                      "vectors": [], "licenses": [], "green": True})})
         argv = ["decide", "--root", str(work / "root"), "--pulled", str(work / "pulled"), "--run", str(work / "run"),
-                "--out", str(work / "out"), "--job", "getir=success", "--job", "kos=success"]
+                "--out", str(work / "out"), "--job", "getir=success", "--job", "kos=success",
+                "--job", "kanarya=success", "--canary", GREEN_CANARY]
         # No lock in the snapshot: Stage 0's table, whatever the meta says of a stage (E402).
         write(work / "pulled", {"meta.json": json.dumps(dict(self.meta(), stage=1, batch="P1", batches_done=[]))})
         self.assertEqual(cli.main(argv), 0)

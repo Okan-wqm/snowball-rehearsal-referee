@@ -14,9 +14,11 @@ import test does). A difference in any field of either document, for any shape, 
 change nothing the bootstrap referee signs before `stage-open` wrote `setup/stage.json` (`asama-0/10a`: the Stage 1
 table holds only after the lock).
 
-One addition is set aside by name, and nothing else (E585, `29t`): the brain's own map check reads a plan into the meta
-(`self_map`) and, in Stage 0, only warns (`self_map_*` warnings). The recording stays the base's, byte for byte; every
-verdict, reason, exit condition and state field it holds is still compared.
+Two additions are set aside by name, and nothing else. The brain's own map check (E585, `29t`) reads a plan into the
+meta (`self_map`) and, in Stage 0, only warns (`self_map_*` warnings). The exit's container canary (E600, `29z`) runs
+green here, as the workflow's `kanarya` job would report it, and the result records it (`exit.canary`); a red one is
+`test_exit_canary`'s. The recording stays the base's, byte for byte; every verdict, reason, exit condition and state
+field it holds is still compared.
 """
 
 import hashlib
@@ -69,6 +71,8 @@ def without_self_map(found: dict) -> dict:
     meta = {k: v for k, v in found["meta"].items() if k != SELF_MAP}
     kept = [w for w in found["result"]["warnings"] if not w.startswith(SELF_MAP + "_")]
     result = dict(found["result"], warnings=kept)
+    if result["exit"].get("canary") == {"job": "success", "status": ["ok"]}:  # the green canary's record (E600)
+        result["exit"] = {k: v for k, v in result["exit"].items() if k != "canary"}
     return {"meta": meta, "result": result}
 
 
@@ -116,7 +120,8 @@ class Judge(Flow):
         with mock.patch.dict(os.environ, env, clear=True), \
                 mock.patch.object(cli, "utc_now", return_value="2026-11-01T00:00:00Z"):
             rc = cli.main(["decide", "--root", str(self.referee), "--pulled", str(pulled), "--run", str(run),
-                           "--job", "getir=success", "--job", "kos=success", "--out", str(out)])
+                           "--job", "getir=success", "--job", "kos=success", "--job", "kanarya=success",
+                           "--canary", "ok", "--out", str(out)])
         self.assertEqual(rc, 0, label)
         result = json.loads((out / "result.json").read_text(encoding="utf-8"))
         # Content hashes are named too, each computed here from the commit (the blobs' bytes follow the checkout's

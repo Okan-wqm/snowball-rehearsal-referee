@@ -21,6 +21,7 @@ from snowball_bootstrap.reproduce import reproducer_key
 
 import test_flow
 import test_state
+from helpers import GREEN_CANARY, with_green_canary
 from helpers import (DRILL, EVERY_GROUP, STATS, FakeRunner, commit, install_fake_claude, ledger_bytes, ledger_rows,
                      ok_result, posix_only, sh, submit)
 
@@ -80,7 +81,8 @@ CODE_JOBS = {"getir": "success", "kos": "success", "cagir": "success", "yeniden"
 
 
 def run_decide(meta, run=None, rival=None, repro=None, jobs=None, min_attempts=2, limit=3):
-    return decide(meta, run, rival, repro, jobs or {}, min_attempts, limit)
+    return decide(meta, run, rival, repro, with_green_canary(meta, jobs or {}), min_attempts, limit,
+                  canary=GREEN_CANARY)
 
 
 class RivalOutcomeJudgement(unittest.TestCase):

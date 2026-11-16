@@ -14,7 +14,7 @@ import datetime
 import hashlib
 from typing import Any
 
-from . import config, exitchecks, ledgercheck, policyreads, secretscan, selfmap, stages
+from . import config, exitcanary, exitchecks, ledgercheck, policyreads, secretscan, selfmap, stages
 from .reproduce import reproducer_key
 from .rival import REPRODUCER_FIELDS
 from .state import MAX_OPEN_CLAIMS, MAX_OPEN_REFUTATIONS
@@ -273,13 +273,14 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
            repro: list[dict[str, Any]] | None, job_results: dict[str, str],
            rival_min_attempts: int, repeat_reject_limit: int, *,
            state_repro: list[dict[str, Any]] | None = None, now: str | None = None,
-           table: stages.StageTable | None = None) -> dict[str, Any]:
+           table: stages.StageTable | None = None, canary: str | None = None) -> dict[str, Any]:
     """Return the signed result (including the next state).
 
     ``repro`` holds the results of this rival's reproducers, ``state_repro`` those of the reproducers the state
     keeps (proven defects and open claims) that `pull` asked for in ``meta["state_repro"]``. ``table`` is the
     table `pull` judged under (`stages/stage0.json` when not given; the open batch's after the lock): the exit needs
-    every one of its micro-features.
+    every one of its micro-features. ``canary`` is the `kanarya` job's output on an exit request (seed-058, `29z`),
+    read as untrusted text; its job's result is ``job_results["kanarya"]``.
     """
     table = table or stages.load(0)
     state = copy.deepcopy(meta["state"])
@@ -510,6 +511,12 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
                 ref = NOT_CHECKED + anchor
                 detail[ref] = "; ".join(w for w in (CARRY_UNPLANTED[anchor], detail.get(ref)) if w)
         missing += checked
+        # seed-058 (`29z`): the brain's own contained run on the host, before (B). A red or absent canary keeps the exit
+        # closed; it is never an outage, and the run still signs.
+        exit_block["canary"] = exitcanary.record(job_results.get("kanarya"), canary)
+        for m in exitcanary.missing(exit_block["canary"]):
+            missing.append(m)
+            detail[m] = exitcanary.DETAIL
         for m in missing:
             reasons.append(_reason("exit_condition", ref=m, detail=detail.get(m, "")))
         exit_block["checks"] = copy.deepcopy(meta.get("exit_checks") or {})

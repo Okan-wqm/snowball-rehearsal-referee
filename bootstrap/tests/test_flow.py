@@ -22,6 +22,7 @@ from snowball_bootstrap.decide import decide
 from snowball_bootstrap.importer import ImportErrorStop, run_import
 from snowball_bootstrap.treehash import TreeError, tree_hash
 
+from helpers import GREEN_CANARY, with_green_canary
 from helpers import (GIT_IDENTITY, LOOP_YML, bare_repo, commit, install_fake_claude, ledger_bytes, ledger_rows, main_of,
                      make_repo, module_less_red, ok_result, posix_only, sh, submit, tree_files)
 
@@ -82,7 +83,8 @@ class Flow(unittest.TestCase):
         return json.loads((out / "meta.json").read_text(encoding="utf-8"))  # not the platform's default: names can be non-ASCII
 
     def finish(self, meta, run=None, rival=None, repro=None, jobs=None):
-        result = decide(meta, run, rival, repro, jobs or {}, rival_min_attempts=2, repeat_reject_limit=3)
+        result = decide(meta, run, rival, repro, with_green_canary(meta, jobs or {}), rival_min_attempts=2,
+                        repeat_reject_limit=3, canary=GREEN_CANARY)
         self.state = result["state"]
         return result
 

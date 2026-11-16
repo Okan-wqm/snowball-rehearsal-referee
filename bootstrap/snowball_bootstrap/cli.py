@@ -17,8 +17,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from . import (canon, config, drillfixtures, exitchecks, ghapi, gitio, ledgercheck, licenses, parts, policyreads,
-               selfmap, stagelock, stages, state as st, wiring)
+from . import (canon, config, drillfixtures, exitcanary, exitchecks, ghapi, gitio, ledgercheck, licenses, parts,
+               policyreads, selfmap, stagelock, stages, state as st, wiring)
 from .classify import (LEDGER_FILE, REPORTS_DIR, SEED_DIRS, classify, is_founder_record, is_seed_path,
                        spec_stage_dirs)
 from .container import DockerRunner
@@ -909,6 +909,22 @@ def cmd_reproduce(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_canary(args: argparse.Namespace) -> int:
+    """The exit request's canary (seed-058, `29z`): the brain's own `runner.contained run`, once, outside any container
+    and in a job with no secret and no permission. Its statuses go out as the step's one output; the job stays green
+    whatever the brain answers, so `decide` reads the answer and not a failed job."""
+    root, pulled = Path(args.root), Path(args.pulled)
+    boot = config.load_bootstrap(root)
+    tar_bytes = (pulled / "brain.tar").read_bytes()
+    work = Path(args.work)
+    tree = work / "src"
+    extract(tar_bytes, tree, boot.limits.max_tree_bytes)
+    found = exitcanary.run(root, tar_bytes, tree, work / "canary")
+    output(canary=",".join(found))
+    summary(f"## Exit canary: `{','.join(found)}`")
+    return 0
+
+
 def cmd_decide(args: argparse.Namespace) -> int:
     root, pulled, out = Path(args.root), Path(args.pulled), Path(args.out)
     policy = config.load_policy(root)
@@ -927,7 +943,8 @@ def cmd_decide(args: argparse.Namespace) -> int:
     result = decide(meta, run, rival, None if repro_doc is None else repro_doc["results"], jobs,
                     policy.rival_min_attempts, policy.repeat_reject_limit,
                     state_repro=None if repro_doc is None else repro_doc.get("state", []), now=utc_now(),
-                    table=stagelock.open_table(root))  # the snapshot's, as `pull` read it (E402)
+                    table=stagelock.open_table(root),  # the snapshot's, as `pull` read it (E402)
+                    canary=args.canary)  # the `kanarya` job's output, untrusted text (seed-058, `29z`)
     result["run"] = {"id": os.environ.get("GITHUB_RUN_ID", "local"),
                      "attempt": os.environ.get("GITHUB_RUN_ATTEMPT", "1")}
     write_json(out / "result.json", result)
@@ -1049,8 +1066,10 @@ def build_parser() -> argparse.ArgumentParser:
         ("--claude", {"help": "path of the claude CLI (default: the one on PATH)"}))
     add("reproduce", cmd_reproduce, root, ("--pulled", req), ("--deps", req), ("--rival", req),
         ("--work", req), ("--out", req))
+    add("canary", cmd_canary, root, ("--pulled", req), ("--work", req))
     add("decide", cmd_decide, root, ("--pulled", req), ("--run", {}), ("--rival", {}), ("--repro", {}),
-        ("--job", {"action": "append"}), ("--out", req))
+        ("--job", {"action": "append"}), ("--canary", {"help": "the kanarya job's output (an exit request's)"}),
+        ("--out", req))
     add("pack", cmd_pack, ("--dir", req), ("--out", req))
     add("unpack", cmd_unpack, ("--tar", req), ("--sha256", req), ("--out", req))
     add("seed-hash", cmd_seed_hash, ("--brain", req), ("--commit", req))

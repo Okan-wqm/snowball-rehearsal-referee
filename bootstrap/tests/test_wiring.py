@@ -1869,7 +1869,8 @@ class SystemMapTest(unittest.TestCase):
         jobs = self.mod.workflow_jobs(WORKFLOW)
         listed = re.findall(r"^  ([A-Za-z_][A-Za-z0-9_-]*):[ \t]*$", WORKFLOW.split("\njobs:\n", 1)[1], re.M)
         self.assertEqual(list(jobs), listed)
-        self.assertEqual(jobs["yaz"].needs, ["cek", "getir", "kos", "cagir", "yeniden"])
+        self.assertEqual(jobs["yaz"].needs, ["cek", "getir", "kos", "cagir", "yeniden", "kanarya"])
+        self.assertEqual(jobs["kanarya"].needs, ["cek"])  # seed-058 (E600): an exit request's canary, beside the rest
         self.assertEqual(jobs["getir"].needs, ["cek"])
         ran = {c for job in jobs.values() for c in job.commands}
         self.assertLessEqual({argv[0] for argv in bootstrap_invocations()}, ran)

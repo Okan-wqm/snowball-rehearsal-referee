@@ -81,7 +81,7 @@ AREAS = (
     ("Entry", ("__init__", "__main__", "cli")),
     ("Intake", ("canon", "classify", "config", "drillfixtures", "ghapi", "gitio", "importer", "licenses", "stagelock",
                 "treehash")),
-    ("Sandbox", ("container", "controls", "manifest", "moduleless", "parts", "policyreads", "selfmap", "vectors")),
+    ("Sandbox", ("container", "controls", "exitcanary", "manifest", "moduleless", "parts", "policyreads", "selfmap", "vectors")),
     ("Rival", ("reproduce", "rival", "rival_mcp", "secretscan")),
     ("Judgement", ("decide", "exitchecks", "ledgercheck", "stages", "state", "wiring")),
 )

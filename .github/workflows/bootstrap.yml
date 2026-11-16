@@ -27,6 +27,8 @@
 #   kos     nothing; joins the parts' records, judging the vectors on their answers - runs no brain code
 #   cagir   operator's Claude login (CLAUDE_CODE_OAUTH_TOKEN)        - runs no brain code
 #   yeniden nothing; reproducers only inside --network none containers
+#   kanarya nothing; an exit request only: the brain's runner.contained run on the host, outside any container
+#           (seed-058, tohum/29z); its one output is read by `decide` as untrusted text
 #   yaz     OIDC (Sigstore) and contents: read                         - runs no brain code
 
 name: snowball-bootstrap
@@ -379,8 +381,37 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+  kanarya:
+    # seed-058 (tohum/29z): before (B), an exit request's one real container from the brain's referee/. The brain's own
+    # `python -m runner.contained run` runs here on the host, outside any container, in the toy's unit image, with a
+    # canary command and a red control. This job holds no secret and no permission and pulls no image; brain code runs
+    # in it, so nothing it writes is trusted: its one output is a status line `decide` checks token by token, and no
+    # other job reads anything of it.
+    needs: cek
+    if: needs.cek.result == 'success' && needs.cek.outputs.kind == 'exit'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions: {}
+    outputs:
+      canary: ${{ steps.canary.outputs.canary }}
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: snapshot }
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with: { name: pulled }
+      - name: Verify and unpack
+        run: |
+          echo "${{ needs.cek.outputs.snap_sha }}  snapshot.tar" | sha256sum -c -
+          echo "${{ needs.cek.outputs.pulled_sha }}  pulled.tar" | sha256sum -c -
+          mkdir snap pulled && tar -xf snapshot.tar -C snap && tar -xf pulled.tar -C pulled
+      - name: Kill switch (snapshot of this run)
+        run: python3 -m snowball_bootstrap control --root snap
+      - id: canary
+        name: The brain's contained run, a canary, on the host with no secret
+        run: python3 -m snowball_bootstrap canary --root snap --pulled pulled --work work
+
   yaz:
-    needs: [cek, getir, kos, cagir, yeniden]
+    needs: [cek, getir, kos, cagir, yeniden, kanarya]
     if: always() && github.ref == 'refs/heads/main' && needs.cek.result == 'success' && needs.cek.outputs.skip != 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -418,11 +449,14 @@ jobs:
           if [ -f rival.tar ]; then check rival.tar "${{ needs.cagir.outputs.rival_sha }}"; fi
           if [ -f repro.tar ]; then check repro.tar "${{ needs.yeniden.outputs.repro_sha }}"; fi
       - name: Decide
+        env:
+          CANARY: ${{ needs.kanarya.outputs.canary }}  # written where brain code ran: never pasted into the script
         run: >
           python3 -m snowball_bootstrap decide --root snap --pulled pulled
           --run run --rival rival --repro repro --out out
           --job getir=${{ needs.getir.result }} --job kos=${{ needs.kos.result }}
           --job cagir=${{ needs.cagir.result }} --job yeniden=${{ needs.yeniden.result }}
+          --job kanarya=${{ needs.kanarya.result }} --canary "$CANARY"
       - name: Sign the result into Rekor (Sigstore, keyless)
         run: |
           python3 -m venv /tmp/sig

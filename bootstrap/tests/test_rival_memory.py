@@ -24,6 +24,7 @@ from snowball_bootstrap.container import RunResult
 from snowball_bootstrap.decide import decide
 
 import test_flow
+from helpers import GREEN_CANARY, with_green_canary
 from helpers import (EVERY_GROUP, PINNED_CLI, STATS, FakeRunner, commit, good_init, install_fake_claude, ok_result,
                      posix_only, submit)
 
@@ -119,7 +120,8 @@ def claim_entry(claim="cp_lower is the Wilson bound", rep=REP, rewritten=False):
 
 def run_decide(meta, run=None, rival_doc=None, repro=None, jobs=None, state_repro=None, limit=3, min_attempts=2,
                now=NOW):
-    return decide(meta, run, rival_doc, repro, jobs or {}, min_attempts, limit, state_repro=state_repro, now=now)
+    return decide(meta, run, rival_doc, repro, with_green_canary(meta, jobs or {}), min_attempts, limit,
+                  state_repro=state_repro, now=now, canary=GREEN_CANARY)
 
 
 class Returns(FakeRunner):
