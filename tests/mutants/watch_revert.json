@@ -1,0 +1,287 @@
+{
+ "mutants": [
+  {
+   "id": "watch_unexpected_ignored",
+   "file": "loop/watch.py",
+   "old": "        if entry is not None:\n            raise Refused([\"sentinel_unexpected\"])\n",
+   "new": "        if False:\n            raise Refused([\"sentinel_unexpected\"])\n",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "watch_other_merge_taken",
+   "file": "loop/watch.py",
+   "old": "if not isinstance(entry, dict) or entry.get(\"merge_sha\") != watch:",
+   "new": "if not isinstance(entry, dict):",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "watch_hash_not_checked",
+   "file": "loop/watch.py",
+   "old": "if raw is None or hashlib.sha256(raw).hexdigest() != entry.get(\"sha256\"):",
+   "new": "if raw is None:",
+   "tests": [
+    "test_watch.py",
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "watch_doc_merge_not_checked",
+   "file": "loop/watch.py",
+   "old": " and doc[\"merge_sha\"] == watch):",
+   "new": "):",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "watch_verdict_not_redecided",
+   "file": "loop/watch.py",
+   "old": "    if (judged[\"verdict\"], judged[\"red\"], judged[\"flaky\"]) != (doc[\"verdict\"], doc[\"red\"], doc[\"flaky\"]) \\\n            or doc[\"verdict\"] != entry[\"verdict\"]:",
+   "new": "    if doc[\"verdict\"] != entry[\"verdict\"]:",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "watch_index_verdict_not_compared",
+   "file": "loop/watch.py",
+   "old": "\\\n            or doc[\"verdict\"] != entry[\"verdict\"]:",
+   "new": ":",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "watch_impact_first_run_only",
+   "file": "loop/watch.py",
+   "old": "for run in sentinel[\"runs\"] for r in run[\"results\"]}",
+   "new": "for r in sentinel[\"runs\"][0][\"results\"]}",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "watch_absent_tool_not_zero",
+   "file": "loop/watch.py",
+   "old": "for tool in sorted(set(before) | set(after[\"counts\"]))}",
+   "new": "for tool in sorted(set(before) & set(after[\"counts\"]))}",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "watch_lint_without_before",
+   "file": "loop/watch.py",
+   "old": "    if before is not None and after is not None:",
+   "new": "    if after is not None:\n        before = before or {}",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "base_lint_reasons_ignored",
+   "file": "loop/watch.py",
+   "old": "    return None if got[\"reasons\"] else {",
+   "new": "    return None if False else {",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "serial_cycle_not_reset",
+   "file": "ledger/serial.py",
+   "old": "        if _type(row) == CYCLE_START:\n            counts = None\n",
+   "new": "        if _type(row) == CYCLE_START:\n            pass\n",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "serial_unknown_merge_none",
+   "file": "ledger/serial.py",
+   "old": "    raise Unusable([\"not_merged:%s\" % merge_sha])\n",
+   "new": "    return None\n",
+   "tests": [
+    "test_serial.py"
+   ]
+  },
+  {
+   "id": "assess_null_lint_as_empty",
+   "file": "gate/revert.py",
+   "old": "        return dict(out, cause=\"build_break\" if found == \"build_break\" else \"unknown\")",
+   "new": "        return dict(out, cause=found)",
+   "tests": [
+    "test_revert.py",
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "write_no_ratchet_row",
+   "file": "loop/write_cycle.py",
+   "old": "        if merge is not None or planted:\n            out.append(events.ratchet_base(",
+   "new": "        if False:\n            out.append(events.ratchet_base(",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "write_no_revert_row",
+   "file": "loop/write_cycle.py",
+   "old": "        if red is not None:\n            out.append(events.revert(",
+   "new": "        if False:\n            out.append(events.revert(",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "write_revert_not_landed",
+   "file": "loop/write_cycle.py",
+   "old": "        if red is not None:\n            reverted = dict(",
+   "new": "        if False:\n            reverted = dict(",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "land_revert_not_merged",
+   "file": "target/land.py",
+   "old": "            \"merge_sha\": _checked_merge(writer, done[\"pull\"], done[\"commit\"], check, summary)}",
+   "new": "            \"merge_sha\": done[\"commit\"]}",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "job_end_not_passed",
+   "file": "loop/job.py",
+   "old": "d6 = yaz_d6(environ, tid, art, tree, d5, transport, signer, now, lint, end, d8, opened, passed)",
+   "new": "d6 = yaz_d6(environ, tid, art, tree, d5, transport, signer, now, lint, None, d8, opened, passed)",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "job_sentinel_refusal_ignored",
+   "file": "loop/job.py",
+   "old": "        return {\"reason\": \"sentinel_refused\", \"reasons\": exc.reasons}, None, None",
+   "new": "        return {\"sentinel\": None}, None, None",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "land_revert_not_red_ignored",
+   "file": "target/land.py",
+   "old": "    if not done[\"reverted\"]:  # revert_red sent nothing\n",
+   "new": "    if False:\n",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "base_build_fatal_ignored",
+   "file": "loop/watch.py",
+   "old": "    if any(r.startswith(FATAL) for r in reasons) and",
+   "new": "    if False and",
+   "tests": [
+    "test_watch.py",
+    "test_kos.Sentinel.test_the_heads_lint_tells_whether_it_built"
+   ]
+  },
+  {
+   "id": "base_build_red_control_ignored",
+   "file": "loop/watch.py",
+   "old": " and \"red_control_green\" not in reasons and not verified:",
+   "new": " and not verified:",
+   "tests": [
+    "test_watch.py",
+    "test_kos.Sentinel.test_the_heads_lint_tells_whether_it_built"
+   ]
+  },
+  {
+   "id": "base_build_fatal_beside_a_verified_run",
+   "file": "loop/watch.py",
+   "old": " and \"red_control_green\" not in reasons and not verified:",
+   "new": " and \"red_control_green\" not in reasons:",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "base_build_true_without_a_verified_run",
+   "file": "loop/watch.py",
+   "old": "    if not reasons and verified:",
+   "new": "    if not reasons:",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "base_build_true_on_a_verified_run_alone",
+   "file": "loop/watch.py",
+   "old": "    if not reasons and verified:",
+   "new": "    if verified:",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "base_build_unknown_is_a_build",
+   "file": "loop/watch.py",
+   "old": "        return None\n    verified = base_lint(results) is not None",
+   "new": "        return True\n    verified = base_lint(results) is not None",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "facts_build_ok_constant",
+   "file": "loop/watch.py",
+   "old": "\"build_ok\": build_ok, \"lint\": lint}",
+   "new": "\"build_ok\": True, \"lint\": lint}",
+   "tests": [
+    "test_watch.py"
+   ]
+  },
+  {
+   "id": "job_build_not_read",
+   "file": "loop/job.py",
+   "old": "lint, WT.base_build(results))",
+   "new": "lint, True)",
+   "tests": [
+    "test_loop_write.D8.test_each_planted_cause_is_reverted_with_the_keys_cause_and_judged_pass"
+   ]
+  },
+  {
+   "id": "assess_unknown_build_not_unknown",
+   "file": "gate/revert.py",
+   "old": "    if \"build_ok\" in facts and facts[\"build_ok\"] is None:",
+   "new": "    if False:",
+   "tests": [
+    "test_revert.py"
+   ]
+  },
+  {
+   "id": "assess_unknown_build_shape_unchecked",
+   "file": "gate/revert.py",
+   "old": "            checked[\"lint\"] = {}\n        cause(checked)\n",
+   "new": "            checked[\"lint\"] = {}\n",
+   "tests": [
+    "test_revert.py"
+   ]
+  },
+  {
+   "id": "assess_unknown_build_lint_judged",
+   "file": "gate/revert.py",
+   "old": "        cause(checked)\n        return dict(out, cause=\"unknown\")",
+   "new": "        return dict(out, cause=cause(dict(checked, build_ok=True)))",
+   "tests": [
+    "test_revert.py"
+   ]
+  }
+ ]
+}

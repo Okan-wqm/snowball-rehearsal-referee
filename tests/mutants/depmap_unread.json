@@ -1,0 +1,257 @@
+{
+ "mutants": [
+  {
+   "id": "um_root_pkg_counted",
+   "file": "status/depmap.py",
+   "old": "            if d and d not in npm_dirs:\n",
+   "new": "            if d not in npm_dirs:\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "um_workspace_counted",
+   "file": "status/depmap.py",
+   "old": "            if d and d not in npm_dirs:\n",
+   "new": "            if d:\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "um_pkg_not_counted",
+   "file": "status/depmap.py",
+   "old": "                found.setdefault(name, []).append(rel)\n            continue\n",
+   "new": "                pass\n            continue\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "um_fnmatch_case",
+   "file": "status/depmap.py",
+   "old": "        pattern = next((p for p in MANIFESTS_NOT_READ if fnmatch.fnmatchcase(name, p)), None)\n",
+   "new": "        pattern = next((p for p in MANIFESTS_NOT_READ if fnmatch.fnmatch(name.lower(), p.lower())), None)\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "um_path_match",
+   "file": "status/depmap.py",
+   "old": "        pattern = next((p for p in MANIFESTS_NOT_READ if fnmatch.fnmatchcase(name, p)), None)\n",
+   "new": "        pattern = next((p for p in MANIFESTS_NOT_READ if fnmatch.fnmatchcase(rel, \"*\" + p)), None)\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "um_examples_unsorted",
+   "file": "status/depmap.py",
+   "old": "\"examples\": sorted(v)[:UNREAD_EXAMPLES]",
+   "new": "\"examples\": sorted(v)",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "um_count_examples",
+   "file": "status/depmap.py",
+   "old": "{\"count\": len(v),",
+   "new": "{\"count\": len(v[:UNREAD_EXAMPLES]),",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "um_not_wired",
+   "file": "status/depmap.py",
+   "old": "    coverage[\"unread_manifests\"] = unread_manifests(files, set(manifests))\n",
+   "new": "    pass\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "um_npm_dirs_wrong",
+   "file": "status/depmap.py",
+   "old": "unread_manifests(files, set(manifests))",
+   "new": "unread_manifests(files, set(projects.by_dir))",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "py_outside_not_counted",
+   "file": "status/depmap.py",
+   "old": "                coverage[\"python_files_outside_projects\"] += 1\n",
+   "new": "                pass\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "render_py_outside",
+   "file": "status/depmap.py",
+   "old": "cov[\"python_files_outside_projects\"], cov[\"python_files_unparsed\"]",
+   "new": "cov[\"python_files_unparsed\"], cov[\"python_files_outside_projects\"]",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "render_no_ellipsis",
+   "file": "status/depmap.py",
+   "old": "    return \", \".join(counted[\"examples\"]) + (\", ...\" if counted[\"count\"] > len(counted[\"examples\"]) else \"\")",
+   "new": "    return \", \".join(counted[\"examples\"]) + (\"\" if counted[\"count\"] > len(counted[\"examples\"]) else \"\")",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "list_no_go",
+   "file": "status/depmap.py",
+   "old": "    \"go.mod\",                                                               # Go\n",
+   "new": "                                                                            # Go\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "uc_no_terraform",
+   "file": "status/depmap.py",
+   "old": "                         \".tf\", \".hcl\",\n",
+   "new": "                         \".hcl\",\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "uc_no_sql",
+   "file": "status/depmap.py",
+   "old": "\".sql\", \".graphql\", \".gql\", \".proto\", \".jq\"}",
+   "new": "\".graphql\", \".gql\", \".proto\", \".jq\"}",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "uc_markup_counted",
+   "file": "status/depmap.py",
+   "old": "\".sql\", \".graphql\", \".gql\", \".proto\", \".jq\"}",
+   "new": "\".sql\", \".graphql\", \".gql\", \".proto\", \".jq\", \".md\", \".css\", \".yaml\"}",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "uc_any_extension",
+   "file": "status/depmap.py",
+   "old": "    if ext in OTHER_CODE_EXTENSIONS:\n",
+   "new": "    if ext:\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "fk_names_after_suffix",
+   "file": "status/depmap.py",
+   "old": "    if pattern is not None:\n        return \"code\", pattern\n",
+   "new": "    if pattern is not None and not ext:\n        return \"code\", pattern\n",
+   "tests": [
+    "test_depmap.FileKinds",
+    "test_depmap.Target"
+   ]
+  },
+  {
+   "id": "fk_names_ignored",
+   "file": "status/depmap.py",
+   "old": "(p for p in CODE_FILE_NAMES if",
+   "new": "(p for p in () if",
+   "tests": [
+    "test_depmap.FileKinds",
+    "test_depmap.Target"
+   ]
+  },
+  {
+   "id": "fk_name_case",
+   "file": "status/depmap.py",
+   "old": "    pattern = next((p for p in CODE_FILE_NAMES if fnmatch.fnmatchcase(name, p)), None)\n",
+   "new": "    pattern = next((p for p in CODE_FILE_NAMES if fnmatch.fnmatch(name.lower(), p.lower())), None)\n",
+   "tests": [
+    "test_depmap.FileKinds",
+    "test_depmap.Target"
+   ]
+  },
+  {
+   "id": "fk_read_after_names",
+   "file": "status/depmap.py",
+   "old": "    if ext == \".py\" or ext in J.SOURCE_EXTENSIONS:\n        return \"read\", ext\n",
+   "new": "    if ext in J.SOURCE_EXTENSIONS:\n        return \"read\", ext\n",
+   "tests": [
+    "test_depmap.FileKinds",
+    "test_depmap.Target"
+   ]
+  },
+  {
+   "id": "fk_not_code_unclassified",
+   "file": "status/depmap.py",
+   "old": "    if ext in NOT_CODE_EXTENSIONS:\n",
+   "new": "    if False:\n",
+   "tests": [
+    "test_depmap.FileKinds",
+    "test_depmap.Target"
+   ]
+  },
+  {
+   "id": "fk_no_extension_unclassified",
+   "file": "status/depmap.py",
+   "old": "    return (\"unclassified\", ext) if ext else (\"no_extension\", \"\")\n",
+   "new": "    return (\"unclassified\", ext)\n",
+   "tests": [
+    "test_depmap.FileKinds",
+    "test_depmap.Target"
+   ]
+  },
+  {
+   "id": "cov_no_extension_dropped",
+   "file": "status/depmap.py",
+   "old": "            elif kind in (\"unclassified\", \"no_extension\"):\n",
+   "new": "            elif kind == \"unclassified\":\n",
+   "tests": [
+    "test_depmap.FileKinds",
+    "test_depmap.Target"
+   ]
+  },
+  {
+   "id": "cov_not_code_counted",
+   "file": "status/depmap.py",
+   "old": "            elif kind in (\"unclassified\", \"no_extension\"):\n",
+   "new": "            elif kind != \"code\":\n",
+   "tests": [
+    "test_depmap.FileKinds",
+    "test_depmap.Target"
+   ]
+  },
+  {
+   "id": "render_zero_listed",
+   "file": "status/depmap.py",
+   "old": " for k, v in counted.items() if v[\"count\"])",
+   "new": " for k, v in counted.items())",
+   "tests": [
+    "test_depmap.FileKinds",
+    "test_depmap.Target"
+   ]
+  },
+  {
+   "id": "cov_no_extension_in_unclassified",
+   "file": "status/depmap.py",
+   "old": "    coverage[\"files_without_extension\"] = unknown_counted.pop(\"\", {\"count\": 0, \"examples\": []})\n",
+   "new": "    coverage[\"files_without_extension\"] = unknown_counted.get(\"\", {\"count\": 0, \"examples\": []})\n",
+   "tests": [
+    "test_depmap.FileKinds",
+    "test_depmap.Target"
+   ]
+  }
+ ]
+}

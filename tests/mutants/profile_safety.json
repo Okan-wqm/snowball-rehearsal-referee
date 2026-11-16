@@ -1,0 +1,94 @@
+{
+ "mutants": [
+  {
+   "id": "no_safety_keywords",
+   "file": "profile/derive.py",
+   "old": "        if any(k in name for k in SAFETY_KEYWORDS):\n            safety.append(rel)",
+   "new": "        if False:\n            safety.append(rel)",
+   "tests": [
+    "test_profile_safety.py"
+   ]
+  },
+  {
+   "id": "safety_not_in_security",
+   "file": "profile/derive.py",
+   "old": "\"security_paths\": minimal(security + safety),",
+   "new": "\"security_paths\": minimal(security),",
+   "tests": [
+    "test_profile_safety.py"
+   ]
+  },
+  {
+   "id": "owner_list_ignored",
+   "file": "profile/derive.py",
+   "old": "safety_patterns = _owner_patterns(tree, SAFETY_KEYWORDS) + op_safety",
+   "new": "safety_patterns = _owner_patterns(tree, SAFETY_KEYWORDS)",
+   "tests": [
+    "test_profile_safety.py"
+   ]
+  },
+  {
+   "id": "codeowners_safety_ignored",
+   "file": "profile/derive.py",
+   "old": "safety_patterns = _owner_patterns(tree, SAFETY_KEYWORDS) + op_safety",
+   "new": "safety_patterns = op_safety",
+   "tests": [
+    "test_profile_safety.py"
+   ]
+  },
+  {
+   "id": "candidate_not_guarded",
+   "file": "profile/derive.py",
+   "old": "    if guarded:\n        reasons.append(guarded)",
+   "new": "    if False:\n        reasons.append(guarded)",
+   "tests": [
+    "test_profile_safety.py"
+   ]
+  },
+  {
+   "id": "guarded_only_when_equal",
+   "file": "profile/derive.py",
+   "old": "        if any(covers(entry, path) for entry in derived.get(field, [])):",
+   "new": "        if any(entry == path for entry in derived.get(field, [])):",
+   "tests": [
+    "test_profile_safety.py"
+   ]
+  },
+  {
+   "id": "guarded_also_below",
+   "file": "profile/derive.py",
+   "old": "        if any(covers(entry, path) for entry in derived.get(field, [])):",
+   "new": "        if any(covers(entry, path) or covers(path, entry) for entry in derived.get(field, [])):",
+   "tests": [
+    "test_profile_safety.py"
+   ]
+  },
+  {
+   "id": "guarded_security_first",
+   "file": "profile/derive.py",
+   "old": "    for field in (\"safety_paths\", \"security_paths\"):",
+   "new": "    for field in (\"security_paths\", \"safety_paths\"):",
+   "tests": [
+    "test_profile_safety.py"
+   ]
+  },
+  {
+   "id": "safety_not_minimal",
+   "file": "profile/derive.py",
+   "old": "\"safety_paths\": minimal(safety),",
+   "new": "\"safety_paths\": sorted(set(safety)),",
+   "tests": [
+    "test_profile_safety.py"
+   ]
+  },
+  {
+   "id": "safety_not_checked",
+   "file": "profile/derive.py",
+   "old": "\"safety_keywords\", \"safety_paths\", \"excluded_dir_names\"",
+   "new": "\"excluded_dir_names\"",
+   "tests": [
+    "test_profile_safety.py"
+   ]
+  }
+ ]
+}
