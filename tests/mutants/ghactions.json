@@ -1,0 +1,247 @@
+{
+ "mutants": [
+  {
+   "id": "gh_case_insensitive",
+   "file": "profile/ghactions.py",
+   "old": "uses.partition(\"@\")[0].lower() == ACTION",
+   "new": "uses.partition(\"@\")[0] == ACTION",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_ref_required",
+   "file": "profile/ghactions.py",
+   "old": "uses.partition(\"@\")[0].lower() == ACTION",
+   "new": "uses.lower().startswith(ACTION)",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_default_context",
+   "file": "profile/ghactions.py",
+   "old": "    return path or \".\"",
+   "new": "    return path",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_dot_slash",
+   "file": "profile/ghactions.py",
+   "old": "    while path.startswith(\"./\"):\n        path = path[2:]\n",
+   "new": "",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_file_default",
+   "file": "profile/ghactions.py",
+   "old": "pairs.add((context, _norm(file) if file else _norm(context + \"/Dockerfile\")))",
+   "new": "pairs.add((context, _norm(file) if file else \"Dockerfile\"))",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_composite_off",
+   "file": "profile/ghactions.py",
+   "old": "    if isinstance(runs, dict) and isinstance(runs.get(\"steps\"), list):",
+   "new": "    if False:",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_str_ci",
+   "file": "profile/ghactions.py",
+   "old": "        return a.casefold() == b.casefold()",
+   "new": "        return a == b",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_num_coerce",
+   "file": "profile/ghactions.py",
+   "old": "    return _number(a) == _number(b)",
+   "new": "    return a == b",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_and_returns_bool",
+   "file": "profile/ghactions.py",
+   "old": "        else:\n            stack.append(b)\n        return",
+   "new": "        else:\n            stack.append(_truthy(b))\n        return",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_unknown_left_decides",
+   "file": "profile/ghactions.py",
+   "old": "        if a is _UNKNOWN:\n            stack.append(_UNKNOWN)\n        elif",
+   "new": "        if a is _UNKNOWN or b is _UNKNOWN:\n            stack.append(_UNKNOWN)\n        elif",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_precedence_flat",
+   "file": "profile/ghactions.py",
+   "old": "_PREC = {\"||\": 1, \"&&\": 2, \"==\": 3, \"!=\": 3}",
+   "new": "_PREC = {\"||\": 1, \"&&\": 1, \"==\": 1, \"!=\": 1}",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_not_binds_late",
+   "file": "profile/ghactions.py",
+   "old": "            while ops and ops[-1] == \"!\":\n                _apply(ops.pop(), values)\n            continue\n        if token in",
+   "new": "            continue\n        if token in",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_function_allowed",
+   "file": "profile/ghactions.py",
+   "old": "            if text[j:].lstrip().startswith(\"(\"):\n                raise Unresolved(\"function\")",
+   "new": "            if False:\n                raise Unresolved(\"function\")",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_context_any",
+   "file": "profile/ghactions.py",
+   "old": "    if parts[0].lower() != \"matrix\":",
+   "new": "    if False:",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_context_case",
+   "file": "profile/ghactions.py",
+   "old": "    if parts[0].lower() != \"matrix\":",
+   "new": "    if parts[0] != \"matrix\":",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_missing_key",
+   "file": "profile/ghactions.py",
+   "old": "        value = value.get(part) if isinstance(value, dict) else None",
+   "new": "        value = value.get(part, \"\") if isinstance(value, dict) else \"\"",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_unknown_result",
+   "file": "profile/ghactions.py",
+   "old": "    if values[0] is _UNKNOWN:\n        raise Unresolved(\"context\")",
+   "new": "    if False:\n        raise Unresolved(\"context\")",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_text_float",
+   "file": "profile/ghactions.py",
+   "old": "        return str(int(v)) if isinstance(v, float) and v == int(v) else str(v)",
+   "new": "        return str(v)",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_text_none",
+   "file": "profile/ghactions.py",
+   "old": "    if v is None:\n        return \"\"\n    if isinstance(v, bool):",
+   "new": "    if isinstance(v, bool):",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_exclude_off",
+   "file": "profile/ghactions.py",
+   "old": "    combos = [c for c in combos\n              if not any(",
+   "new": "    combos = [c for c in combos\n              if True or not any(",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_include_any",
+   "file": "profile/ghactions.py",
+   "old": "            if all(_equal(original[k], v) for k, v in entry.items() if k in original):",
+   "new": "            if True:",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_include_added_matched",
+   "file": "profile/ghactions.py",
+   "old": "    return combos + added",
+   "new": "    return combos + added if not added else combos + added[:1]",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_axes_dynamic",
+   "file": "profile/ghactions.py",
+   "old": "            or any(_dynamic(x) for v in axes.values() for x in v):",
+   "new": "            or False:",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_bound",
+   "file": "profile/ghactions.py",
+   "old": "    if size > MAX_COMBINATIONS or len(include) > MAX_COMBINATIONS:",
+   "new": "    if False:",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_include_original",
+   "file": "profile/ghactions.py",
+   "old": "    originals = [dict(c) for c in combos]",
+   "new": "    originals = combos",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_workflows_nested",
+   "file": "profile/ghactions.py",
+   "old": "return (head == \".github/workflows\" and",
+   "new": "return (head.endswith(\".github/workflows\") and",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  },
+  {
+   "id": "gh_action_name",
+   "file": "profile/ghactions.py",
+   "old": "or name in (\"action.yml\", \"action.yaml\")",
+   "new": "or name.endswith(\"action.yml\")",
+   "tests": [
+    "test_profile_ghactions.py"
+   ]
+  }
+ ]
+}

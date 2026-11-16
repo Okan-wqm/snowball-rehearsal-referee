@@ -1,0 +1,473 @@
+{
+ "root": ".",
+ "mutants": [
+  {
+   "id": "broken_chain_not_alone",
+   "old": "return [], [\"chain: %s (line %s)\" % (verdict[\"reason\"], verdict[\"line\"])], [], {}",
+   "new": "pass",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "row_shape_unchecked",
+   "old": "        out += FOUNDER_ROW(row, where)\n",
+   "new": "        pass\n",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "supersedes_shape_any",
+   "old": "{**schema.ROW_OPTIONAL_FIELDS, \"supersedes\": schema.hex64}",
+   "new": "{**schema.ROW_OPTIONAL_FIELDS, \"supersedes\": schema.text}",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "payload_extra_field_ok",
+   "old": "PAYLOAD = schema.shape({\"summary\": schema.text, \"refs\": schema.list_of(schema.text)})",
+   "new": "PAYLOAD = schema.shape({\"summary\": schema.text}, {\"refs\": schema.list_of(schema.text)})",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "part_unchecked",
+   "old": "if row.get(\"part\") != FOUNDER:",
+   "new": "if False:",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "kind_unchecked",
+   "old": "if row.get(\"kind\") not in kinds:",
+   "new": "if False:",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "supersedes_unknown_ok",
+   "old": "            if j is None:\n                broken.append(\"supersedes names no earlier row\")",
+   "new": "            if j is None:\n                pass",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "supersedes_valid_row_ok",
+   "old": "elif not breaks[j]:",
+   "new": "elif False:",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "later_row_can_be_named",
+   "old": "        earlier[row.get(\"row_hash\")] = i\n",
+   "new": "        pass\n",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "closer_need_not_be_valid",
+   "old": "    closed = {row[\"supersedes\"] for row, broken in zip(rows, breaks)\n              if not broken and",
+   "new": "    closed = {row[\"supersedes\"] for row, broken in zip(rows, breaks)\n              if",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "closer_need_not_have_shape",
+   "old": "if not broken and \"supersedes\" in row and not FOUNDER_ROW(row, \"\")}",
+   "new": "if not broken and \"supersedes\" in row}",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "broken_row_never_problem",
+   "old": "if broken and row.get(\"row_hash\") not in closed:",
+   "new": "if False:",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "closed_row_still_problem",
+   "old": "if broken and row.get(\"row_hash\") not in closed:",
+   "new": "if broken:",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "closes_unknown_ok",
+   "old": "            if name not in items:\n                out.append",
+   "new": "            if False:\n                out.append",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "closes_twice_ok",
+   "old": "elif name in names[:n]:",
+   "new": "elif False:",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "closes_closed_again_ok",
+   "old": "elif name in closed:",
+   "new": "elif False:",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "closes_by_broken_row",
+   "old": "counts = not breaks[i] and not FOUNDER_ROW(row, \"\")",
+   "new": "counts = not FOUNDER_ROW(row, \"\")",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "closes_by_shapeless_row",
+   "old": "counts = not breaks[i] and not FOUNDER_ROW(row, \"\")",
+   "new": "counts = not breaks[i]",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "closes_any_kind",
+   "old": "if row.get(\"kind\") in ITEM_KINDS and isinstance(row.get(\"row_id\"), str):",
+   "new": "if isinstance(row.get(\"row_id\"), str):",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "item_kinds_no_blocked",
+   "old": "ITEM_KINDS = frozenset({\"seed_issue\", \"blocked\"})",
+   "new": "ITEM_KINDS = frozenset({\"seed_issue\"})",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "spec_kinds_first_list",
+   "old": "    if len(found) != 1:\n        raise AssertionError",
+   "new": "    if not found:\n        raise AssertionError",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "spec_kinds_repeat_ok",
+   "old": "if not kinds or len(set(kinds)) != len(kinds):",
+   "new": "if not kinds:",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "open_lists_closed_items",
+   "old": "for row in rows if row[\"kind\"] in ITEM_KINDS and row[\"row_id\"] not in closed]",
+   "new": "for row in rows if row[\"kind\"] in ITEM_KINDS]",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "open_head_whole",
+   "old": "\"head\": row[\"payload\"][\"summary\"][:HEAD]}",
+   "new": "\"head\": row[\"payload\"][\"summary\"]}",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "open_lists_confirmed_reports",
+   "old": "for r in reports if r[\"state\"] not in CLOSED_REPORT_STATES]",
+   "new": "for r in reports]",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "open_with_problems",
+   "old": "    if found:\n        return [], found",
+   "new": "    if False:\n        return [], found",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "report_id_unchecked",
+   "old": "report.get(\"id\") != name[:-len(\".json\")] \\\n                or ",
+   "new": "",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "report_state_empty_ok",
+   "old": "or not isinstance(report.get(\"state\"), str) or not report[\"state\"]:",
+   "new": "or not isinstance(report.get(\"state\"), str):",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "trust_only_self",
+   "old": "        if os.path.dirname(d) == d:\n            return out",
+   "new": "        return out",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "literal_pathspecs_off",
+   "old": "\"--literal-pathspecs\", \"-C\", top",
+   "new": "\"-C\", top",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "git_env_dropped",
+   "old": "capture_output=True, env=git_env(dict(os.environ)))",
+   "new": "capture_output=True)",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "ref_dotdot_ok",
+   "old": "or \"..\" in path.split(\"/\")",
+   "new": "or False",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "ref_reversed_range_ok",
+   "old": "if not m or last < first or",
+   "new": "if not m or",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "uncommitted_change_unseen",
+   "old": "if not filed or _file_at(trust, top, filed, report) != _read(report_path):",
+   "new": "if not filed:",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "shallow_unread",
+   "old": "\"bounded\": filed in shallow}",
+   "new": "\"bounded\": False}",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "filed_link_is_file",
+   "old": "or (canonical(fields[0]) or (\"\",))[0] != \"file\":",
+   "new": ":",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "line_out_of_range_unseen",
+   "old": "if len(block) != last - first + 1:",
+   "new": "if not block:",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "page_unchanged_skipped",
+   "old": "    if now == then:\n        return {\"status\": \"page_unchanged\", **out}",
+   "new": "    if False:\n        return {\"status\": \"page_unchanged\", **out}",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "line_same_skipped",
+   "old": "    if lines[first - 1:last] == block:\n        return",
+   "new": "    if False:\n        return",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "moved_first_only",
+   "old": "return {\"status\": \"line_moved\", \"lines\": starts, **out}",
+   "new": "return {\"status\": \"line_moved\", \"lines\": starts[:1], **out}",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "no_git_uncaught",
+   "old": "    except _NoGit:\n        return",
+   "new": "    except ValueError:\n        return",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "row_id_restarts",
+   "old": "row_id, prev = \"f%d\" % (int(m.group(1)) + 1), last.get(\"row_hash\")",
+   "new": "row_id, prev = \"f1\", last.get(\"row_hash\")",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "prev_hash_zero",
+   "old": "row_id, prev = \"f%d\" % (int(m.group(1)) + 1), last.get(\"row_hash\")",
+   "new": "row_id, prev = \"f%d\" % (int(m.group(1)) + 1), chain.ZERO_HASH",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "scan_off",
+   "old": "found = [\"row_scan:%s:%s\" % (m[\"rule\"], m[\"sha256\"]) for m in secrets.scan(line.decode(\"utf-8\"), \"row\")]",
+   "new": "found = []",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "old_problems_refuse",
+   "old": "    seen = set(before)\n",
+   "new": "    seen = set()\n",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "unusable_chain_appended",
+   "old": "    if before and before[0].startswith(\"chain: \"):\n        raise",
+   "new": "    if False:\n        raise",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "refused_row_written",
+   "old": "    if reasons:\n        return reasons\n    fd",
+   "new": "    if False:\n        return reasons\n    fd",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "old_bytes_dropped",
+   "old": "fh.write(old + line)",
+   "new": "fh.write(line)",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "temp_left",
+   "old": "            os.unlink(tmp)\n        raise",
+   "new": "            pass\n        raise",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "stdin_newline_kept",
+   "old": "summary = summary[:-1] if summary.endswith(\"\\n\") else summary",
+   "new": "summary = summary",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "check_exit_zero",
+   "old": "            _emit({\"ok\": not found, \"problems\": found})\n            return 1 if found else 0",
+   "new": "            _emit({\"ok\": not found, \"problems\": found})\n            return 0",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  },
+  {
+   "id": "unusable_exit_one",
+   "old": "        _emit({\"ok\": False, \"error\": cli.cause(exc)})\n        return 2",
+   "new": "        _emit({\"ok\": False, \"error\": cli.cause(exc)})\n        return 1",
+   "file": "referee/ledger/founder.py",
+   "tests": [
+    "test_founder_ledger.py"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,373 @@
+{
+ "mutants": [
+  {
+   "id": "yb_null_words",
+   "file": "profile/yamlblock.py",
+   "old": "_NULL = (\"\", \"~\", \"null\", \"Null\", \"NULL\")",
+   "new": "_NULL = (\"\", \"~\")",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_bool_off",
+   "file": "profile/yamlblock.py",
+   "old": "    if text in _BOOL:\n        return _BOOL[text]\n",
+   "new": "",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_int_off",
+   "file": "profile/yamlblock.py",
+   "old": "    if _INT.fullmatch(text):\n        return int(text)\n",
+   "new": "",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_float_off",
+   "file": "profile/yamlblock.py",
+   "old": "    if _FLOAT.fullmatch(text):\n        return float(text)\n",
+   "new": "",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_comment_kept",
+   "file": "profile/yamlblock.py",
+   "old": "    return (text[:m.start()] if m else text).strip()",
+   "new": "    return text.strip()",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_hash_starts_comment",
+   "file": "profile/yamlblock.py",
+   "old": "m = re.search(r\"[ \\t]#\", text)",
+   "new": "m = re.search(r\"#\", text)",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_single_quote_escape",
+   "file": "profile/yamlblock.py",
+   "old": "        return body.replace(\"''\", \"'\")",
+   "new": "        return body",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_dq_escapes_off",
+   "file": "profile/yamlblock.py",
+   "old": "        if e in _ESCAPES:\n",
+   "new": "        if False:\n",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_hex_off",
+   "file": "profile/yamlblock.py",
+   "old": "        elif e in _HEX and",
+   "new": "        elif False and",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_fold_blank_as_space",
+   "file": "profile/yamlblock.py",
+   "old": "            out += (\"\\n\" * blanks if blanks else \" \") + piece",
+   "new": "            out += \" \" + piece",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_escaped_break_kept",
+   "file": "profile/yamlblock.py",
+   "old": "                body = re.sub(r\"\\\\\\n[ \\t]*\", \"\", body)",
+   "new": "                pass",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_text_after_quote",
+   "file": "profile/yamlblock.py",
+   "old": "            if _uncomment(joined[end + 1:]) != \"\":",
+   "new": "            if False:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_plain_cont_off",
+   "file": "profile/yamlblock.py",
+   "old": "                if s.startswith(\"#\") or self._indent(k) <= limit:",
+   "new": "                if True:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_mapping_in_scalar",
+   "file": "profile/yamlblock.py",
+   "old": "                if re.search(r\":(?: |$)\", cont):\n                    raise Unreadable(k + 1, \"mapping_in_scalar\")",
+   "new": "                if False:\n                    raise Unreadable(k + 1, \"mapping_in_scalar\")",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_indicator",
+   "file": "profile/yamlblock.py",
+   "old": "            if plain[:1] in (\"%\", \"@\", \"`\"):",
+   "new": "            if False:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_chomp_strip",
+   "file": "profile/yamlblock.py",
+   "old": "        if chomp == \"-\":\n            return core, k",
+   "new": "        if False:\n            return core, k",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_chomp_keep",
+   "file": "profile/yamlblock.py",
+   "old": "        return core + \"\\n\" + (\"\\n\" * trailing if chomp == \"+\" else \"\"), k",
+   "new": "        return core + \"\\n\", k",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_indent_indicator",
+   "file": "profile/yamlblock.py",
+   "old": "        ci = limit + int(given) if given else None",
+   "new": "        ci = None",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_folded_as_literal",
+   "file": "profile/yamlblock.py",
+   "old": "        if style == \"|\":",
+   "new": "        if True:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_folded_more_indented",
+   "file": "profile/yamlblock.py",
+   "old": "                elif cur[0] in \" \\t\" or prev[0] in \" \\t\":\n                    core += \"\\n\" + cur",
+   "new": "                elif False:\n                    core += \"\\n\" + cur",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_flow_null_value",
+   "file": "profile/yamlblock.py",
+   "old": "            if top[2]:\n                top[0][str(top[1])] = None\n            put(top[0])",
+   "new": "            put(top[0])",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_flow_depth",
+   "file": "profile/yamlblock.py",
+   "old": "            if len(stack) >= MAX_DEPTH:",
+   "new": "            if False:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_alias_unknown",
+   "file": "profile/yamlblock.py",
+   "old": "            if name not in self.anchors:\n                raise Unreadable(i + 1, \"alias\")",
+   "new": "            if False:\n                raise Unreadable(i + 1, \"alias\")",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_anchor_not_recorded",
+   "file": "profile/yamlblock.py",
+   "old": "        if anchor is not None:\n            self.anchors[anchor] = value\n        return value, nxt",
+   "new": "        return value, nxt",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_block_anchor",
+   "file": "profile/yamlblock.py",
+   "old": "                    if pending[4] is not None:\n                        self.anchors[pending[4]] = obj",
+   "new": "                    pass",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_merge_overrides",
+   "file": "profile/yamlblock.py",
+   "old": "                            if k not in obj:\n",
+   "new": "                            if True:\n",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_merge_as_key",
+   "file": "profile/yamlblock.py",
+   "old": "                elif key == \"<<\":",
+   "new": "                elif False:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_dup_key",
+   "file": "profile/yamlblock.py",
+   "old": "                if key in explicit:",
+   "new": "                if False:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_key_anchor",
+   "file": "profile/yamlblock.py",
+   "old": "                if text[:1] in \"&*!\":",
+   "new": "                if False:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_same_col_seq",
+   "file": "profile/yamlblock.py",
+   "old": "if indent > pending[2] or (entry and pending[3] and indent == pending[2]):",
+   "new": "if indent > pending[2]:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_seq_pop",
+   "file": "profile/yamlblock.py",
+   "old": "                              and not entry and len(frames) > 1 and frames[-2][0] == indent)):",
+   "new": "                              and False)):",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_next_line_value",
+   "file": "profile/yamlblock.py",
+   "old": "                if indent > pending[2] and not entry and _key(content) is None and not content.startswith(\"? \"):",
+   "new": "                if False:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_depth",
+   "file": "profile/yamlblock.py",
+   "old": "                if len(frames) > MAX_DEPTH:",
+   "new": "                if False:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_documents",
+   "file": "profile/yamlblock.py",
+   "old": "    if len(docs) > 1:\n        raise Unreadable(docs[1][0], \"documents\")",
+   "new": "    if False:\n        raise Unreadable(docs[1][0], \"documents\")",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_crlf",
+   "file": "profile/yamlblock.py",
+   "old": "self.lines = [ln[:-1] if ln.endswith(\"\\r\") else ln for ln in text.split(\"\\n\")]",
+   "new": "self.lines = text.split(\"\\n\")",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_tab",
+   "file": "profile/yamlblock.py",
+   "old": "            if content.startswith(\"\\t\"):",
+   "new": "            if False:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_quoted_key",
+   "file": "profile/yamlblock.py",
+   "old": "        return _unquote(content[:end + 1], 0), after[1:].strip()",
+   "new": "        return content[1:end], after[1:].strip()",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_key_colon_space",
+   "file": "profile/yamlblock.py",
+   "old": "for m in re.finditer(r\":(?: |$)\", content):",
+   "new": "for m in re.finditer(r\":\", content):",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_flow_multiline",
+   "file": "profile/yamlblock.py",
+   "old": "            while not _closed(\"\\n\".join(pieces)) and k + 1 < len(lines) \\",
+   "new": "            while False and not _closed(\"\\n\".join(pieces)) and k + 1 < len(lines) \\",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_closed_quotes",
+   "file": "profile/yamlblock.py",
+   "old": "        if c in \"'\\\"\" and (j == 0 or text[j - 1] in \" \\t\\n[{,:\"):",
+   "new": "        if False and c in \"'\\\"\" and (j == 0 or text[j - 1] in \" \\t\\n[{,:\"):",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  },
+  {
+   "id": "yb_flow_comment",
+   "file": "profile/yamlblock.py",
+   "old": "        elif c == \"#\" and (j == 0 or text[j - 1] in \" \\t\\n\"):\n            nl = text.find(\"\\n\", j)\n            j = len(text) if nl < 0 else nl\n        elif done:",
+   "new": "        elif False and c == \"#\" and (j == 0 or text[j - 1] in \" \\t\\n\"):\n            nl = text.find(\"\\n\", j)\n            j = len(text) if nl < 0 else nl\n        elif done:",
+   "tests": [
+    "test_profile_yamlblock.py"
+   ]
+  }
+ ]
+}
