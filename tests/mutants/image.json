@@ -1,0 +1,115 @@
+{
+  "mutants": [
+    {
+      "id": "img_stage_skips_image",
+      "file": "profile/unit_verify.py",
+      "old": "    bad = C.ensure_image(recipe[\"env_image\"], values[\"kos_wall_s\"], staging_root, runner)\n    if bad:\n        return bad, result, {}\n",
+      "new": "",
+      "tests": [
+        "test_unit_verify.Image",
+        "test_kos.TheBase.test_an_image_the_host_cannot_get_gives_no_base_and_nothing_runs"
+      ]
+    },
+    {
+      "id": "img_stage_fixed_timeout",
+      "file": "profile/unit_verify.py",
+      "old": "C.ensure_image(recipe[\"env_image\"], values[\"kos_wall_s\"], staging_root, runner)",
+      "new": "C.ensure_image(recipe[\"env_image\"], 600, staging_root, runner)",
+      "tests": [
+        "test_unit_verify.Image"
+      ]
+    },
+    {
+      "id": "img_always_pulls",
+      "file": "runner/contained.py",
+      "old": "    if held.exit == 0:\n        return []\n    pulled",
+      "new": "    pulled",
+      "tests": [
+        "test_contained.ImageTest"
+      ]
+    },
+    {
+      "id": "img_failed_pull_passes",
+      "file": "runner/contained.py",
+      "old": "    sys.stderr.write(fault_text(pulled.stderr))\n    return [IMAGE_UNAVAILABLE]",
+      "new": "    return []",
+      "tests": [
+        "test_contained.ImageTest"
+      ]
+    },
+    {
+      "id": "img_fault_silent",
+      "file": "runner/contained.py",
+      "old": "    sys.stderr.write(fault_text(pulled.stderr))\n",
+      "new": "",
+      "tests": [
+        "test_contained.ImageTest"
+      ]
+    },
+    {
+      "id": "img_pull_timeout_is_unavailable",
+      "file": "runner/contained.py",
+      "old": "    if pulled.timed_out:\n        return [\"limit_hit:kos_wall_s\"]\n",
+      "new": "",
+      "tests": [
+        "test_contained.ImageTest"
+      ]
+    },
+    {
+      "id": "img_unpinned_pulled",
+      "file": "runner/contained.py",
+      "old": "    if not (isinstance(image, str) and IMAGE.match(image)):\n        raise ContainmentError(\"image must be pinned: name[:tag]@sha256:<64 hex>\")\n    runner = runner or docker_runner\n    env = _docker_env(home)",
+      "new": "    runner = runner or docker_runner\n    env = _docker_env(home)",
+      "tests": [
+        "test_contained.ImageTest"
+      ]
+    },
+    {
+      "id": "img_fault_unbounded",
+      "file": "runner/contained.py",
+      "old": "stderr[:FAULT_BYTES].decode",
+      "new": "stderr.decode",
+      "tests": [
+        "test_contained.ImageTest"
+      ]
+    },
+    {
+      "id": "img_fault_raw",
+      "file": "runner/contained.py",
+      "old": "if \" \" <= ch <= \"~\" and ch != \"\\\\\" else",
+      "new": "if True else",
+      "tests": [
+        "test_contained.ImageTest"
+      ]
+    },
+    {
+      "id": "img_cli_gets_host_env",
+      "file": "runner/contained.py",
+      "old": "    return {\"PATH\": os.environ.get(\"PATH\", os.defpath), \"HOME\": home}",
+      "new": "    return dict(os.environ, HOME=home)",
+      "tests": [
+        "test_contained.ImageTest",
+        "test_contained.RunTest"
+      ]
+    },
+    {
+      "id": "img_no_name_kill",
+      "file": "runner/contained.py",
+      "old": "            out, err = proc.communicate()\n            return RunnerResult(None, out, err, True)\n        subprocess.run([\"docker\", \"kill\", name]",
+      "new": "            pass\n        subprocess.run([\"docker\", \"kill\", name]",
+      "tests": [
+        "test_contained.py"
+      ]
+    },
+    {
+      "id": "img_fake_holds_every_image",
+      "file": "tests/fake_docker.py",
+      "old": "        if spec[\"image\"] not in self.images:",
+      "new": "        if False:",
+      "tests": [
+        "test_contained.ImageTest",
+        "test_unit_verify.Image"
+      ]
+    }
+  ]
+}

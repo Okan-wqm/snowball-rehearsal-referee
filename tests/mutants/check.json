@@ -1,0 +1,980 @@
+{
+ "mutants": [
+  {
+   "id": "ck_block_copy_counts",
+   "file": "gate/check.py",
+   "old": "b[\"old\"] == path and b[\"kind\"] != \"copy\"]",
+   "new": "b[\"old\"] == path]",
+   "tests": [
+    "test_check.MappedLine.test_copies_and_two_blocks_of_one_path"
+   ]
+  },
+  {
+   "id": "ck_block_many",
+   "file": "gate/check.py",
+   "old": "if len(hits) > 1:",
+   "new": "if len(hits) > 2:",
+   "tests": [
+    "test_check.MappedLine.test_copies_and_two_blocks_of_one_path"
+   ]
+  },
+  {
+   "id": "ck_block_create",
+   "file": "gate/check.py",
+   "old": "if any(b[\"kind\"] == \"create\" and b[\"new\"] == path for b in blocks):",
+   "new": "if False:",
+   "tests": [
+    "test_check.MappedLine.test_paths"
+   ]
+  },
+  {
+   "id": "ck_map_line_type",
+   "file": "gate/check.py",
+   "old": "if type(line) is not int or line < 1:\n        raise DiffError",
+   "new": "if not isinstance(line, int) or line < 1:\n        raise DiffError",
+   "tests": [
+    "test_check.MappedLine.test_paths"
+   ]
+  },
+  {
+   "id": "ck_map_line_zero",
+   "file": "gate/check.py",
+   "old": "if type(line) is not int or line < 1:\n        raise DiffError",
+   "new": "if type(line) is not int or line < 0:\n        raise DiffError",
+   "tests": [
+    "test_check.MappedLine.test_paths"
+   ]
+  },
+  {
+   "id": "ck_map_delete",
+   "file": "gate/check.py",
+   "old": "    if block[\"kind\"] == \"delete\":\n        return []\n",
+   "new": "",
+   "tests": [
+    "test_check.MappedLine.test_paths"
+   ]
+  },
+  {
+   "id": "ck_map_range_end",
+   "file": "gate/check.py",
+   "old": "if b and a <= line <= a + b - 1:",
+   "new": "if b and a <= line <= a + b:",
+   "tests": [
+    "test_check.MappedLine.test_cli_map",
+    "test_check.MappedLine.test_real_diffs_against_the_files"
+   ]
+  },
+  {
+   "id": "ck_map_inside_d0",
+   "file": "gate/check.py",
+   "old": "return [c, c + d - 1] if d else []",
+   "new": "return [c, c + d - 1]",
+   "tests": [
+    "test_check.MappedLine.test_cli_map",
+    "test_check.MappedLine.test_real_diffs_expected_numbers"
+   ]
+  },
+  {
+   "id": "ck_map_inside_end",
+   "file": "gate/check.py",
+   "old": "return [c, c + d - 1] if d else []",
+   "new": "return [c, c + d] if d else []",
+   "tests": [
+    "test_check.Decision.test_scope_inserted_line",
+    "test_check.MappedLine.test_cli_map"
+   ]
+  },
+  {
+   "id": "ck_map_ends_before_le",
+   "file": "gate/check.py",
+   "old": "if (a + b - 1 if b else a) < line:",
+   "new": "if (a + b - 1 if b else a) <= line:",
+   "tests": [
+    "test_check.Decision.test_insertion_not_distinguished",
+    "test_check.MappedLine.test_real_diffs_against_the_files"
+   ]
+  },
+  {
+   "id": "ck_map_insert_point",
+   "file": "gate/check.py",
+   "old": "if (a + b - 1 if b else a) < line:",
+   "new": "if (a + b - 1 if b else a - 1) < line:",
+   "tests": [
+    "test_check.Decision.test_insertion_not_distinguished",
+    "test_check.MappedLine.test_real_diffs_against_the_files"
+   ]
+  },
+  {
+   "id": "ck_map_shift_d",
+   "file": "gate/check.py",
+   "old": "shift += d - b",
+   "new": "shift += d",
+   "tests": [
+    "test_check.MappedLine.test_cli_map",
+    "test_check.MappedLine.test_real_diffs_against_the_files"
+   ]
+  },
+  {
+   "id": "ck_map_shift_b",
+   "file": "gate/check.py",
+   "old": "shift += d - b",
+   "new": "shift -= b",
+   "tests": [
+    "test_check.Decision.test_scope_inserted_line",
+    "test_check.MappedLine.test_cli_map"
+   ]
+  },
+  {
+   "id": "ck_map_no_shift",
+   "file": "gate/check.py",
+   "old": "return [line + shift, line + shift]",
+   "new": "return [line, line]",
+   "tests": [
+    "test_check.Decision.test_scope_inserted_line",
+    "test_check.MappedLine.test_insertion_at_the_top"
+   ]
+  },
+  {
+   "id": "ck_scope_null_fix",
+   "file": "gate/check.py",
+   "old": "if fix is None or len(blocks) != 1:",
+   "new": "if fix is None:\n        return False\n    if len(blocks) != 1:",
+   "tests": [
+    "test_check.Decision.test_first_target_in_the_file",
+    "test_check.Decision.test_scope_other_path_rename_mode_and_null_fix"
+   ]
+  },
+  {
+   "id": "ck_scope_one_block",
+   "file": "gate/check.py",
+   "old": "if fix is None or len(blocks) != 1:",
+   "new": "if fix is None or not blocks:",
+   "tests": [
+    "test_check.Decision.test_scope_other_path_rename_mode_and_null_fix"
+   ]
+  },
+  {
+   "id": "ck_scope_binary",
+   "file": "gate/check.py",
+   "old": "or block[\"binary\"] or set",
+   "new": "or set",
+   "tests": [
+    "test_check.Decision.test_scope_other_path_rename_mode_and_null_fix"
+   ]
+  },
+  {
+   "id": "ck_scope_headers_all",
+   "file": "gate/check.py",
+   "old": "set(block[\"headers\"]) - {\"index\"}",
+   "new": "set(block[\"headers\"])",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable",
+    "test_check.Decision.test_a_file_failing_its_hash_is_not_read"
+   ]
+  },
+  {
+   "id": "ck_scope_headers_none",
+   "file": "gate/check.py",
+   "old": " or set(block[\"headers\"]) - {\"index\"}:",
+   "new": ":",
+   "tests": [
+    "test_check.Decision.test_scope_other_path_rename_mode_and_null_fix"
+   ]
+  },
+  {
+   "id": "ck_scope_pos_b0",
+   "file": "gate/check.py",
+   "old": "pos = h[\"old_start\"] if h[\"old_count\"] else h[\"old_start\"] + 1",
+   "new": "pos = h[\"old_start\"]",
+   "tests": [
+    "test_check.Decision.test_scope_inserted_line"
+   ]
+  },
+  {
+   "id": "ck_scope_pos_b0_minus",
+   "file": "gate/check.py",
+   "old": "pos = h[\"old_start\"] if h[\"old_count\"] else h[\"old_start\"] + 1",
+   "new": "pos = h[\"old_start\"] if h[\"old_count\"] else h[\"old_start\"] + 2",
+   "tests": [
+    "test_check.Decision.test_insertion_not_distinguished",
+    "test_check.Decision.test_scope_inserted_line"
+   ]
+  },
+  {
+   "id": "ck_scope_add_e",
+   "file": "gate/check.py",
+   "old": "if not s <= pos <= e + 1:",
+   "new": "if not s <= pos <= e:",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable",
+    "test_check.Decision.test_a_file_failing_its_hash_is_not_read"
+   ]
+  },
+  {
+   "id": "ck_scope_add_e2",
+   "file": "gate/check.py",
+   "old": "if not s <= pos <= e + 1:",
+   "new": "if not s <= pos <= e + 2:",
+   "tests": [
+    "test_check.Decision.test_scope_inserted_line"
+   ]
+  },
+  {
+   "id": "ck_scope_add_low",
+   "file": "gate/check.py",
+   "old": "if not s <= pos <= e + 1:",
+   "new": "if not pos <= e + 1:",
+   "tests": [
+    "test_check.Decision.test_scope_inserted_line"
+   ]
+  },
+  {
+   "id": "ck_scope_add_low1",
+   "file": "gate/check.py",
+   "old": "if not s <= pos <= e + 1:",
+   "new": "if not s - 1 <= pos <= e + 1:",
+   "tests": [
+    "test_check.Decision.test_scope_inserted_line"
+   ]
+  },
+  {
+   "id": "ck_scope_add_counts",
+   "file": "gate/check.py",
+   "old": "                    return True\n                continue\n",
+   "new": "                    return True\n",
+   "tests": [
+    "test_check.Decision.test_merge_with_shifted_violation_and_changed_rule",
+    "test_check.Decision.test_not_distinguished_inside_the_hunk"
+   ]
+  },
+  {
+   "id": "ck_scope_del_e1",
+   "file": "gate/check.py",
+   "old": "if tag == \"-\" and not s <= pos <= e:",
+   "new": "if tag == \"-\" and not s <= pos <= e + 1:",
+   "tests": [
+    "test_check.Decision.test_scope_removed_line"
+   ]
+  },
+  {
+   "id": "ck_scope_del_low",
+   "file": "gate/check.py",
+   "old": "if tag == \"-\" and not s <= pos <= e:",
+   "new": "if tag == \"-\" and not pos <= e:",
+   "tests": [
+    "test_check.Decision.test_scope_removed_line"
+   ]
+  },
+  {
+   "id": "ck_scope_context_judged",
+   "file": "gate/check.py",
+   "old": "if tag == \"-\" and not s <= pos <= e:",
+   "new": "if not s <= pos <= e:",
+   "tests": [
+    "test_check.Decision.test_scope_ignores_context"
+   ]
+  },
+  {
+   "id": "ck_scope_context_no_count",
+   "file": "gate/check.py",
+   "old": "                return True\n            pos += 1\n",
+   "new": "                return True\n            if tag == \"-\":\n                pos += 1\n",
+   "tests": [
+    "test_check.Decision.test_scope_ignores_context"
+   ]
+  },
+  {
+   "id": "ck_plain_nonstr",
+   "file": "gate/check.py",
+   "old": "if not isinstance(path, str) or not path or path.startswith",
+   "new": "if not path or path.startswith",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_plain_backslash",
+   "file": "gate/check.py",
+   "old": " or \"\\\\\" in path \\\n",
+   "new": " \\\n",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_plain_dot",
+   "file": "gate/check.py",
+   "old": "in (\"\", \".\", \"..\")",
+   "new": "in (\"\", \"..\")",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_plain_dotdot",
+   "file": "gate/check.py",
+   "old": "in (\"\", \".\", \"..\")",
+   "new": "in (\"\", \".\")",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_plain_emptypart",
+   "file": "gate/check.py",
+   "old": "in (\"\", \".\", \"..\")",
+   "new": "in (\".\", \"..\")",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_line_no_type",
+   "file": "gate/check.py",
+   "old": "if type(value) is not int or value < 1:",
+   "new": "if not isinstance(value, int) or value < 1:",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_line_no_zero",
+   "file": "gate/check.py",
+   "old": "if type(value) is not int or value < 1:",
+   "new": "if type(value) is not int or value < 0:",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_rule_nonstr",
+   "file": "gate/check.py",
+   "old": "if not isinstance(value, str) or not value:",
+   "new": "if not value:",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_rule_empty",
+   "file": "gate/check.py",
+   "old": "if not isinstance(value, str) or not value:",
+   "new": "if not isinstance(value, str):",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_finding_dict",
+   "file": "gate/check.py",
+   "old": "    if not isinstance(doc, dict):\n        raise Unusable(\"finding.json must be an object\")\n",
+   "new": "",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_violation_dict",
+   "file": "gate/check.py",
+   "old": "    if not isinstance(v, dict):\n        raise Unusable(\"%s must be an object\" % what)\n",
+   "new": "",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_fix_len",
+   "file": "gate/check.py",
+   "old": "and len(fix) == 2 and",
+   "new": "and len(fix) >= 2 and",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_fix_int",
+   "file": "gate/check.py",
+   "old": "all(type(x) is int for x in fix)",
+   "new": "all(isinstance(x, int) for x in fix)",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_fix_low",
+   "file": "gate/check.py",
+   "old": "1 <= fix[0] <= fix[1]",
+   "new": "0 <= fix[0] <= fix[1]",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_fix_order",
+   "file": "gate/check.py",
+   "old": "1 <= fix[0] <= fix[1]",
+   "new": "1 <= fix[0]",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_run_pop",
+   "file": "gate/check.py",
+   "old": "    if lines[-1] == b\"\":\n        lines.pop()\n",
+   "new": "",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable",
+    "test_check.Decision.test_a_file_failing_its_hash_is_not_read"
+   ]
+  },
+  {
+   "id": "ck_run_count",
+   "file": "gate/check.py",
+   "old": "if len(lines) != RUN_LINES:",
+   "new": "if len(lines) < RUN_LINES:",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_run_dict",
+   "file": "gate/check.py",
+   "old": "if not isinstance(rec, dict) or not isinstance(rec.get(\"violations\"), list):",
+   "new": "if not isinstance(rec.get(\"violations\"), list):",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_run_list",
+   "file": "gate/check.py",
+   "old": "if not isinstance(rec, dict) or not isinstance(rec.get(\"violations\"), list):",
+   "new": "if not isinstance(rec, dict):",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_run_same_one",
+   "file": "gate/check.py",
+   "old": "return run, all(line == lines[0] for line in lines)",
+   "new": "return run, lines[1] == lines[0]",
+   "tests": [
+    "test_check.Decision.test_tool_nondeterministic"
+   ]
+  },
+  {
+   "id": "ck_run_same_two",
+   "file": "gate/check.py",
+   "old": "return run, all(line == lines[0] for line in lines)",
+   "new": "return run, lines[2] == lines[0]",
+   "tests": [
+    "test_check.Decision.test_tool_nondeterministic"
+   ]
+  },
+  {
+   "id": "ck_bc_hash",
+   "file": "gate/check.py",
+   "old": "if hashlib.sha256(base_run).hexdigest() != base_run_sha256:",
+   "new": "if False:",
+   "tests": [
+    "test_activate.Refusals.test_ratchet_base_refusals_write_nothing",
+    "test_watch.BaseLint.test_none_when_it_cannot_be_read"
+   ]
+  },
+  {
+   "id": "ck_bc_same",
+   "file": "gate/check.py",
+   "old": "    if not same:\n        return {\"reasons\": [\"tool_nondeterministic\"]",
+   "new": "    if False:\n        return {\"reasons\": [\"tool_nondeterministic\"]",
+   "tests": [
+    "test_activate.Refusals.test_ratchet_base_refusals_write_nothing",
+    "test_watch.BaseLint.test_none_when_it_cannot_be_read"
+   ]
+  },
+  {
+   "id": "ck_bc_counts",
+   "file": "gate/check.py",
+   "old": "return {\"reasons\": [], \"counts\": _counts(run)}",
+   "new": "return {\"reasons\": [], \"counts\": {}}",
+   "tests": [
+    "test_activate.Activation.test_d5s_merge_landed_rejects_recorded_one_orphan_state",
+    "test_activate.Activation.test_the_ratchet_base_is_the_referees_run"
+   ]
+  },
+  {
+   "id": "ck_checks_dict",
+   "file": "gate/check.py",
+   "old": "if not isinstance(doc, dict) or not isinstance(doc.get(\"tests\"), list) or",
+   "new": "if not isinstance(doc.get(\"tests\"), list) or",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_checks_list",
+   "file": "gate/check.py",
+   "old": "or not isinstance(doc.get(\"tests\"), list) or doc.get(\"red_control\")",
+   "new": "or doc.get(\"red_control\")",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_checks_red",
+   "file": "gate/check.py",
+   "old": " or doc.get(\"red_control\") not in STATUSES:",
+   "new": ":",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_checks_test_dict",
+   "file": "gate/check.py",
+   "old": "if not isinstance(t, dict) or not isinstance(t.get(\"id\"), str)",
+   "new": "if not isinstance(t.get(\"id\"), str)",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_checks_test_id",
+   "file": "gate/check.py",
+   "old": "or not isinstance(t.get(\"id\"), str) or t.get(\"status\")",
+   "new": "or t.get(\"status\")",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_checks_test_status",
+   "file": "gate/check.py",
+   "old": " or t.get(\"status\") not in STATUSES:",
+   "new": ":",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_statuses",
+   "file": "gate/check.py",
+   "old": "STATUSES = (\"pass\", \"fail\")",
+   "new": "STATUSES = (\"pass\", \"fail\", \"ok\")",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_hashes_dict",
+   "file": "gate/check.py",
+   "old": "if not isinstance(doc, dict) or not all(isinstance(doc.get(k), str)",
+   "new": "if not all(isinstance(doc.get(k), str)",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_hashes_anchor",
+   "file": "gate/check.py",
+   "old": "SHA256 = re.compile(r\"[0-9a-f]{64}\\Z\")",
+   "new": "SHA256 = re.compile(r\"[0-9a-f]{64}$\")",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_hashes_len",
+   "file": "gate/check.py",
+   "old": "SHA256 = re.compile(r\"[0-9a-f]{64}\\Z\")",
+   "new": "SHA256 = re.compile(r\"[0-9a-f]{64}\")",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_hashes_case",
+   "file": "gate/check.py",
+   "old": "SHA256 = re.compile(r\"[0-9a-f]{64}\\Z\")",
+   "new": "SHA256 = re.compile(r\"[0-9a-fA-F]{64}\\Z\")",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_req_dict",
+   "file": "gate/check.py",
+   "old": "if not isinstance(doc, dict) or not isinstance(doc.get(\"control\"), dict)",
+   "new": "if not isinstance(doc.get(\"control\"), dict)",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_req_control",
+   "file": "gate/check.py",
+   "old": "or not isinstance(doc.get(\"control\"), dict) \\\n",
+   "new": "\\\n",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_req_list",
+   "file": "gate/check.py",
+   "old": "            or not isinstance(doc.get(\"unfinished_sentinels\"), list) \\\n",
+   "new": "",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_req_str",
+   "file": "gate/check.py",
+   "old": "            or not all(isinstance(s, str) for s in doc[\"unfinished_sentinels\"]):",
+   "new": "            or False:",
+   "tests": [
+    "test_check.Decision.test_unusable_inputs"
+   ]
+  },
+  {
+   "id": "ck_dec_missing",
+   "file": "gate/check.py",
+   "old": "if raw is None or hashlib.sha256(raw).hexdigest() != hashes[name]:",
+   "new": "if raw is not None and hashlib.sha256(raw).hexdigest() != hashes[name]:",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable",
+    "test_check.Decision.test_every_hash_is_checked"
+   ]
+  },
+  {
+   "id": "ck_dec_hash",
+   "file": "gate/check.py",
+   "old": "if raw is None or hashlib.sha256(raw).hexdigest() != hashes[name]:",
+   "new": "if raw is None:",
+   "tests": [
+    "test_check.Decision.test_a_file_failing_its_hash_is_not_read",
+    "test_check.Decision.test_every_hash_is_checked"
+   ]
+  },
+  {
+   "id": "ck_dec_read_unverified",
+   "file": "gate/check.py",
+   "old": "verified[name] = raw  # only a file whose hash holds is read",
+   "new": "pass",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable",
+    "test_check.Decision.test_a_file_failing_its_hash_is_not_read"
+   ]
+  },
+  {
+   "id": "ck_dec_nondet",
+   "file": "gate/check.py",
+   "old": "            if not same:\n                reasons.append(\"tool_nondeterministic\")",
+   "new": "            if False:\n                reasons.append(\"tool_nondeterministic\")",
+   "tests": [
+    "test_check.Decision.test_tool_nondeterministic"
+   ]
+  },
+  {
+   "id": "ck_dec_nondet_base",
+   "file": "gate/check.py",
+   "old": "            if not same:\n                reasons.append(\"tool_nondeterministic\")",
+   "new": "            if not same and name == \"cand.jsonl\":\n                reasons.append(\"tool_nondeterministic\")",
+   "tests": [
+    "test_check.Decision.test_tool_nondeterministic"
+   ]
+  },
+  {
+   "id": "ck_dec_target_rule",
+   "file": "gate/check.py",
+   "old": "== (found[\"rule_id\"], found[\"path\"], found[\"line\"])",
+   "new": "== (v[\"rule_id\"], found[\"path\"], found[\"line\"])",
+   "tests": [
+    "test_check.Decision.test_target_not_found"
+   ]
+  },
+  {
+   "id": "ck_dec_target_path",
+   "file": "gate/check.py",
+   "old": "== (found[\"rule_id\"], found[\"path\"], found[\"line\"])",
+   "new": "== (found[\"rule_id\"], v[\"path\"], found[\"line\"])",
+   "tests": [
+    "test_check.Decision.test_target_not_found"
+   ]
+  },
+  {
+   "id": "ck_dec_target_line",
+   "file": "gate/check.py",
+   "old": "== (found[\"rule_id\"], found[\"path\"], found[\"line\"])",
+   "new": "== (found[\"rule_id\"], found[\"path\"], v[\"line\"])",
+   "tests": [
+    "test_check.Decision.test_target_not_found"
+   ]
+  },
+  {
+   "id": "ck_dec_target_last",
+   "file": "gate/check.py",
+   "old": "target = targets[0]",
+   "new": "target = targets[-1]",
+   "tests": [
+    "test_check.Decision.test_first_target_in_the_file"
+   ]
+  },
+  {
+   "id": "ck_dec_no_scope",
+   "file": "gate/check.py",
+   "old": "                reasons.append(\"scope_violation\")",
+   "new": "                pass",
+   "tests": [
+    "test_check.Decision.test_a_file_failing_its_hash_is_not_read",
+    "test_check.Decision.test_first_target_in_the_file"
+   ]
+  },
+  {
+   "id": "ck_dec_mapped_empty",
+   "file": "gate/check.py",
+   "old": "if cand is not None and mapped and any(",
+   "new": "if cand is not None and any(",
+   "tests": [
+    "test_check.Decision.test_deleting_the_target_line_distinguishes_it"
+   ]
+  },
+  {
+   "id": "ck_dec_nd_rule",
+   "file": "gate/check.py",
+   "old": "v[\"rule_id\"] == target[\"rule_id\"] and v[\"path\"]",
+   "new": "v[\"path\"]",
+   "tests": [
+    "test_check.Decision.test_merge_with_shifted_violation_and_changed_rule",
+    "test_check.Decision.test_not_distinguished"
+   ]
+  },
+  {
+   "id": "ck_dec_nd_path",
+   "file": "gate/check.py",
+   "old": "and v[\"path\"] == target[\"path\"]\n",
+   "new": "\n",
+   "tests": [
+    "test_check.Decision.test_not_distinguished_needs_rule_path_and_range"
+   ]
+  },
+  {
+   "id": "ck_dec_nd_low",
+   "file": "gate/check.py",
+   "old": "and mapped[0] <= v[\"line\"] <= mapped[1]",
+   "new": "and v[\"line\"] <= mapped[1]",
+   "tests": [
+    "test_check.Decision.test_not_distinguished_needs_rule_path_and_range"
+   ]
+  },
+  {
+   "id": "ck_dec_nd_high",
+   "file": "gate/check.py",
+   "old": "and mapped[0] <= v[\"line\"] <= mapped[1]",
+   "new": "and mapped[0] <= v[\"line\"]",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable",
+    "test_check.Decision.test_a_file_failing_its_hash_is_not_read"
+   ]
+  },
+  {
+   "id": "ck_dec_ratchet_ge",
+   "file": "gate/check.py",
+   "old": "if any(n > before.get(tool, 0)",
+   "new": "if any(n >= before.get(tool, 0)",
+   "tests": [
+    "test_check.Decision.test_insertion_not_distinguished",
+    "test_check.Decision.test_merge_with_shifted_violation_and_changed_rule"
+   ]
+  },
+  {
+   "id": "ck_dec_ratchet_default",
+   "file": "gate/check.py",
+   "old": "if any(n > before.get(tool, 0)",
+   "new": "if any(n > before.get(tool, 1)",
+   "tests": [
+    "test_check.Decision.test_ratchet_per_tool"
+   ]
+  },
+  {
+   "id": "ck_counts_rule",
+   "file": "gate/check.py",
+   "old": "return {run[\"tool\"]: len(run[\"violations\"])}",
+   "new": "return {run[\"tool\"]: len({v[\"rule_id\"] for v in run[\"violations\"]})}",
+   "tests": [
+    "test_check.Decision.test_first_target_in_the_file",
+    "test_check.Decision.test_merge_with_shifted_violation_and_changed_rule"
+   ]
+  },
+  {
+   "id": "ck_dec_zero",
+   "file": "gate/check.py",
+   "old": "        if not checks[\"tests\"]:\n            reasons.append(\"zero_tests\")\n",
+   "new": "",
+   "tests": [
+    "test_check.Decision.test_fail_closed_controls",
+    "test_check.Decision.test_tests_and_red_control"
+   ]
+  },
+  {
+   "id": "ck_dec_red_all",
+   "file": "gate/check.py",
+   "old": "if any(t[\"status\"] == \"fail\" for t in checks[\"tests\"]):",
+   "new": "if checks[\"tests\"] and all(t[\"status\"] == \"fail\" for t in checks[\"tests\"]):",
+   "tests": [
+    "test_check.Decision.test_tests_and_red_control"
+   ]
+  },
+  {
+   "id": "ck_dec_control",
+   "file": "gate/check.py",
+   "old": "if checks[\"red_control\"] == \"pass\":",
+   "new": "if False:",
+   "tests": [
+    "test_check.Decision.test_tests_and_red_control"
+   ]
+  },
+  {
+   "id": "ck_dec_paused_eq",
+   "file": "gate/check.py",
+   "old": "if stdin[\"control\"].get(\"merge_paused\") is not False:",
+   "new": "if stdin[\"control\"].get(\"merge_paused\", False) is not False:",
+   "tests": [
+    "test_check.Decision.test_a_file_failing_its_hash_is_not_read",
+    "test_check.Decision.test_fail_closed_controls"
+   ]
+  },
+  {
+   "id": "ck_dec_paused_truthy",
+   "file": "gate/check.py",
+   "old": "if stdin[\"control\"].get(\"merge_paused\") is not False:",
+   "new": "if stdin[\"control\"].get(\"merge_paused\") != False:  # noqa: E712",
+   "tests": [
+    "test_check.Decision.test_merge_paused_unless_false"
+   ]
+  },
+  {
+   "id": "ck_dec_sentinel",
+   "file": "gate/check.py",
+   "old": "    if stdin[\"unfinished_sentinels\"]:\n",
+   "new": "    if False:\n",
+   "tests": [
+    "test_check.Decision.test_fail_closed_controls",
+    "test_check.Decision.test_sentinel_pending"
+   ]
+  },
+  {
+   "id": "ck_dec_secret",
+   "file": "gate/check.py",
+   "old": "    if secrets.scan(diff_text, \"diff\"):\n",
+   "new": "    if False:\n",
+   "tests": [
+    "test_check.Decision.test_secret_in_diff"
+   ]
+  },
+  {
+   "id": "ck_dec_dedup",
+   "file": "gate/check.py",
+   "old": "reasons = sorted(set(reasons))",
+   "new": "reasons = sorted(reasons)",
+   "tests": [
+    "test_check.Decision.test_every_hash_is_checked"
+   ]
+  },
+  {
+   "id": "ck_dec_sort",
+   "file": "gate/check.py",
+   "old": "reasons = sorted(set(reasons))",
+   "new": "reasons = list(dict.fromkeys(reasons))",
+   "tests": [
+    "test_check.Decision.test_a_file_failing_its_hash_is_not_read",
+    "test_check.Decision.test_fail_closed_controls"
+   ]
+  },
+  {
+   "id": "ck_cli_surrogate",
+   "file": "gate/check.py",
+   "old": "return fh.read().decode(\"utf-8\", \"surrogateescape\")",
+   "new": "return fh.read().decode(\"utf-8\")",
+   "tests": [
+    "test_check.CommandLine.test_diff_bytes_that_are_not_utf8"
+   ]
+  },
+  {
+   "id": "ck_cli_line_re",
+   "file": "gate/check.py",
+   "old": "if not re.fullmatch(r\"[1-9][0-9]*\", argv[3]):",
+   "new": "if not re.fullmatch(r\"[0-9]+\", argv[3]):",
+   "tests": [
+    "test_check.MappedLine.test_cli_map"
+   ]
+  },
+  {
+   "id": "ck_cli_merge_exit",
+   "file": "gate/check.py",
+   "old": "return 0 if result[\"decision\"] == \"merge\" else 1",
+   "new": "return 0",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable"
+   ]
+  },
+  {
+   "id": "ck_cli_catch_oserror",
+   "file": "gate/check.py",
+   "old": "except (Unusable, DiffError, ValueError, OSError, RecursionError) as exc:",
+   "new": "except (Unusable, DiffError, ValueError, RecursionError) as exc:",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable",
+    "test_check.MappedLine.test_cli_map"
+   ]
+  },
+  {
+   "id": "ck_cli_catch_value",
+   "file": "gate/check.py",
+   "old": "except (Unusable, DiffError, ValueError, OSError, RecursionError) as exc:",
+   "new": "except (Unusable, DiffError, OSError) as exc:",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable"
+   ]
+  },
+  {
+   "id": "ck_cli_reject_line",
+   "file": "gate/check.py",
+   "old": "_emit({\"decision\": \"reject\"} if mode == \"decide\" else {\"error\": cause})",
+   "new": "_emit({\"error\": cause})",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable"
+   ]
+  },
+  {
+   "id": "ck_cli_stderr",
+   "file": "gate/check.py",
+   "old": "    sys.stderr.write(cause + \"\\n\")\n    return 2",
+   "new": "    return 2",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable",
+    "test_check.MappedLine.test_cli_map"
+   ]
+  },
+  {
+   "id": "ck_fault_line",
+   "file": "gate/check.py",
+   "old": "return {\"decision\": \"reject\"} if argv[:1] == [\"decide\"] else cli.GENERIC_LINE",
+   "new": "return cli.GENERIC_LINE",
+   "tests": [
+    "test_check.CommandLine.test_a_crash_in_decide_still_rejects"
+   ]
+  },
+  {
+   "id": "ck_cli_missing_file",
+   "file": "gate/check.py",
+   "old": "    except FileNotFoundError:\n        return None",
+   "new": "    except FileNotFoundError:\n        raise",
+   "tests": [
+    "test_check.CommandLine.test_merge_reject_unusable"
+   ]
+  }
+ ]
+}
