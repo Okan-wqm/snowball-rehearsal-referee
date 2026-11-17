@@ -1,0 +1,284 @@
+{
+ "root": ".",
+ "mutants": [
+  {
+   "id": "ledger_in_stamped_files",
+   "file": "tests/prepush.py",
+   "old": "return state(root, [n for n in R.files(root, git) if n != LEDGER])",
+   "new": "return state(root, R.files(root, git))",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "red_run_stamped",
+   "file": "tests/prepush.py",
+   "old": "reasons = [] if summary[\"ok\"] else [\"tests_red\"]",
+   "new": "reasons = []",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "moving_tree_stamped",
+   "file": "tests/prepush.py",
+   "old": "if state(root, R.files(root, git)) != before:",
+   "new": "if False:",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "old_stamp_kept_on_red",
+   "file": "tests/prepush.py",
+   "old": "if os.path.lexists(path):\n            os.remove(path)",
+   "new": "pass",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "every_command_a_reader",
+   "file": "tests/prepush.py",
+   "old": "readers = [r[\"id\"] for r in results if r[\"read\"]] if watched else None",
+   "new": "readers = [r[\"id\"] for r in results] if watched else None",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "no_atime_reads_as_no_reader",
+   "file": "tests/prepush.py",
+   "old": "readers = [r[\"id\"] for r in results if r[\"read\"]] if watched else None",
+   "new": "readers = [r[\"id\"] for r in results if r[\"read\"]] if watched else []",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "execute_bit_not_in_state",
+   "file": "tests/prepush.py",
+   "old": "out[name] = digest + (\":x\" if os.stat(path).st_mode & 0o111 else \"\")",
+   "new": "out[name] = digest",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "link_followed",
+   "file": "tests/prepush.py",
+   "old": "if os.path.islink(path):\n            out[name] = \"link:\" + os.readlink(path)\n        else:",
+   "new": "if True:",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "other_schema_read",
+   "file": "tests/prepush.py",
+   "old": "if not isinstance(stamp, dict) or stamp.get(\"schema\") != SCHEMA:",
+   "new": "if not isinstance(stamp, dict):",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "files_values_unchecked",
+   "file": "tests/prepush.py",
+   "old": "if not isinstance(files, dict) or not all(isinstance(v, str) for v in files.values()):",
+   "new": "if not isinstance(files, dict):",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "prefix_not_compared",
+   "file": "tests/prepush.py",
+   "old": "if now is None or hashlib.sha256(now[:stamped[\"bytes\"]]).hexdigest() != stamped[\"sha256\"]:",
+   "new": "if now is None:",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "whole_ledger_compared",
+   "file": "tests/prepush.py",
+   "old": "if now is None or hashlib.sha256(now[:stamped[\"bytes\"]]).hexdigest() != stamped[\"sha256\"]:",
+   "new": "if now is None or hashlib.sha256(now).hexdigest() != stamped[\"sha256\"]:",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "changed_paths_unnamed",
+   "file": "tests/prepush.py",
+   "old": "if now.get(n) != stamp[\"files\"].get(n)]",
+   "new": "if False]",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "added_path_unseen",
+   "file": "tests/prepush.py",
+   "old": "for n in sorted(set(now) | set(stamp[\"files\"]))",
+   "new": "for n in sorted(set(stamp[\"files\"]))",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "removed_path_unseen",
+   "file": "tests/prepush.py",
+   "old": "for n in sorted(set(now) | set(stamp[\"files\"]))",
+   "new": "for n in sorted(set(now))",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "uncommitted_passes",
+   "file": "tests/prepush.py",
+   "old": "reasons.append(\"uncommitted\")",
+   "new": "pass",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "rewritten_passes",
+   "file": "tests/prepush.py",
+   "old": "reasons.append(\"ledger_rewritten\")",
+   "new": "pass",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "readers_run_beside_a_reason",
+   "file": "tests/prepush.py",
+   "old": "if change == \"grown\" and not reasons:",
+   "new": "if change == \"grown\":",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "grown_ledger_not_rerun",
+   "file": "tests/prepush.py",
+   "old": "if change == \"grown\" and not reasons:",
+   "new": "if False:",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "empty_readers_read_as_all",
+   "file": "tests/prepush.py",
+   "old": "if stamp[\"readers\"] is not None:",
+   "new": "if stamp[\"readers\"]:",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "null_readers_read_as_none",
+   "file": "tests/prepush.py",
+   "old": "tests = [t for t in tests if t[\"id\"] in stamp[\"readers\"]]",
+   "new": "tests = [t for t in tests if t[\"id\"] in (stamp[\"readers\"] or [])]\n        else:\n            tests = []",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "reader_failure_dropped",
+   "file": "tests/prepush.py",
+   "old": "reasons += [\"test_failed:%s\" % i for i in summary[\"failed\"]]",
+   "new": "pass",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "unusable_exits_one",
+   "file": "tests/prepush.py",
+   "old": "print(json.dumps({\"ok\": False, \"reason\": str(e)}))\n        return 2",
+   "new": "print(json.dumps({\"ok\": False, \"reason\": str(e)}))\n        return 1",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "not_ok_exits_zero",
+   "file": "tests/prepush.py",
+   "old": "return 0 if result[\"ok\"] else 1",
+   "new": "return 0",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "watch_not_reset",
+   "file": "tests/run_like_referee.py",
+   "old": "for name in watch:\n            unread(os.path.join(tree, name))",
+   "new": "pass",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "watch_every_file_read",
+   "file": "tests/run_like_referee.py",
+   "old": "return os.stat(path).st_atime_ns != 0",
+   "new": "return True",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "read_field_without_watch",
+   "file": "tests/run_like_referee.py",
+   "old": "if watch:\n        result[\"read\"] = read",
+   "new": "result[\"read\"] = read",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "watch_not_passed_by_run",
+   "file": "tests/run_like_referee.py",
+   "old": "run_one(t, root, names, path, work, timeout, watch)",
+   "new": "run_one(t, root, names, path, work, timeout)",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "skill_names_another_tool",
+   "file": "skills/push/SKILL.md",
+   "old": "5. Commit. Then `python3 tests/prepush.py check -j 3`",
+   "new": "5. Commit. Then `python3 tests/prepush.py verify -j 3`",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "skill_extra_key",
+   "file": "skills/push/SKILL.md",
+   "old": "name: push\n",
+   "new": "name: push\ntools: Bash\n",
+   "tests": [
+    "test_prepush.py"
+   ]
+  },
+  {
+   "id": "removed_ledger_passes",
+   "file": "tests/prepush.py",
+   "old": "if now is None or hashlib.sha256(now[:stamped[\"bytes\"]]).hexdigest() != stamped[\"sha256\"]:",
+   "new": "if now is not None and hashlib.sha256(now[:stamped[\"bytes\"]]).hexdigest() != stamped[\"sha256\"]:",
+   "tests": [
+    "test_prepush.py"
+   ]
+  }
+ ]
+}

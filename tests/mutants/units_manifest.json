@@ -1,0 +1,67 @@
+{
+ "mutants": [
+  {
+   "id": "units_project_json_no_manifest",
+   "file": "profile/derive.py",
+   "old": "PROJECT_MANIFESTS = (\"package.json\", \"project.json\")",
+   "new": "PROJECT_MANIFESTS = (\"package.json\",)",
+   "tests": [
+    "test_profile_units.py"
+   ]
+  },
+  {
+   "id": "units_project_json_judged_first",
+   "file": "profile/derive.py",
+   "old": "PROJECT_MANIFESTS = (\"package.json\", \"project.json\")",
+   "new": "PROJECT_MANIFESTS = (\"project.json\", \"package.json\")",
+   "tests": [
+    "test_profile_units.py"
+   ]
+  },
+  {
+   "id": "units_manifest_any_json",
+   "file": "profile/derive.py",
+   "old": "                if not isinstance(manifest, dict):\n                    reasons.append(name.replace(\".\", \"_\") + \"_unparsable\")\n",
+   "new": "                pass\n",
+   "tests": [
+    "test_profile_units.py"
+   ]
+  },
+  {
+   "id": "units_manifest_both_judged",
+   "file": "profile/derive.py",
+   "old": "                    reasons.append(name.replace(\".\", \"_\") + \"_unparsable\")\n                break\n",
+   "new": "                    reasons.append(name.replace(\".\", \"_\") + \"_unparsable\")\n                    continue\n                break\n",
+   "tests": [
+    "test_profile_units.py"
+   ]
+  },
+  {
+   "id": "units_manifest_reason_one_name",
+   "file": "profile/derive.py",
+   "old": "reasons.append(name.replace(\".\", \"_\") + \"_unparsable\")",
+   "new": "reasons.append(\"package_json_unparsable\")",
+   "tests": [
+    "test_profile_units.py"
+   ]
+  },
+  {
+   "id": "units_default_package_dirs_only",
+   "file": "profile/derive.py",
+   "old": "            if name in PROJECT_MANIFESTS:",
+   "new": "            if name == \"package.json\":",
+   "tests": [
+    "test_profile_units.py"
+   ]
+  },
+  {
+   "id": "units_project_json_default_unfit",
+   "file": "profile/derive.py",
+   "old": "            if name in PROJECT_MANIFESTS:",
+   "new": "            if name == PROJECT_MANIFESTS[0]:",
+   "tests": [
+    "test_profile_nx.py"
+   ]
+  }
+ ]
+}

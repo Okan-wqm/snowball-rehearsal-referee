@@ -1,0 +1,177 @@
+{
+ "mutants": [
+  {
+   "id": "targets_order",
+   "file": "loop/cek.py",
+   "old": "    return ([], reasons) if reasons else (entries, [])\n",
+   "new": "    return ([], reasons) if reasons else (list(reversed(entries)), [])\n",
+   "tests": [
+    "test_loop_cek.py"
+   ]
+  },
+  {
+   "id": "targets_kind_unchecked",
+   "file": "loop/cek.py",
+   "old": "    if not all(isinstance(t, dict) and t.get(\"kind\") in KINDS for t in entries):\n",
+   "new": "    if not all(isinstance(t, dict) for t in entries):\n",
+   "tests": [
+    "test_loop_cek.py"
+   ]
+  },
+  {
+   "id": "targets_duplicate",
+   "file": "loop/cek.py",
+   "old": "    if len(set(named)) != len(named):\n",
+   "new": "    if False:\n",
+   "tests": [
+    "test_loop_cek.py"
+   ]
+  },
+  {
+   "id": "targets_empty_ok",
+   "file": "loop/cek.py",
+   "old": "    reasons = [] if entries else [\"targets_empty\"]\n",
+   "new": "    reasons = []\n",
+   "tests": [
+    "test_loop_cek.py"
+   ]
+  },
+  {
+   "id": "waiting_any_kind",
+   "file": "loop/job.py",
+   "old": "    if target[\"kind\"] == \"copy\" and len(missing) == len(heads) and not opened:\n",
+   "new": "    if len(missing) == len(heads) and not opened:\n",
+   "tests": [
+    "test_loop_cek.py"
+   ]
+  },
+  {
+   "id": "waiting_one_head",
+   "file": "loop/job.py",
+   "old": "    if target[\"kind\"] == \"copy\" and len(missing) == len(heads) and not opened:\n",
+   "new": "    if target[\"kind\"] == \"copy\" and missing and not opened:\n",
+   "tests": [
+    "test_loop_cek.py"
+   ]
+  },
+  {
+   "id": "waiting_served",
+   "file": "loop/job.py",
+   "old": "    _hand_over(root, [line[\"target\"] for line in lines if \"waiting\" not in line], _dir(environ, \"out\", \"pulled\"))\n",
+   "new": "    _hand_over(root, [line[\"target\"] for line in lines], _dir(environ, \"out\", \"pulled\"))\n",
+   "tests": [
+    "test_loop_cek.py"
+   ]
+  },
+  {
+   "id": "cek_no_stop",
+   "file": "loop/job.py",
+   "old": "        if \"reason\" in line:\n            return dict(_refused",
+   "new": "        if \"reason\" in line and len(lines) == len(targets):\n            return dict(_refused",
+   "tests": [
+    "test_loop_cek.py"
+   ]
+  },
+  {
+   "id": "served_order",
+   "file": "loop/pulled.py",
+   "old": "    ids = doc[\"targets\"]\n",
+   "new": "    ids = sorted(doc[\"targets\"])\n",
+   "tests": [
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "served_unlisted",
+   "file": "loop/pulled.py",
+   "old": "    reasons += [\"unlisted:%s\" % n for n in sorted(entries - set(ids))]\n",
+   "new": "",
+   "tests": [
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "served_link",
+   "file": "loop/pulled.py",
+   "old": "               if t not in entries or os.path.islink(os.path.join(root, t)) or not os.path.isdir(os.path.join(root, t))]\n",
+   "new": "               if t not in entries or not os.path.isdir(os.path.join(root, t))]\n",
+   "tests": [
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "job_no_stop",
+   "file": "loop/job.py",
+   "old": "        if not line[\"ok\"]:\n",
+   "new": "        if not line[\"ok\"] and len(lines) == len(served):\n",
+   "tests": [
+    "test_loop_kos.py",
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "unit_target_unchecked",
+   "file": "loop/job.py",
+   "old": "    if art.target[\"id\"] != tid:\n        return None, None, {\"reason\": \"pulled_invalid\", \"reasons\": [\"target_mismatch\"]}\n",
+   "new": "",
+   "tests": [
+    "test_loop_kos.py",
+    "test_loop_yaz.py"
+   ]
+  },
+  {
+   "id": "cagir_target_unchecked",
+   "file": "loop/job.py",
+   "old": "    if art.target[\"id\"] != tid:\n        return {\"reason\": \"pulled_invalid\", \"reasons\": [\"target_mismatch\"]}\n",
+   "new": "",
+   "tests": [
+    "test_loop_cagir.py"
+   ]
+  },
+  {
+   "id": "deps_not_per_target",
+   "file": "loop/job.py",
+   "old": "    deps = _dir(environ, \"in\", \"deps\", tid)\n",
+   "new": "    deps = _dir(environ, \"in\", \"deps\")\n",
+   "tests": [
+    "test_loop_getir.py"
+   ]
+  },
+  {
+   "id": "drill_any_kind",
+   "file": "loop/job.py",
+   "old": "    toy = art.target.get(\"kind\") == \"toy\"\n",
+   "new": "    toy = True\n",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "scope_two_owners",
+   "file": "loop/job.py",
+   "old": "    if len(owners) != 1:\n",
+   "new": "    if not owners:\n",
+   "tests": [
+    "test_loop_workflow.py"
+   ]
+  },
+  {
+   "id": "scope_sorted",
+   "file": "loop/job.py",
+   "old": "    names = list(dict.fromkeys(name for _, name in repos))\n",
+   "new": "    names = sorted(set(name for _, name in repos))\n",
+   "tests": [
+    "test_loop_workflow.py"
+   ]
+  },
+  {
+   "id": "scope_repo_unchecked",
+   "file": "loop/job.py",
+   "old": "        repos = [A.repo_name(t.get(\"repo\")).split(\"/\") for t in targets]\n",
+   "new": "        repos = [str(t.get(\"repo\")).split(\"/\")[:2] for t in targets]\n",
+   "tests": [
+    "test_loop_workflow.py"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,103 @@
+{
+ "mutants": [
+  {
+   "id": "test_cmd_not_affected",
+   "file": "runner/kos.py",
+   "old": "U._one(recipe[\"affected_test_cmd\"], red",
+   "new": "U._one(recipe[\"test_cmd\"], red",
+   "tests": [
+    "test_kos.py"
+   ]
+  },
+  {
+   "id": "red_control_green_judged",
+   "file": "runner/kos.py",
+   "old": "        if test[\"reasons\"]:  # a run",
+   "new": "        if [r for r in test[\"reasons\"] if r != \"red_control_green\"]:  # a run",
+   "tests": [
+    "test_kos.py"
+   ]
+  },
+  {
+   "id": "no_reruns",
+   "file": "runner/kos.py",
+   "old": "        got = S.watch(one(), one)\n",
+   "new": "        got = dict(S.decide([one()]), runs=[])\n",
+   "tests": [
+    "test_kos.py"
+   ]
+  },
+  {
+   "id": "unusable_runs_escape",
+   "file": "runner/kos.py",
+   "old": "    except S.Unusable:\n        return dict(entry, reasons=[\"sentinel_unusable\"])\n",
+   "new": "",
+   "tests": [
+    "test_kos.py"
+   ]
+  },
+  {
+   "id": "sentinel_needs_base_lint",
+   "file": "runner/kos.py",
+   "old": "        if watch is not None:\n            index[\"sentinel\"]",
+   "new": "        if watch is not None and index[\"base_run_sha256\"]:\n            index[\"sentinel\"]",
+   "tests": [
+    "test_kos.py"
+   ]
+  },
+  {
+   "id": "watch_unchecked",
+   "file": "runner/kos.py",
+   "old": "    if watch is not None and not (isinstance(watch, str) and MERGE_SHA.match(watch)):",
+   "new": "    if False:",
+   "tests": [
+    "test_kos.py"
+   ]
+  },
+  {
+   "id": "file_hash_dropped",
+   "file": "runner/kos.py",
+   "old": "    return dict(entry, verdict=got[\"verdict\"], sha256=sha256(data))\n",
+   "new": "    return dict(entry, verdict=got[\"verdict\"])\n",
+   "tests": [
+    "test_kos.py"
+   ]
+  },
+  {
+   "id": "watch_any_unfinished",
+   "file": "loop/job.py",
+   "old": "    if unfinished == [head]:\n        return head, None\n",
+   "new": "    if head in unfinished:\n        return head, None\n",
+   "tests": [
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "watch_last_unfinished",
+   "file": "loop/job.py",
+   "old": "    if unfinished == [head]:\n        return head, None\n",
+   "new": "    if unfinished:\n        return unfinished[-1], None\n",
+   "tests": [
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "watch_not_passed",
+   "file": "loop/job.py",
+   "old": "deps, art.target, runner, base=root, watch=watch)",
+   "new": "deps, art.target, runner, base=root)",
+   "tests": [
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "state_unread_in_kos",
+   "file": "loop/job.py",
+   "old": "    unfinished, refused = _unfinished(art)\n    if refused:\n        return refused\n    watch,",
+   "new": "    unfinished, refused = [], None\n    watch,",
+   "tests": [
+    "test_loop_kos.py"
+   ]
+  }
+ ]
+}
