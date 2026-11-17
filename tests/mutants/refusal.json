@@ -1,0 +1,49 @@
+{
+ "mutants": [
+  {
+   "id": "rf_derive_oserror_uncaught",
+   "file": "profile/derive.py",
+   "old": "    except (DeriveError, ValueError, OSError) as exc:",
+   "new": "    except (DeriveError, ValueError) as exc:",
+   "tests": [
+    "test_profile.VectorTest.test_unusable_operator_and_proposal"
+   ]
+  },
+  {
+   "id": "rf_secrets_oserror_uncaught",
+   "file": "gate/secrets.py",
+   "old": "    except (ScanError, OSError) as exc:\n        _emit({\"error\": cli.cause(exc)})",
+   "new": "    except (ScanError,) as exc:\n        _emit({\"error\": cli.cause(exc)})",
+   "tests": [
+    "test_secrets.Usage.test_unusable_input_is_exit_2_never_clean"
+   ]
+  },
+  {
+   "id": "rf_contained_json_uncaught",
+   "file": "runner/contained.py",
+   "old": "    except (ValueError, RecursionError) as exc:  # UnusableInput, JSON errors",
+   "new": "    except (RecursionError,) as exc:  # UnusableInput, JSON errors",
+   "tests": [
+    "test_contained.ArgvTest.test_command_line_unusable_input_is_exit_2_never_traceback"
+   ]
+  },
+  {
+   "id": "rf_contained_run_oserror_uncaught",
+   "file": "runner/contained.py",
+   "old": "    except (ValueError, KeyError, TypeError, OSError, RecursionError) as exc:",
+   "new": "    except (ValueError, KeyError, TypeError, RecursionError) as exc:",
+   "tests": [
+    "test_contained.ArgvTest.test_command_line_unusable_input_is_exit_2_never_traceback"
+   ]
+  },
+  {
+   "id": "rf_unit_verify_oserror_uncaught",
+   "file": "profile/unit_verify.py",
+   "old": "    except (VerifyError, D.DeriveError, C.ContainmentError, ValueError, KeyError, TypeError, OSError,\n            RecursionError) as exc:",
+   "new": "    except (VerifyError, D.DeriveError, C.ContainmentError, ValueError, KeyError, TypeError,\n            RecursionError) as exc:",
+   "tests": [
+    "test_unit_verify.Cli.test_unusable_input_is_exit_2"
+   ]
+  }
+ ]
+}
