@@ -1519,8 +1519,8 @@ class UnitProposalReportsTest(unittest.TestCase):
 
     @staticmethod
     def entry():
-        return changelog_entry((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8"),
-                               "2026-11-13, E577")
+        return changelog_entry((ROOT / "spec" / "tohum" / "CHANGELOG-7.md").read_text(encoding="utf-8"),
+                               "2026-11-13, E577")  # moved by the cap (E608)
 
     def answered_by(self, report, says, upto=None):
         """The E577 entry names ``report`` and, in its answer, each page range of ``says``; each range holds its words
@@ -1594,7 +1594,7 @@ class UnitProposalReportsTest(unittest.TestCase):
         still listed it unanswered. The id must sit whole on one line: the reader looks at added lines one by one."""
         launch = self.launch()
         rid = "seed-052-known-b-stop-has-no-path-before-b"
-        lines = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
+        lines = (ROOT / "spec" / "tohum" / "CHANGELOG-7.md").read_text(encoding="utf-8").splitlines()  # cap (E608)
         self.assertTrue(any(launch.names_report(line, rid) for line in lines))
         self.answered_by(rid, {("29b", 73, 73): ("(seed-052, E576)", "kanıtı doğruladıktan sonra")})
         for rid in ("seed-050-copy-target-row-unreadable-for-unit-proposal",
