@@ -1,0 +1,50 @@
+{
+ "mutants": [
+  {
+   "id": "policy_not_passed",
+   "file": "loop/decide.py",
+   "old": "V.guard_profile(tree, art.target, art.policy)",
+   "new": "V.guard_profile(tree, art.target, {})",
+   "tests": [
+    "test_loop_yaz.py"
+   ]
+  },
+  {
+   "id": "target_not_passed",
+   "file": "loop/decide.py",
+   "old": "V.guard_profile(tree, art.target, art.policy)",
+   "new": "V.guard_profile(tree, dict(art.target, excluded_paths=[]), art.policy)",
+   "tests": [
+    "test_loop_yaz.py"
+   ]
+  },
+  {
+   "id": "profile_not_derived",
+   "file": "loop/decide.py",
+   "old": "    profile = V.guard_profile(tree, art.target, art.policy)",
+   "new": "    profile = {\"security_paths\": [], \"excluded_dirs\": []}",
+   "tests": [
+    "test_loop_yaz.py"
+   ]
+  },
+  {
+   "id": "base_read_follows_links",
+   "file": "target/land.py",
+   "old": "    old = derive._read_regular(tree, path)",
+   "new": "    old = open(os.path.join(tree, path), 'rb').read() if os.path.isfile(os.path.join(tree, path)) else None",
+   "tests": [
+    "test_activate.py",
+    "test_loop_write.py"
+   ]
+  },
+  {
+   "id": "guard_drops_excluded_paths",
+   "file": "profile/unit_verify.py",
+   "old": "\"excluded_dirs\": D.minimal(derived[\"excluded_dirs\"] + derived[\"excluded_paths\"])",
+   "new": "\"excluded_dirs\": D.minimal(derived[\"excluded_dirs\"])",
+   "tests": [
+    "test_loop_yaz.py"
+   ]
+  }
+ ]
+}

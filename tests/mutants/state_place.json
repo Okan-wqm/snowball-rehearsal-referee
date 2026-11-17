@@ -1,0 +1,184 @@
+{
+ "mutants": [
+  {
+   "id": "ledger_at_tree_root",
+   "file": "target/branches.py",
+   "old": "STATE_LEDGER = STATE_ROOT + \"/ledger.jsonl\"\n",
+   "new": "STATE_LEDGER = \"ledger.jsonl\"\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "roots_at_tree_root",
+   "file": "target/branches.py",
+   "old": "STATE_ROOTS = STATE_ROOT + \"/chain/root.jsonl\"\n",
+   "new": "STATE_ROOTS = \"chain/root.jsonl\"\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "status_at_tree_root",
+   "file": "target/branches.py",
+   "old": "STATE_STATUS = STATE_ROOT + \"/status.md\"\n",
+   "new": "STATE_STATUS = \"status.md\"\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "state_dir_renamed",
+   "file": "target/branches.py",
+   "old": "STATE_ROOT = \".brain\"\n",
+   "new": "STATE_ROOT = \".state\"\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "bundle_outside_chain",
+   "file": "target/branches.py",
+   "old": "    return \"%s/chain/%s.sigstore.json\" % (STATE_ROOT, root)\n",
+   "new": "    return \"%s/%s.sigstore.json\" % (STATE_ROOT, root)\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "bundle_at_tree_root",
+   "file": "target/branches.py",
+   "old": "    return \"%s/chain/%s.sigstore.json\" % (STATE_ROOT, root)\n",
+   "new": "    return \"chain/%s.sigstore.json\" % root\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "name_of_any_path",
+   "file": "target/branches.py",
+   "old": "    if not path.startswith(prefix) or len(path) == len(prefix):\n",
+   "new": "    if len(path) <= len(prefix):\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "name_of_the_directory",
+   "file": "target/branches.py",
+   "old": "    if not path.startswith(prefix) or len(path) == len(prefix):\n",
+   "new": "    if not path.startswith(prefix):\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "artifact_keeps_commit_path",
+   "file": "loop/pulled.py",
+   "old": "    return \"%s/%s\" % (STATE_DIR, B.state_name(path))\n",
+   "new": "    return \"%s/%s\" % (STATE_DIR, path)\n",
+   "tests": [
+    "test_loop_kos.py"
+   ]
+  },
+  {
+   "id": "bundle_not_committed",
+   "file": "ledger/cycle.py",
+   "old": "             anchor.bundle_path(root): bundle, block.STATUS_PATH: planned[\"status\"]}\n",
+   "new": "             block.STATUS_PATH: planned[\"status\"]}\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "bundle_of_another_root",
+   "file": "ledger/cycle.py",
+   "old": "             anchor.bundle_path(root): bundle, block.STATUS_PATH: planned[\"status\"]}\n",
+   "new": "             anchor.bundle_path(entry[\"uuid\"]): bundle, block.STATUS_PATH: planned[\"status\"]}\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "root_text_signed",
+   "file": "ledger/anchor.py",
+   "old": "    answer = signer.sign(preimage(tip_map))\n",
+   "new": "    answer = signer.sign(root_of(tip_map).encode(\"ascii\"))\n",
+   "tests": [
+    "test_anchor.py"
+   ]
+  },
+  {
+   "id": "empty_bundle_taken",
+   "file": "ledger/anchor.py",
+   "old": "    if not isinstance(answer.get(\"bundle\"), bytes) or not answer[\"bundle\"]:\n",
+   "new": "    if not isinstance(answer.get(\"bundle\"), bytes):\n",
+   "tests": [
+    "test_anchor.py"
+   ]
+  },
+  {
+   "id": "text_bundle_taken",
+   "file": "ledger/anchor.py",
+   "old": "    if not isinstance(answer.get(\"bundle\"), bytes) or not answer[\"bundle\"]:\n",
+   "new": "    if not answer.get(\"bundle\"):\n",
+   "tests": [
+    "test_anchor.py"
+   ]
+  },
+  {
+   "id": "bundle_never_asked",
+   "file": "ledger/anchor.py",
+   "old": "    if not isinstance(answer.get(\"bundle\"), bytes) or not answer[\"bundle\"]:\n        raise Unsignable(\"signer gave no bundle\")\n    return entry, answer[\"bundle\"]\n",
+   "new": "    return entry, answer.get(\"bundle\")\n",
+   "tests": [
+    "test_anchor.py"
+   ]
+  },
+  {
+   "id": "digest_of_root_compared",
+   "file": "loop/rekor.py",
+   "old": "        if body is None or body[\"spec\"][\"data\"][\"hash\"][\"value\"] != root:\n",
+   "new": "        if body is None or body[\"spec\"][\"data\"][\"hash\"][\"value\"] != hashlib.sha256(root.encode(\"ascii\")).hexdigest():\n",
+   "tests": [
+    "test_rekor.py"
+   ]
+  },
+  {
+   "id": "digest_of_root_verified",
+   "file": "loop/rekor.py",
+   "old": "            code = verifier(A.identity_argv(sigstore, path, pin, \"sha256:\" + root))\n",
+   "new": "            code = verifier(A.identity_argv(sigstore, path, pin, \"sha256:\" + hashlib.sha256(root.encode(\"ascii\")).hexdigest()))\n",
+   "tests": [
+    "test_rekor.py"
+   ]
+  },
+  {
+   "id": "bundle_remade",
+   "file": "loop/sign.py",
+   "old": "        return {\"uuid\": R._leaf(body), \"identity\": self.pin, \"bundle\": data}\n",
+   "new": "        return {\"uuid\": R._leaf(body), \"identity\": self.pin, \"bundle\": cli.dumps(cli.loads(data)).encode(\"utf-8\")}\n",
+   "tests": [
+    "test_sign.py"
+   ]
+  },
+  {
+   "id": "bundle_not_answered",
+   "file": "loop/sign.py",
+   "old": "        return {\"uuid\": R._leaf(body), \"identity\": self.pin, \"bundle\": data}\n",
+   "new": "        return {\"uuid\": R._leaf(body), \"identity\": self.pin}\n",
+   "tests": [
+    "test_sign.py"
+   ]
+  },
+  {
+   "id": "dry_signer_without_bundle",
+   "file": "loop/write_cycle.py",
+   "old": "        return {\"uuid\": \"dry\", \"identity\": \"dry\", \"bundle\": b\"dry\"}\n",
+   "new": "        return {\"uuid\": \"dry\", \"identity\": \"dry\"}\n",
+   "tests": [
+    "test_loop_write.py"
+   ]
+  }
+ ]
+}
