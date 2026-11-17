@@ -1,0 +1,86 @@
+{
+ "root": ".",
+ "mutants": [
+  {
+   "id": "ledger_at_tree_root",
+   "file": "referee/target/branches.py",
+   "old": "STATE_LEDGER = STATE_ROOT + \"/ledger.jsonl\"\n",
+   "new": "STATE_LEDGER = \"ledger.jsonl\"\n",
+   "tests": [
+    "test_state_paths_spec.py"
+   ]
+  },
+  {
+   "id": "roots_at_tree_root",
+   "file": "referee/target/branches.py",
+   "old": "STATE_ROOTS = STATE_ROOT + \"/chain/root.jsonl\"\n",
+   "new": "STATE_ROOTS = \"chain/root.jsonl\"\n",
+   "tests": [
+    "test_state_paths_spec.py"
+   ]
+  },
+  {
+   "id": "status_at_tree_root",
+   "file": "referee/target/branches.py",
+   "old": "STATE_STATUS = STATE_ROOT + \"/status.md\"\n",
+   "new": "STATE_STATUS = \"status.md\"\n",
+   "tests": [
+    "test_state_paths_spec.py"
+   ]
+  },
+  {
+   "id": "state_dir_renamed",
+   "file": "referee/target/branches.py",
+   "old": "STATE_ROOT = \".brain\"\n",
+   "new": "STATE_ROOT = \".state\"\n",
+   "tests": [
+    "test_state_paths_spec.py"
+   ]
+  },
+  {
+   "id": "bundle_outside_chain",
+   "file": "referee/target/branches.py",
+   "old": "    return \"%s/chain/%s.sigstore.json\" % (STATE_ROOT, root)\n",
+   "new": "    return \"%s/%s.sigstore.json\" % (STATE_ROOT, root)\n",
+   "tests": [
+    "test_state_paths_spec.py"
+   ]
+  },
+  {
+   "id": "bundle_at_tree_root",
+   "file": "referee/target/branches.py",
+   "old": "    return \"%s/chain/%s.sigstore.json\" % (STATE_ROOT, root)\n",
+   "new": "    return \"chain/%s.sigstore.json\" % root\n",
+   "tests": [
+    "test_state_paths_spec.py"
+   ]
+  },
+  {
+   "id": "bundle_not_committed",
+   "file": "referee/ledger/cycle.py",
+   "old": "             anchor.bundle_path(root): bundle, block.STATUS_PATH: planned[\"status\"]}\n",
+   "new": "             block.STATUS_PATH: planned[\"status\"]}\n",
+   "tests": [
+    "test_state_paths_spec.py"
+   ]
+  },
+  {
+   "id": "bundle_of_another_root",
+   "file": "referee/ledger/cycle.py",
+   "old": "             anchor.bundle_path(root): bundle, block.STATUS_PATH: planned[\"status\"]}\n",
+   "new": "             anchor.bundle_path(entry[\"uuid\"]): bundle, block.STATUS_PATH: planned[\"status\"]}\n",
+   "tests": [
+    "test_state_paths_spec.py"
+   ]
+  },
+  {
+   "id": "root_text_signed",
+   "file": "referee/ledger/anchor.py",
+   "old": "    answer = signer.sign(preimage(tip_map))\n",
+   "new": "    answer = signer.sign(root_of(tip_map).encode(\"ascii\"))\n",
+   "tests": [
+    "test_state_paths_spec.py"
+   ]
+  }
+ ]
+}

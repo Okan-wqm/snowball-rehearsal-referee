@@ -1,0 +1,175 @@
+{
+ "mutants": [
+  {
+   "id": "cargo_virtual_is_project",
+   "file": "status/depmap.py",
+   "old": "        if d and isinstance(package, dict):\n",
+   "new": "        if d:\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "cargo_root_is_project",
+   "file": "status/depmap.py",
+   "old": "        if d and isinstance(package, dict):\n",
+   "new": "        if isinstance(package, dict):\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "cargo_no_roots",
+   "file": "status/depmap.py",
+   "old": "            cargo_roots[d] = manifest\n",
+   "new": "            pass\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "cargo_name_ignored",
+   "file": "status/depmap.py",
+   "old": "            projects.add(d, \"cargo\", name if isinstance(name, str) else posixpath.basename(d))\n",
+   "new": "            projects.add(d, \"cargo\", posixpath.basename(d))\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "ws_key_ignored",
+   "file": "status/depmap.py",
+   "old": "    if isinstance(package.get(\"workspace\"), str):\n",
+   "new": "    if False:\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "own_root_ignored",
+   "file": "status/depmap.py",
+   "old": "    if d in roots:\n        return d\n",
+   "new": "    if False:\n        return d\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "exclude_ignored",
+   "file": "status/depmap.py",
+   "old": "                if path is not None and _under(d, path):\n",
+   "new": "                if False:\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "exclude_by_text",
+   "file": "status/depmap.py",
+   "old": "    return base == \"\" or path == base or path.startswith(base + \"/\")\n",
+   "new": "    return base == \"\" or path.startswith(base)\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "exclude_exact_only",
+   "file": "status/depmap.py",
+   "old": "    return base == \"\" or path == base or path.startswith(base + \"/\")\n",
+   "new": "    return base == \"\" or path == base\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "nearest_not_first",
+   "file": "status/depmap.py",
+   "old": "            return probe\n    return None\n",
+   "new": "            continue\n    return None\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "patch_from_member",
+   "file": "status/depmap.py",
+   "old": "        top_manifest = manifest if top is None else cargo_roots[top]\n",
+   "new": "        top_manifest = manifest\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "ws_dep_base_member",
+   "file": "status/depmap.py",
+   "old": "            base = top_dir\n",
+   "new": "            base = d\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "missing_ws_entry_patched",
+   "file": "status/depmap.py",
+   "old": "            if not isinstance(inherited, (dict, str)):\n                continue\n",
+   "new": "            if not isinstance(inherited, (dict, str)):\n                inherited = {}\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "git_patched",
+   "file": "status/depmap.py",
+   "old": "        elif not any(k in spec for k in (\"git\", \"registry\")):\n",
+   "new": "        elif not any(k in spec for k in (\"registry\",)):\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "registry_patched",
+   "file": "status/depmap.py",
+   "old": "        elif not any(k in spec for k in (\"git\", \"registry\")):\n",
+   "new": "        elif not any(k in spec for k in (\"git\",)):\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "rename_ignored",
+   "file": "status/depmap.py",
+   "old": "    return spec[\"package\"] if isinstance(spec.get(\"package\"), str) else key\n",
+   "new": "    return key\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "patch_from_package_dir",
+   "file": "status/depmap.py",
+   "old": "                path = _norm(posixpath.join(top_dir, patch[\"path\"]))\n",
+   "new": "                path = _norm(posixpath.join(d, patch[\"path\"]))\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "no_target_tables",
+   "file": "status/depmap.py",
+   "old": "    tables = [manifest] + [t for t in (manifest.get(\"target\") or {}).values() if isinstance(t, dict)]\n",
+   "new": "    tables = [manifest]\n",
+   "tests": [
+    "test_depmap.py"
+   ]
+  },
+  {
+   "id": "outside_not_counted",
+   "file": "status/depmap.py",
+   "old": "                if projects.owner(rel) is None:\n                    outside",
+   "new": "                if False:\n                    outside",
+   "tests": [
+    "test_depmap.py"
+   ]
+  }
+ ]
+}

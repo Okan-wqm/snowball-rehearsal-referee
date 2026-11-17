@@ -1,0 +1,193 @@
+{
+ "mutants": [
+  {
+   "id": "pr_root_fallback",
+   "file": "policy/reads.py",
+   "old": "        if key not in node:\n            return ABSENT\n",
+   "new": "        if key not in node:\n            return policy.get(path[-1], ABSENT)\n",
+   "tests": [
+    "test_policy_reads.py"
+   ]
+  },
+  {
+   "id": "pr_other_section_fallback",
+   "file": "policy/reads.py",
+   "old": "        if key not in node:\n            return ABSENT\n",
+   "new": "        if key not in node:\n            return policy.get(\"performance\", {}).get(path[-1], ABSENT) if depth else ABSENT\n",
+   "tests": [
+    "test_policy_reads.Walk"
+   ]
+  },
+  {
+   "id": "pr_malformed_is_absent",
+   "file": "policy/reads.py",
+   "old": "            raise Malformed(\"policy%s is not an object\" % \"\".join(\".%s\" % k for k in path[:depth]))",
+   "new": "            return ABSENT",
+   "tests": [
+    "test_policy_reads.Walk.test_a_non_object_on_the_way_is_malformed"
+   ]
+  },
+  {
+   "id": "pr_malformed_is_absent_cli",
+   "file": "policy/reads.py",
+   "old": "            raise Malformed(\"policy%s is not an object\" % \"\".join(\".%s\" % k for k in path[:depth]))",
+   "new": "            return ABSENT",
+   "tests": [
+    "test_policy_reads.Command.test_unusable_input_is_exit_2_with_one_json_error"
+   ]
+  },
+  {
+   "id": "pr_malformed_is_absent_deps",
+   "file": "policy/reads.py",
+   "old": "            raise Malformed(\"policy%s is not an object\" % \"\".join(\".%s\" % k for k in path[:depth]))",
+   "new": "            return ABSENT",
+   "tests": [
+    "test_deps_npm.TestLicense.test_policy_shape"
+   ]
+  },
+  {
+   "id": "pr_null_is_absent",
+   "file": "policy/reads.py",
+   "old": "        node = node[key]\n    return node\n",
+   "new": "        node = node[key]\n    return ABSENT if node is None else node\n",
+   "tests": [
+    "test_policy_reads.Walk"
+   ]
+  },
+  {
+   "id": "pr_operating_whole",
+   "file": "policy/reads.py",
+   "old": "    return {name: value for name, value in found.items() if value is not ABSENT}",
+   "new": "    return dict.copy(policy[OPERATING])",
+   "tests": [
+    "test_policy_reads.Walk.test_operating_holds_the_named_entries_only"
+   ]
+  },
+  {
+   "id": "pr_operating_whole_readers",
+   "file": "policy/reads.py",
+   "old": "    return {name: value for name, value in found.items() if value is not ABSENT}",
+   "new": "    return dict.copy(policy[OPERATING])",
+   "tests": [
+    "test_policy_reads.Readers"
+   ]
+  },
+  {
+   "id": "pr_operating_at_root",
+   "file": "policy/reads.py",
+   "old": "    if not isinstance(policy, dict) or OPERATING not in policy:\n        return None",
+   "new": "    if not isinstance(policy, dict):\n        return None\n    if OPERATING not in policy:\n        policy = {OPERATING: policy}",
+   "tests": [
+    "test_policy_reads.py"
+   ]
+  },
+  {
+   "id": "pr_named_drops_absent",
+   "file": "policy/reads.py",
+   "old": "    return {name: None if value is ABSENT else value for name, value in values.items()}",
+   "new": "    return {name: value for name, value in values.items() if value is not ABSENT}",
+   "tests": [
+    "test_policy_reads.py"
+   ]
+  },
+  {
+   "id": "pr_path_dropped",
+   "file": "policy/reads.py",
+   "old": "PATHS = (LICENSE_ALLOWLIST, LICENSE_EXCEPTIONS, SECURITY_KEYWORDS, CANARY_USD) + tuple(",
+   "new": "PATHS = (LICENSE_ALLOWLIST, LICENSE_EXCEPTIONS, SECURITY_KEYWORDS) + tuple(",
+   "tests": [
+    "test_policy_reads.Readers"
+   ]
+  },
+  {
+   "id": "pr_repeated_key_read",
+   "file": "policy/reads.py",
+   "old": "object_pairs_hook=chain._no_duplicates,",
+   "new": "",
+   "tests": [
+    "test_policy_reads.Command"
+   ]
+  },
+  {
+   "id": "pr_nan_read",
+   "file": "policy/reads.py",
+   "old": ",\n                               parse_constant=chain._no_constant)",
+   "new": ")",
+   "tests": [
+    "test_policy_reads.Command"
+   ]
+  },
+  {
+   "id": "pr_unusable_is_exit_0",
+   "file": "policy/reads.py",
+   "old": "        return _refuse(\"unusable input: %s\" % cli.cause(exc))",
+   "new": "        sys.stdout.write(\"{}\\n\")\n        return 0",
+   "tests": [
+    "test_policy_reads.Command"
+   ]
+  },
+  {
+   "id": "pr_derive_reads_root",
+   "file": "profile/derive.py",
+   "old": "        words = P.at(policy, P.SECURITY_KEYWORDS)\n",
+   "new": "        words = P.at(policy, P.SECURITY_KEYWORDS)\n        if words is P.ABSENT:\n            words = policy.get(\"security_keywords\")\n",
+   "tests": [
+    "test_policy_reads.Readers"
+   ]
+  },
+  {
+   "id": "pr_deps_reads_root",
+   "file": "runner/deps_npm.py",
+   "old": "    if allow is P.ABSENT:\n        allow = list(LICENSE_ALLOWLIST)",
+   "new": "    if allow is P.ABSENT:\n        allow = policy.get(\"license_allowlist\", list(LICENSE_ALLOWLIST))",
+   "tests": [
+    "test_policy_reads.Readers"
+   ]
+  },
+  {
+   "id": "pr_deps_reads_whole_operating",
+   "file": "runner/deps_npm.py",
+   "old": "        entry = P.at(policy, DEPS_BYTES)\n",
+   "new": "        entry = dict(policy.get(P.OPERATING, {})).get(\"deps_bytes\", P.ABSENT)\n",
+   "tests": [
+    "test_policy_reads.Readers"
+   ]
+  },
+  {
+   "id": "pr_verify_reads_operating_itself",
+   "file": "profile/unit_verify.py",
+   "old": "        return P.operating(policy)\n",
+   "new": "        return policy.get(P.OPERATING) if isinstance(policy, dict) else None\n",
+   "tests": [
+    "test_policy_reads.Readers"
+   ]
+  },
+  {
+   "id": "pr_usd_reads_root",
+   "file": "dispatcher/llm_call.py",
+   "old": "    try:\n        node = P.at(node, path)\n    except P.Malformed:\n        node = P.ABSENT\n",
+   "new": "    root = node\n    try:\n        node = P.at(node, path)\n    except P.Malformed:\n        node = P.ABSENT\n    if node is P.ABSENT:\n        node = P.at(root, path[1:])\n",
+   "tests": [
+    "test_policy_reads.Readers"
+   ]
+  },
+  {
+   "id": "pr_section_literal_elsewhere",
+   "file": "profile/unit_verify.py",
+   "old": "P.CONSTITUTIONAL in policy else None",
+   "new": "\"constitutional\" in policy else None",
+   "tests": [
+    "test_policy_reads.Register"
+   ]
+  },
+  {
+   "id": "pr_register_blind",
+   "file": "tests/test_policy_reads.py",
+   "old": "SECTIONS_ONLY_HERE = (\"constitutional\", \"performance\")",
+   "new": "SECTIONS_ONLY_HERE = ()",
+   "tests": [
+    "test_policy_reads.Register.test_the_register_sees_each_form"
+   ]
+  }
+ ]
+}
