@@ -157,8 +157,8 @@ class FounderLedgerRules(unittest.TestCase):
                          [f"{INVALID}:kind:L2"])
         self.assertEqual(self.check(ledger_bytes(ledger_rows(2, edits={1: {"part": "events"}}))),
                          [f"{INVALID}:part:L2"])
-        self.assertEqual(set(ledgercheck.FOUNDER_KINDS),
-                         {"session_start", "decision", "build", "blocked", "seed_issue", "cost", "session_end"})
+        self.assertEqual(set(ledgercheck.FOUNDER_KINDS), {"session_start", "decision", "build", "blocked", "seed_issue",
+                                                          "cost", "session_end", "lesson"})
 
     def test_bytes_that_are_not_rows_are_refused(self):
         for raw, rule in ((b"\xff\xfe\n", "not_utf8"), (b"not json\n", "not_json"), (b"[1, 2]\n", "not_json"),
@@ -179,7 +179,7 @@ class FounderLedgerRules(unittest.TestCase):
         base = ledger_bytes(rows[:3])
         self.assertEqual(self.check(ledger_bytes(rows), base), [f"{ACCEPTED}:kind:L3"])
         self.assertEqual(self.check(ledger_bytes(rows), base, whole=False), [])  # a push checks what it adds
-        worse = ledger_rows(5, edits={2: {"kind": "learning"}, 4: {"kind": "lesson"}})
+        worse = ledger_rows(5, edits={2: {"kind": "learning"}, 4: {"kind": "note"}})
         self.assertEqual(self.check(ledger_bytes(worse), base), [f"{ACCEPTED}:kind:L3", f"{INVALID}:kind:L5"])
         self.assertEqual(self.check(ledger_bytes(worse), base, whole=False), [f"{INVALID}:kind:L5"])
 
@@ -246,7 +246,7 @@ class FounderLedgerOnEveryPush(ExitFlow):
         commit(self.brain, {"founder-ledger.jsonl": ledger_bytes(rows)}, "rows alone: nothing to judge")
         self.assertEqual(self.pull()["kind"], "none")
         commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0 v2\n",
-                            "founder-ledger.jsonl": ledger_bytes(ledger_rows(2, edits={0: {"kind": "lesson"}}))},
+                            "founder-ledger.jsonl": ledger_bytes(ledger_rows(2, edits={0: {"kind": "note"}}))},
                "spec")
         meta = self.pull()  # the rows were never accepted: the push may rewrite them, and they are all checked
         self.assertEqual((meta["kind"], meta["pre_reasons"], meta["run_rival"]), ("spec", [f"{INVALID}:kind:L1"], False))

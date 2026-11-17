@@ -108,7 +108,7 @@ class SupersedingAnAcceptedRow(unittest.TestCase):
 
     def test_only_a_valid_row_closes(self):
         rows = self.accepted()
-        for fields in ({"kind": "lesson"}, {"part": "events"}):
+        for fields in ({"kind": "note"}, {"part": "events"}):
             head = ledger_bytes(rows + closing(rows, rows[1]["row_hash"], **fields))
             rule = "kind" if "kind" in fields else "part"
             self.assertEqual(ledgercheck.judge(head, ledger_bytes(rows), whole=True),

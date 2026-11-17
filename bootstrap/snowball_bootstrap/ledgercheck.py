@@ -33,7 +33,7 @@ from typing import Any
 
 from . import canon
 
-FOUNDER_KINDS = ("session_start", "decision", "build", "blocked", "seed_issue", "cost", "session_end")
+FOUNDER_KINDS = ("session_start", "decision", "build", "blocked", "seed_issue", "cost", "session_end", "lesson")
 INVALID = "founder_ledger_invalid"
 ACCEPTED_INVALID = "founder_ledger_accepted_invalid"
 SUPERSEDES = "supersedes"

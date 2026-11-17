@@ -516,7 +516,7 @@ def load_brain_defs():
 
 def load_ledger_index():
     """The capsule's read-only index of the Founder's ledger (`seed/founder/ledger_index.py`, E506), loaded by path:
-    the capsule runs it as a script and nothing in the seed imports it."""
+    the capsule runs it as a script, and the launcher loads it by path for the lesson index (`26g`, E610)."""
     spec = importlib.util.spec_from_file_location("founder_ledger_index", FOUNDER_DIR / "ledger_index.py")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
