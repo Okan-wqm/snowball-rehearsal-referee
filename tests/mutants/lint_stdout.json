@@ -1,0 +1,199 @@
+{
+ "mutants": [
+  {
+   "id": "ls_whole_json_cut_too",
+   "file": "runner/lint_record.py",
+   "old": "    if not whole:\n        body =",
+   "new": "    if True:\n        body =",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_rule_1_a_whole_json_stdout_has_no_extra"
+   ]
+  },
+  {
+   "id": "ls_final_newline_kept",
+   "file": "runner/lint_record.py",
+   "old": "        body = output[:-1] if output.endswith(b\"\\n\") else output\n",
+   "new": "        body = output\n",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_rule_2_one_final_newline_or_none_and_extra_is_not_decoded"
+   ]
+  },
+  {
+   "id": "ls_every_final_newline_dropped",
+   "file": "runner/lint_record.py",
+   "old": "        body = output[:-1] if output.endswith(b\"\\n\") else output\n",
+   "new": "        body = output.rstrip(b\"\\n\")\n",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_rule_3_only_the_last_line_is_tried"
+   ]
+  },
+  {
+   "id": "ls_first_newline_cuts",
+   "file": "runner/lint_record.py",
+   "old": "        cut = body.rfind(b\"\\n\") + 1\n",
+   "new": "        cut = body.find(b\"\\n\") + 1\n",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_real_output_the_document_is_the_last_line_and_the_rest_is_extra"
+   ]
+  },
+  {
+   "id": "ls_several_documents_pass",
+   "file": "runner/lint_record.py",
+   "old": "        if is_json and _shaped(value):\n",
+   "new": "        if False:\n",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_rule_4_an_earlier_line_that_is_a_document_is_refused"
+   ]
+  },
+  {
+   "id": "ls_empty_earlier_document_passes",
+   "file": "runner/lint_record.py",
+   "old": "        if is_json and _shaped(value):\n",
+   "new": "        if is_json and _shaped(value) and value:\n",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_rule_4_an_earlier_line_that_is_a_document_is_refused"
+   ]
+  },
+  {
+   "id": "ls_extra_decoded",
+   "file": "runner/lint_record.py",
+   "old": "        extra = body[:cut]\n",
+   "new": "        extra = body[:cut].decode(\"utf-8\").encode(\"utf-8\")\n",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_rule_2_one_final_newline_or_none_and_extra_is_not_decoded"
+   ]
+  },
+  {
+   "id": "ls_runs_repeat_reasons",
+   "file": "runner/lint_record.py",
+   "old": "            reasons += [PREFIX + r for r in exc.reasons if PREFIX + r not in reasons]\n",
+   "new": "            reasons += [PREFIX + r for r in exc.reasons]\n",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_runs_gives_records_and_extras_or_prefixed_reasons_once"
+   ]
+  },
+  {
+   "id": "ls_runs_root_ignored",
+   "file": "runner/lint_record.py",
+   "old": "            rec, extra = convert(out if isinstance(out, bytes) else b\"\", tree, root)\n",
+   "new": "            rec, extra = convert(out if isinstance(out, bytes) else b\"\", tree)\n",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_runs_gives_records_and_extras_or_prefixed_reasons_once"
+   ]
+  },
+  {
+   "id": "ls_runs_records_despite_reason",
+   "file": "runner/lint_record.py",
+   "old": "    return (reasons, [], []) if reasons else ([], records, extras)\n",
+   "new": "    return reasons, records, extras\n",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_runs_gives_records_and_extras_or_prefixed_reasons_once"
+   ]
+  },
+  {
+   "id": "ls_cli_extra_always",
+   "file": "runner/lint_record.py",
+   "old": "    if extra:\n        answer[",
+   "new": "    if True:\n        answer[",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_command_line_reports_the_extra_only_when_there_is_one"
+   ]
+  },
+  {
+   "id": "ls_cli_extra_never",
+   "file": "runner/lint_record.py",
+   "old": "    if extra:\n        answer[",
+   "new": "    if False:\n        answer[",
+   "tests": [
+    "test_lint_record.StdoutNotOnlyTheDocument.test_command_line_reports_the_extra_only_when_there_is_one"
+   ]
+  },
+  {
+   "id": "ls_carried_never",
+   "file": "runner/lint_record.py",
+   "old": "    return {EXTRA_KEY: extras} if any(e[\"bytes\"] for e in extras) else {}\n",
+   "new": "    return {}\n",
+   "tests": [
+    "test_unit_verify.Run.test_lines_before_the_document_are_reported_not_dropped_silently",
+    "test_kos.TheBase.test_lines_before_the_document_give_the_same_base_and_the_index_names_them",
+    "test_kos.Candidates.test_a_candidate_whose_lint_runs_print_before_the_document_says_so_in_the_index"
+   ]
+  },
+  {
+   "id": "ls_carried_always",
+   "file": "runner/lint_record.py",
+   "old": "    return {EXTRA_KEY: extras} if any(e[\"bytes\"] for e in extras) else {}\n",
+   "new": "    return {EXTRA_KEY: extras}\n",
+   "tests": [
+    "test_unit_verify.Run.test_lines_before_the_document_are_reported_not_dropped_silently",
+    "test_kos.TheBase.test_base_jsonl_is_three_records_of_the_base_tree",
+    "test_kos.Candidates.test_a_candidate_whose_lint_runs_print_before_the_document_says_so_in_the_index"
+   ]
+  },
+  {
+   "id": "ls_kos_refusal_dropped",
+   "file": "runner/kos.py",
+   "old": "    return reasons + refused, records, R.carried(extras)\n",
+   "new": "    return reasons, records, R.carried(extras)\n",
+   "tests": [
+    "test_kos.TheBase.test_output_that_does_not_convert_gives_no_base",
+    "test_kos.TheBase.test_two_documents_give_no_base"
+   ]
+  },
+  {
+   "id": "ls_verify_extra_not_carried",
+   "file": "profile/unit_verify.py",
+   "old": "                result.update(R.carried(extras))\n",
+   "new": "                pass\n",
+   "tests": [
+    "test_unit_verify.Run.test_lines_before_the_document_are_reported_not_dropped_silently"
+   ]
+  },
+  {
+   "id": "ls_kos_lint_extra_dropped",
+   "file": "runner/kos.py",
+   "old": "    return reasons + refused, records, R.carried(extras)\n",
+   "new": "    return reasons + refused, records, {}\n",
+   "tests": [
+    "test_kos.TheBase.test_lines_before_the_document_give_the_same_base_and_the_index_names_them",
+    "test_kos.Candidates.test_a_candidate_whose_lint_runs_print_before_the_document_says_so_in_the_index"
+   ]
+  },
+  {
+   "id": "ls_kos_base_extra_dropped",
+   "file": "runner/kos.py",
+   "old": "        index[\"base\"] = dict(_verdict(reasons), **extra)\n",
+   "new": "        index[\"base\"] = _verdict(reasons)\n",
+   "tests": [
+    "test_kos.TheBase.test_lines_before_the_document_give_the_same_base_and_the_index_names_them"
+   ]
+  },
+  {
+   "id": "ls_kos_candidate_extra_dropped",
+   "file": "runner/kos.py",
+   "old": "                fh.write(data)\n        return dict(_verdict(reasons), **extra)\n",
+   "new": "                fh.write(data)\n        return _verdict(reasons)\n",
+   "tests": [
+    "test_kos.Candidates.test_a_candidate_whose_lint_runs_print_before_the_document_says_so_in_the_index"
+   ]
+  },
+  {
+   "id": "ls_kos_candidate_extra_dropped_without_files",
+   "file": "runner/kos.py",
+   "old": "reasons if r != \"red_control_green\"]:\n            return dict(_verdict(reasons), **extra)\n",
+   "new": "reasons if r != \"red_control_green\"]:\n            return _verdict(reasons)\n",
+   "tests": [
+    "test_kos.Candidates.test_the_extra_is_carried_whatever_the_test_run_gave"
+   ]
+  },
+  {
+   "id": "ls_watch_prefix_alone",
+   "file": "loop/watch.py",
+   "old": "FATAL = lint_record.PREFIX + \"fatal:\"",
+   "new": "FATAL = lint_record.PREFIX",
+   "tests": [
+    "test_watch.py"
+   ]
+  }
+ ]
+}
