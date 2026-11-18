@@ -1,5 +1,5 @@
 {
-  "kill_switch": true,
+  "kill_switch": false,
   "budget_state": "ok",
   "waived_refutations": [
     "027465767d2d46dc"
@@ -22,7 +22,8 @@
     "d8eee21e31c8527fb99210218ca066e2fc6055dd",
     "1965b8aeec1d6fabdd7369133063a28e4b014234",
     "8cae5241cebf3c28c81c9c744a548a265ce155c1",
-    "6a148ce2bd5c82b6a6a7a9e8b5d970c64993dee8"
+    "6a148ce2bd5c82b6a6a7a9e8b5d970c64993dee8",
+    "f531f74a880df3b810a987af505d59f98f2926f9"
   ],
   "loop_schedule": false,
   "merge_paused": false
