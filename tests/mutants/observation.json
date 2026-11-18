@@ -1,0 +1,94 @@
+{
+ "mutants": [
+  {
+   "id": "obs_fixable_keeps_null_fix",
+   "file": "gate/check.py",
+   "old": "for v in run[\"violations\"] if v[\"fix\"] is not None]",
+   "new": "for v in run[\"violations\"]]",
+   "tests": [
+    "test_check.BaseRun.test_counts_and_the_findings_with_a_fix"
+   ]
+  },
+  {
+   "id": "obs_fixable_range_is_the_line",
+   "file": "gate/check.py",
+   "old": "\"fix_range\": list(v[\"fix\"])}",
+   "new": "\"fix_range\": [v[\"line\"], v[\"line\"]]}",
+   "tests": [
+    "test_check.BaseRun.test_counts_and_the_findings_with_a_fix"
+   ]
+  },
+  {
+   "id": "obs_fixable_on_mismatch",
+   "file": "gate/check.py",
+   "old": "return {\"reasons\": [\"base_run_hash_mismatch\"], \"counts\": None, \"fixable\": None}",
+   "new": "return {\"reasons\": [\"base_run_hash_mismatch\"], \"counts\": None, \"fixable\": []}",
+   "tests": [
+    "test_check.BaseRun.test_no_findings_without_a_verified_file"
+   ]
+  },
+  {
+   "id": "obs_watch_drops_fixable",
+   "file": "loop/watch.py",
+   "old": "\"counts\": got[\"counts\"], \"fixable\": got[\"fixable\"]}",
+   "new": "\"counts\": got[\"counts\"], \"fixable\": []}",
+   "tests": [
+    "test_watch.BaseLint.test_the_findings_with_a_fix_of_a_verified_base"
+   ]
+  },
+  {
+   "id": "obs_observed_first_not_last",
+   "file": "ledger/serial.py",
+   "old": "            last = row[\"payload\"][\"base_run_sha256\"]\n",
+   "new": "            last = last or row[\"payload\"][\"base_run_sha256\"]\n",
+   "tests": [
+    "test_serial.Observed.test_the_last_observation_row"
+   ]
+  },
+  {
+   "id": "obs_cycle_always_publishes",
+   "file": "loop/write_cycle.py",
+   "old": "if serial.observed(art.state[B.STATE_LEDGER]) != base_lint[\"base_run_sha256\"]:",
+   "new": "if True:",
+   "tests": [
+    "test_loop_write.D8.test_each_planted_cause_is_reverted_with_the_keys_cause_and_judged_pass"
+   ]
+  },
+  {
+   "id": "obs_cycle_never_publishes",
+   "file": "loop/write_cycle.py",
+   "old": "                observe = base_lint\n",
+   "new": "                observe = None\n",
+   "tests": [
+    "test_loop_write.D6.test_a_cycle_merges_and_writes_one_state_commit"
+   ]
+  },
+  {
+   "id": "obs_genesis_without_observation",
+   "file": "activate.py",
+   "old": "                events.ratchet_base(cyc, base_run_sha256, base[\"counts\"]),\n                events.observation(cyc, base_run_sha256, base[\"fixable\"])]",
+   "new": "                events.ratchet_base(cyc, base_run_sha256, base[\"counts\"])]",
+   "tests": [
+    "test_activate.Activation.test_no_merge_cuts_and_writes_the_state_only"
+   ]
+  },
+  {
+   "id": "obs_schema_range_unchecked",
+   "file": "ledger/schema.py",
+   "old": "FIXABLE = shape({\"rule_id\": text, \"path\": text, \"line\": positive, \"fix_range\": _fix_range})",
+   "new": "FIXABLE = shape({\"rule_id\": text, \"path\": text, \"line\": positive, \"fix_range\": any_value})",
+   "tests": [
+    "test_schema.Artifacts.test_observation_row_rules"
+   ]
+  },
+  {
+   "id": "obs_schema_range_order",
+   "file": "ledger/schema.py",
+   "old": "            and value[0] <= value[1]):",
+   "new": "            ):",
+   "tests": [
+    "test_schema.Artifacts.test_observation_row_rules"
+   ]
+  }
+ ]
+}

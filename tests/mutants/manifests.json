@@ -1,0 +1,49 @@
+{
+ "mutants": [
+  {
+   "id": "manifests_not_joined",
+   "file": "profile/fit.py",
+   "old": "        \"inputs\": D.minimal(inputs + manifests(tree, inputs)),\n",
+   "new": "        \"inputs\": D.minimal(inputs),\n",
+   "tests": [
+    "test_profile_fit.Manifests.test_a_unit_with_no_manifest_takes_the_ones_above_it"
+   ]
+  },
+  {
+   "id": "manifests_nearest_only",
+   "file": "profile/fit.py",
+   "old": "                out.add(rel)\n    return sorted(out)\n",
+   "new": "                out.add(rel)\n                break\n    return sorted(out)\n",
+   "tests": [
+    "test_profile_fit.Manifests.test_every_level_above_and_a_file_inputs_own_directory"
+   ]
+  },
+  {
+   "id": "manifests_from_the_parent_of_a_file",
+   "file": "profile/fit.py",
+   "old": "        for d in D._ancestors(posixpath.dirname(p) or \".\"):\n",
+   "new": "        for d in D._ancestors(posixpath.dirname(posixpath.dirname(p)) or \".\"):\n",
+   "tests": [
+    "test_profile_fit.Manifests.test_every_level_above_and_a_file_inputs_own_directory"
+   ]
+  },
+  {
+   "id": "manifests_any_kind",
+   "file": "profile/fit.py",
+   "old": "            if D._read_regular(tree, rel) is not None:\n",
+   "new": "            if os.path.lexists(os.path.join(tree, rel)):\n",
+   "tests": [
+    "test_profile_fit.Manifests.test_only_regular_files_with_no_link_on_the_way"
+   ]
+  },
+  {
+   "id": "manifests_root_input_too",
+   "file": "profile/fit.py",
+   "old": "        if p == \".\":\n            continue\n        for d in D._ancestors",
+   "new": "        for d in D._ancestors",
+   "tests": [
+    "test_profile_fit.Manifests.test_every_level_above_and_a_file_inputs_own_directory"
+   ]
+  }
+ ]
+}

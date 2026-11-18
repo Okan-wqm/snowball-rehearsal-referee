@@ -1,0 +1,431 @@
+{
+ "mutants": [
+  {
+   "id": "jwt_exp_an_hour",
+   "file": "target/app_jwt.py",
+   "old": "part({\"exp\": now + LIFE,",
+   "new": "part({\"exp\": now + 3600,",
+   "tests": [
+    "test_app_auth.Jwt",
+    "test_app_auth.TheGitHub"
+   ]
+  },
+  {
+   "id": "jwt_iat_now",
+   "file": "target/app_jwt.py",
+   "old": "\"iat\": now - SKEW, \"iss\": app_id}))",
+   "new": "\"iat\": now, \"iss\": app_id}))",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "jwt_padding_kept",
+   "file": "target/app_jwt.py",
+   "old": "base64.urlsafe_b64encode(data).rstrip(b\"=\")",
+   "new": "base64.urlsafe_b64encode(data)",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "key_modulus_unchecked",
+   "file": "target/app_jwt.py",
+   "old": " or n != p * q or",
+   "new": " or",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "key_inverse_unchecked",
+   "file": "target/app_jwt.py",
+   "old": " or (d * e) % math.lcm(p - 1, q - 1) != 1:",
+   "new": ":",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "key_factor_one",
+   "file": "target/app_jwt.py",
+   "old": "if p <= 1 or q <= 1 or",
+   "new": "if",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "key_exponent_one",
+   "file": "target/app_jwt.py",
+   "old": " or e <= 1 or e % 2 == 0 or",
+   "new": " or",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "key_min_bits_lower",
+   "file": "target/app_jwt.py",
+   "old": "MIN_BITS = 2048",
+   "new": "MIN_BITS = 2046",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "key_version_any",
+   "file": "target/app_jwt.py",
+   "old": "    if version != 0:\n        raise Unusable(\"private key: not a two-prime RSA key (version 0)\")\n",
+   "new": "",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "der_trailing_bytes",
+   "file": "target/app_jwt.py",
+   "old": "    if end != len(data):\n        raise Unusable(\"private key: bytes after the DER structure\")\n",
+   "new": "",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "der_nine_then_more",
+   "file": "target/app_jwt.py",
+   "old": "    if at != len(body):\n        raise Unusable(\"private key: bytes after the nine integers of an RSA key\")\n",
+   "new": "",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "der_length_leading_zero",
+   "file": "target/app_jwt.py",
+   "old": " or data[at] == 0:",
+   "new": ":",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "der_length_long_form_small",
+   "file": "target/app_jwt.py",
+   "old": "        if size < 0x80:\n            raise Unusable(\"private key: a DER length that is not in its shortest form\")\n",
+   "new": "",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "der_integer_leading_zero",
+   "file": "target/app_jwt.py",
+   "old": " or (len(value) > 1 and value[0] == 0 and not value[1] & 0x80):",
+   "new": ":",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "der_integer_negative",
+   "file": "target/app_jwt.py",
+   "old": "if not value or value[0] & 0x80 or",
+   "new": "if not value or",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "pkcs8_any_oid",
+   "file": "target/app_jwt.py",
+   "old": "version != 0 or oid != RSA_OID or",
+   "new": "version != 0 or",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "pkcs8_any_parameters",
+   "file": "target/app_jwt.py",
+   "old": " or algorithm[end:] != b\"\\x05\\x00\":",
+   "new": ":",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "pkcs8_any_version",
+   "file": "target/app_jwt.py",
+   "old": "if version != 0 or oid",
+   "new": "if oid",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "pkcs8_attributes_read",
+   "file": "target/app_jwt.py",
+   "old": "    if at != len(body):\n        raise Unusable(\"private key: PKCS#8 with attributes or a public key is not read\")\n",
+   "new": "",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "pkcs8_unread",
+   "file": "target/app_jwt.py",
+   "old": "der if label == LABELS[0] else _pkcs8(der)",
+   "new": "der",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "sign_unverified",
+   "file": "target/app_jwt.py",
+   "old": "    if pow(sig, e, n) != em:\n        raise Unusable(\"private key: the signature does not verify under its own public numbers\")\n",
+   "new": "",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "app_id_prefix",
+   "file": "target/app_jwt.py",
+   "old": "not APP_ID.fullmatch(app_id)",
+   "new": "not APP_ID.match(app_id)",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "now_before_skew",
+   "file": "target/app_jwt.py",
+   "old": " or now < SKEW:",
+   "new": ":",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "transport_app_any_method",
+   "file": "target/write.py",
+   "old": "if (method, path) != APP_READ:",
+   "new": "if path != APP_READ[1]:",
+   "tests": [
+    "test_app_auth.Credential"
+   ]
+  },
+  {
+   "id": "transport_app_subpaths_by_token",
+   "file": "target/write.py",
+   "old": "if path == APP_READ[1] or path.startswith(APP_READ[1] + \"/\"):",
+   "new": "if path == APP_READ[1]:",
+   "tests": [
+    "test_app_auth.Credential"
+   ]
+  },
+  {
+   "id": "transport_app_other_method_by_token",
+   "file": "target/write.py",
+   "old": "if path == APP_READ[1] or path.startswith(APP_READ[1] + \"/\"):",
+   "new": "if path.startswith(APP_READ[1] + \"/\"):",
+   "tests": [
+    "test_app_auth.Credential"
+   ]
+  },
+  {
+   "id": "transport_app_falls_back_to_token",
+   "file": "target/write.py",
+   "old": "            raise Unusable(\"GET /app is answered only to the App's JWT and none was given\")",
+   "new": "            return self.token",
+   "tests": [
+    "test_app_auth.Credential",
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "transport_jwt_any_text",
+   "file": "target/write.py",
+   "old": "        if not _one_line(jwt):\n            raise Unusable(\"the App's JWT must be one non-empty line\")\n",
+   "new": "",
+   "tests": [
+    "test_app_auth.Credential"
+   ]
+  },
+  {
+   "id": "transport_always_token",
+   "file": "target/write.py",
+   "old": "credential = self._credential(method, path)",
+   "new": "credential = self.token",
+   "tests": [
+    "test_app_auth.Credential",
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "token_without_administration",
+   "file": "loop/job.py",
+   "old": "    \"permission-administration\": \"read\",\n",
+   "new": "",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "token_without_checks",
+   "file": "loop/job.py",
+   "old": "    \"permission-checks\": \"write\",\n",
+   "new": "",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "genesis_without_app",
+   "file": "loop/job.py",
+   "old": "got = _yaz_inputs(environ, tid, art, transport, signer, now, app=True)",
+   "new": "got = _yaz_inputs(environ, tid, art, transport, signer, now)",
+   "tests": [
+    "test_app_auth.Job"
+   ]
+  },
+  {
+   "id": "every_cycle_with_app",
+   "file": "loop/job.py",
+   "old": "transport or writer_transport(environ, now, app)",
+   "new": "transport or writer_transport(environ, now, True)",
+   "tests": [
+    "test_app_auth.Job"
+   ]
+  },
+  {
+   "id": "app_flag_ignored",
+   "file": "loop/job.py",
+   "old": "    if not app:\n        return W.HttpTransport(environ[\"WRITER_TOKEN\"], handlers)\n",
+   "new": "",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "app_held_without_flag",
+   "file": "loop/job.py",
+   "old": "    if not app:\n        return W.HttpTransport(environ[\"WRITER_TOKEN\"], handlers)\n",
+   "new": "    if not app and not environ.get(APP_KEY_ENV):\n        return W.HttpTransport(environ[\"WRITER_TOKEN\"], handlers)\n",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "empty_secret_passes",
+   "file": "loop/job.py",
+   "old": "        if not value:\n            raise Unusable(\"yaz: %s is not set\" % name)",
+   "new": "        if value is None:\n            raise Unusable(\"yaz: %s is not set\" % name)",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "jwt_clock_an_hour_late",
+   "file": "loop/job.py",
+   "old": "int(now().timestamp()))",
+   "new": "int(now().timestamp()) - 3600)",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "jwt_refusal_unmapped",
+   "file": "loop/job.py",
+   "old": "        except AJ.Unusable as exc:",
+   "new": "        except KeyError as exc:",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "yaz_step_without_app_secrets",
+   "file": "loop/job.py",
+   "old": "{\"WRITER_TOKEN\": \"${{ steps.app.outputs.token }}\", **APP_SECRETS,",
+   "new": "{\"WRITER_TOKEN\": \"${{ steps.app.outputs.token }}\",",
+   "tests": [
+    "test_app_auth.Registry"
+   ]
+  },
+  {
+   "id": "secret_not_read_as_action_input",
+   "file": "loop/job.py",
+   "old": "{name: action_input(environ.get(name) or \"\") for name",
+   "new": "{name: environ.get(name) or \"\" for name",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "secret_python_strip",
+   "file": "loop/job.py",
+   "old": "    return value.strip(JS_SPACE)",
+   "new": "    return value.strip()",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "secret_trim_left_only",
+   "file": "loop/job.py",
+   "old": "    return value.strip(JS_SPACE)",
+   "new": "    return value.lstrip(JS_SPACE)",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "jwt_of_untrimmed_secret",
+   "file": "loop/job.py",
+   "old": "AJ.token(secrets[APP_ID_ENV], secrets[APP_KEY_ENV],",
+   "new": "AJ.token(environ[APP_ID_ENV], secrets[APP_KEY_ENV],",
+   "tests": [
+    "test_app_auth.WriterTransport"
+   ]
+  },
+  {
+   "id": "key_escaped_line_ends_unread",
+   "file": "target/app_jwt.py",
+   "old": "pem.replace(\"\\\\n\", \"\\n\").strip()",
+   "new": "pem.strip()",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "job_secret_line_end_kept",
+   "file": "loop/job.py",
+   "old": "    return value.strip(JS_SPACE)",
+   "new": "    return value.strip(\" \")",
+   "tests": [
+    "test_app_auth.Job"
+   ]
+  },
+  {
+   "id": "app_id_why_line_end_unnamed",
+   "file": "target/app_jwt.py",
+   "old": "    if any(ch.isspace() for ch in app_id):",
+   "new": "    if \" \" in app_id:",
+   "tests": [
+    "test_app_auth.Jwt"
+   ]
+  },
+  {
+   "id": "app_id_why_holds_the_value",
+   "file": "target/app_jwt.py",
+   "old": "        return \"space or a line end in it\"",
+   "new": "        return \"space or a line end in %r\" % app_id",
+   "tests": [
+    "test_app_auth.Jwt",
+    "test_app_auth.WriterTransport"
+   ]
+  }
+ ]
+}
