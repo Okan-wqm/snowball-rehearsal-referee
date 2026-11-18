@@ -1890,6 +1890,16 @@ class ImageAndEntrypointTest(unittest.TestCase):
         self.assertIn("COPY bootstrap/requirements/claude-cli/", self.dockerfile)  # the referee's own CLI pin
         self.assertIn("npm ci", self.dockerfile)
 
+    def test_the_standard_library_is_compiled_while_the_image_is_built(self):  # capsule_stdlib_cold
+        """seed-064 (E632): the base image deletes the standard library's bytecode, and a session's root is read-only
+        under PYTHONDONTWRITEBYTECODE=1, so each python process compiled every module it imported. The build compiles
+        the standard library, as root, before the image becomes the Founder's."""
+        line = ("RUN python -m compileall -q -j 0 "
+                "\"$(python -c 'import sysconfig; print(sysconfig.get_path(\"stdlib\"))')\"\n")
+        self.assertIn(line, self.dockerfile)
+        self.assertLess(self.dockerfile.index(line), self.dockerfile.index("USER founder"))
+        self.assertIn("PYTHONDONTWRITEBYTECODE=1", self.dockerfile[self.dockerfile.index("ENV "):])
+
     def test_the_capsule_pins_the_cli_like_the_referee_does(self):
         env_block = self.dockerfile[self.dockerfile.index("ENV "):self.dockerfile.index("USER ")]
         for key, value in rival.PINNED_ENV.items():

@@ -591,6 +591,174 @@ class Flow(unittest.TestCase):
                              jobs={"getir": "success", "kos": "success", "cagir": "success", "yeniden": "success"})
         self.assertEqual(result["reasons"][0]["kind"], "refutation_reproduced")
 
+    # ---- the own-head exit request (E630): the code and its exit in one push, judged in one run
+    CODE_JOBS = {"getir": "success", "kos": "success", "cagir": "success", "yeniden": "skipped"}
+
+    def accepted_stage0(self):
+        """A frozen spec and a complete Stage 0 accepted with its rival, and one more artifact that survived: everything
+        an exit needs but the review of its own head. Returns the accepted SHA."""
+        summary = self.referee / "setup" / "summary.json"
+        summary.write_text(json.dumps(dict(json.loads(summary.read_text()), targets=[
+            {"id": "copy", "repo": "owner/copy", "kind": "copy", "base_sha": "c" * 40, "identifiers": ["Zorbalix"],
+             "excluded_paths": [], "unit_candidates": []}])))
+        self.freeze_stage0()
+        files = {"referee/ledger/chain.py": "x = 1\n", "referee/.github/workflows/loop.yml": LOOP_YML.encode(),
+                 "tests/fixtures/toy-repo/app.py": "import os\n", "founder-ledger.jsonl": ledger_bytes(ledger_rows(2)),
+                 "snowball-tests.json": all_tests_manifest(ALL_MFS)}
+        commit(self.brain, files, "all of stage 0")
+        meta = self.pull()
+        result = self.finish(meta, run=self.green_run(meta), rival=self.rival_ok(), jobs=self.CODE_JOBS)
+        self.assertEqual(result["verdict"], "accepted", result["reasons"])
+        self.state["rival_artifacts"].append({"sha": "f" * 40, "outcome": "survived"})
+        return meta["head"]
+
+    def own_head_push(self, request=None, ride_along=None):
+        """The code (a commit) and on top of it the request naming that commit, pushed together; ``request`` builds the
+        request from the code's SHA, ``ride_along`` adds files to the request's commit."""
+        code = commit(self.brain, {"referee/ledger/chain.py": "x = 2\n"}, "code")
+        frozen = self.state["frozen_specs"]["spec/asama-0"]
+        req = request(code) if request else {"stage": 0, "sha": code, "spec_sha256": frozen}
+        head = commit(self.brain, dict(ride_along or {}, **{"exit-request.json": json.dumps(req)}), "its exit request")
+        return code, head
+
+    def pull_told(self):
+        """``pull``'s meta and the step outputs it printed."""
+        with contextlib.redirect_stdout(io.StringIO()) as shown:
+            meta = self.pull()
+        return meta, shown.getvalue()
+
+    def test_an_own_head_request_is_judged_as_code_then_as_the_exit_of_that_same_head(self):
+        """E630: the request names the commit under it that holds its code (a commit cannot hold its own SHA). The
+        push is judged as code; with the code accepted, (A) is judged in the same run on that head, whose rival is this
+        run's, and the head is pinned: one round where two were needed. The Founder's ledger rows may ride along."""
+        self.accepted_stage0()
+        code, head = self.own_head_push(ride_along={"founder-ledger.jsonl": ledger_bytes(ledger_rows(3))})
+        meta, told = self.pull_told()
+        self.assertEqual((meta["kind"], meta["pre_reasons"], meta["run_tests"], meta["run_rival"]),
+                         ("code", [], True, True))
+        self.assertTrue(meta["exit_own_head"])  # own_head_never, own_head_records_not_aside
+        self.assertEqual(meta["exit_pre_reasons"], [])  # own_head_sha_must_be_last_accepted
+        self.assertEqual((meta["exit_request"]["sha"], meta["module_less"], meta["module_less_code"]),
+                         (code, list(ALL_MFS), []))  # own_head_module_less_like_code
+        self.assertIn("exit_request=true", told.splitlines())  # own_head_canary_not_told: the kanarya job runs
+        saved = json.loads(json.dumps(self.state))
+        with mock.patch("snowball_bootstrap.decide.EXIT_NOT_CHECKED", {}):
+            result = self.finish(meta, run=self.green_run(meta), rival=self.rival_ok(), jobs=self.CODE_JOBS)
+        self.assertEqual((result["kind"], result["verdict"], result["reasons"]), ("code", "accepted", []))
+        done = result["exit"]
+        self.assertEqual((done["requested"], done["transferable"], done["missing"], done["reasons"]),
+                         (True, True, [], []))
+        self.assertEqual((done["brain_sha"], done["pinned_sha"]), (head, code))  # own_head_head_not_reviewed
+        self.assertEqual((result["state"]["exit_accepted_sha"], result["state"]["last_accepted_sha"]), (head, head))
+        self.assertIn({"sha": head, "outcome": "survived"}, result["state"]["rival_artifacts"])
+        self.assertIsNone(result["state"]["rejected_exit_request"])
+        # What the seed cannot check yet keeps this exit closed as it keeps every exit (E162): the code stays accepted,
+        # nothing is pinned, and the request is remembered as rejected (own_head_exit_faults_reject_code,
+        # own_head_pinned_with_exit_faults, own_head_exit_miss_not_remembered).
+        self.state = saved
+        result = self.finish(meta, run=self.green_run(meta), rival=self.rival_ok(), jobs=self.CODE_JOBS)
+        self.assertEqual((result["verdict"], result["reasons"], result["exit"]["transferable"]),
+                         ("accepted", [], False))
+        self.assertEqual([(r["kind"], r["ref"]) for r in result["exit"]["reasons"]],
+                         [("exit_condition", "not_checked:" + a) for a in ("spec", "durustluk")])
+        self.assertEqual((result["state"]["last_accepted_sha"], result["state"]["exit_accepted_sha"]), (head, None))
+        self.assertEqual(result["state"]["rejected_exit_request"], meta["exit_request_sha256"])
+        self.assertEqual(result["learning"]["repeated"], [])
+
+    def test_an_own_head_request_whose_code_is_rejected_is_not_judged_as_an_exit(self):
+        """E630: the exit is judged only on accepted code. Rejected, the result says the exit was not judged and holds
+        no exit condition; the request is remembered, so the fix pushed on top of it is a code push (E97)."""
+        self.accepted_stage0()
+        code, head = self.own_head_push()
+        meta = self.pull()
+        run = self.green_run(meta)
+        run["tests"][0]["ok"], run["green"] = False, False
+        result = self.finish(meta, run=run, jobs=self.CODE_JOBS)
+        self.assertEqual((result["verdict"], [r["kind"] for r in result["reasons"]]), ("rejected", ["test_failed"]))
+        self.assertEqual((result["exit"]["requested"], result["exit"]["transferable"], result["exit"]["missing"]),
+                         (True, False, []))
+        self.assertEqual(result["exit"]["not_judged"], "code_not_accepted")  # own_head_exit_judged_on_rejected_code
+        self.assertEqual(result["exit"]["pinned_sha"], code)
+        self.assertNotIn("reasons", result["exit"])
+        self.assertIsNone(result["state"]["exit_accepted_sha"])
+        self.assertEqual(result["state"]["rejected_exit_request"], meta["exit_request_sha256"])
+        commit(self.brain, {"referee/ledger/chain.py": "x = 3\n"}, "the fix, the request left in place")
+        meta = self.pull()
+        self.assertEqual((meta["kind"], meta["pre_reasons"], meta.get("exit_own_head")), ("code", [], None))
+
+    def test_an_own_head_requests_own_faults_and_the_exits_module_less_red_never_reject_its_code(self):
+        """E630: what is wrong with the request itself (here its spec hash) and the module-less red the code alone
+        did not ask for are the exit's reasons; the code is judged without them. What the code finishes stays the
+        code's own module-less red."""
+        self.accepted_stage0()
+        self.own_head_push(request=lambda code: {"stage": 0, "sha": code, "spec_sha256": "0" * 64})
+        meta = self.pull()
+        self.assertEqual((meta["pre_reasons"], meta["exit_pre_reasons"]), ([], ["exit_request_spec_hash_mismatch"]))
+        run = self.green_run(meta)
+        run["module_less"][0]["stayed_green"] = True  # MF1, finished before this push: the exit's (#modulsuz)
+        saved = json.loads(json.dumps(self.state))
+        with mock.patch("snowball_bootstrap.decide.EXIT_NOT_CHECKED", {}):
+            result = self.finish(meta, run=run, rival=self.rival_ok(), jobs=self.CODE_JOBS)
+            # own_head_module_less_all_on_code
+            self.assertEqual((result["verdict"], result["reasons"]), ("accepted", []))
+            self.assertEqual([(r["kind"], r["ref"]) for r in result["exit"]["reasons"]],
+                             [("exit_request_spec_hash_mismatch", ""), ("module_less_green", "MF1")])
+            self.assertFalse(result["exit"]["transferable"])  # own_head_module_less_dropped_from_exit
+            self.state = saved
+            meta["module_less_code"] = [1]  # had the code finished MF1, its red would be the code's
+            result = self.finish(meta, run=run, rival=self.rival_ok(), jobs=self.CODE_JOBS)
+        self.assertEqual([(r["kind"], r["ref"]) for r in result["reasons"]], [("module_less_green", "MF1")])
+        self.assertEqual(result["exit"]["not_judged"], "code_not_accepted")
+
+    def test_only_a_request_on_top_of_its_own_code_is_an_own_head_request(self):
+        """E630: any other request beside code is `exit_request_not_alone`, as it always was; a request alone that
+        names the last accepted commit is an exit request, as it always was, and carries nothing of E630."""
+        accepted = self.accepted_stage0()
+        frozen = self.state["frozen_specs"]["spec/asama-0"]
+
+        def request(sha):
+            return json.dumps({"stage": 0, "sha": sha, "spec_sha256": frozen})
+
+        code = commit(self.brain, {"referee/ledger/chain.py": "x = 2\n"}, "code")
+        commit(self.brain, {"exit-request.json": request(code), "referee/a.py": "y = 1\n"}, "request beside more code")
+        cases = {"beside_more_code": self.pull()}  # own_head_beside_more_code
+        sh(self.brain, "git", "reset", "-q", "--hard", accepted)
+        commit(self.brain, {"referee/ledger/chain.py": "x = 2\n"}, "code")
+        commit(self.brain, {"exit-request.json": request(accepted)}, "request naming another commit")
+        cases["names_another_commit"] = self.pull()
+        commit(self.brain, {"exit-request.json": request("e" * 40)}, "request naming a commit the brain lacks")
+        cases["names_an_unknown_commit"] = self.pull()  # own_head_unknown_sha_crashes
+        sh(self.brain, "git", "reset", "-q", "--hard", accepted)
+        off = commit(self.brain, {"referee/ledger/chain.py": "x = 2\n"}, "code, fetched by the referee")
+        self.pull()
+        sh(self.brain, "git", "reset", "-q", "--hard", accepted)
+        commit(self.brain, {"referee/ledger/chain.py": "x = 2\n"}, "the same code, another commit")
+        commit(self.brain, {"exit-request.json": request(off)}, "request naming a commit off the branch")
+        cases["names_a_commit_off_the_branch"] = self.pull()  # own_head_names_any_commit
+        sh(self.brain, "git", "reset", "-q", "--hard", accepted)
+        spec = commit(self.brain, {"spec/asama-0/00-ozet.md": "# stage 0, later\n"}, "spec")
+        commit(self.brain, {"exit-request.json": request(spec)}, "request on a spec change")
+        cases["on_a_spec_change"] = self.pull()
+        for name, meta in cases.items():
+            with self.subTest(name=name):
+                self.assertIn("exit_request_not_alone", meta["pre_reasons"])
+                self.assertNotIn("exit_own_head", meta)
+        # The Founder's ledger rows between the code and its request are memory, not code: still its own code.
+        sh(self.brain, "git", "reset", "-q", "--hard", accepted)
+        code = commit(self.brain, {"referee/ledger/chain.py": "x = 2\n"}, "code")
+        commit(self.brain, {"founder-ledger.jsonl": ledger_bytes(ledger_rows(3))}, "a ledger row")
+        commit(self.brain, {"exit-request.json": request(code)}, "its request")
+        meta = self.pull()
+        self.assertEqual((meta["pre_reasons"], meta.get("exit_own_head")), ([], True))
+        sh(self.brain, "git", "reset", "-q", "--hard", accepted)
+        commit(self.brain, {"exit-request.json": request(accepted)}, "the request as it always was")
+        meta, told = self.pull_told()
+        self.assertEqual((meta["kind"], meta["pre_reasons"], meta["run_rival"]), ("exit", [], False))
+        self.assertFalse({"exit_own_head", "exit_pre_reasons", "module_less_code"} & set(meta))
+        self.assertIn("exit_request=true", told.splitlines())
+        commit(self.brain, {"referee/ledger/chain.py": "x = 5\n", "exit-request.json": None}, "plain code")
+        self.assertIn("exit_request=false", self.pull_told()[1].splitlines())
+
     @posix_only
     def test_exit_request_and_import(self):
         # The operator has named the targets (`26c`): the generality check has names to look for.

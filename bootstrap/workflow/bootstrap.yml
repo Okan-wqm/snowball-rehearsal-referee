@@ -27,7 +27,8 @@
 #   kos     nothing; joins the parts' records, judging the vectors on their answers - runs no brain code
 #   cagir   operator's Claude login (CLAUDE_CODE_OAUTH_TOKEN)        - runs no brain code
 #   yeniden nothing; reproducers only inside --network none containers
-#   kanarya nothing; an exit request only: the brain's runner.contained run on the host, outside any container
+#   kanarya nothing; an exit request only (an own-head one too, E630): the brain's runner.contained run on the host,
+#           outside any container
 #           (seed-058, tohum/29z); its one output is read by `decide` as untrusted text
 #   yaz     OIDC (Sigstore) and contents: read                         - runs no brain code
 
@@ -59,6 +60,7 @@ jobs:
     outputs:
       skip: ${{ steps.poll.outputs.skip == 'true' || steps.pull.outputs.skip == 'true' }}
       kind: ${{ steps.pull.outputs.kind }}
+      exit_request: ${{ steps.pull.outputs.exit_request }}
       run_tests: ${{ steps.pull.outputs.run_tests }}
       run_rival: ${{ steps.pull.outputs.run_rival }}
       repro: ${{ steps.pull.outputs.repro }}
@@ -388,7 +390,7 @@ jobs:
     # in it, so nothing it writes is trusted: its one output is a status line `decide` checks token by token, and no
     # other job reads anything of it.
     needs: cek
-    if: needs.cek.result == 'success' && needs.cek.outputs.kind == 'exit'
+    if: needs.cek.result == 'success' && needs.cek.outputs.exit_request == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions: {}

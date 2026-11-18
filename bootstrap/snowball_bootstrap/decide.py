@@ -351,7 +351,9 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
                                            ref=f"{lic['name']}=={lic['version']}:{lic['expression']}"))
             if not tests:
                 reasons.append(_reason("zero_tests"))
-            reasons += _module_less_green(module_less)
+            # An own-head request's code asks only for what it finishes; the rest is its exit's (#modulsuz, E630).
+            asked = set(meta.get("module_less_code") or []) if meta.get("exit_own_head") else None
+            reasons += _module_less_green([m for m in module_less if asked is None or m["mf"] in asked])
             clean = bool(tests) and licensed and all(t["ok"] for t in tests) and all(v["ok"] for v in vectors)
             unrun = set(meta.get("module_less") or []) - {m["mf"] for m in module_less}
             if clean and unrun:  # a green run must carry module-less red for every micro-feature pull named (E05)
@@ -480,8 +482,26 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
             elif rival["verdict"] == "refuted":
                 _keep_claim(claims, attempt, result, head)
 
-    exit_block: dict[str, Any] = {"requested": kind == "exit", "transferable": False, "missing": []}
-    if kind == "exit":
+    # A brake stop is neither the Founder's nor the rival's: the head waits for its allowance, unless the run found a
+    # reason of the Founder's to reject it anyway (a reproducer): that head is judged for it, as `pull` judges a head
+    # with a reason of its own before the brake (E550). An exit request calls no rival, so no brake stops it.
+    budget_stop = None
+    allowance = meta.get("rival_allowance") or {}
+    if any(is_brake_stop(r) for r in reasons):
+        warnings.append(f"rival_budget:{allowance.get('brake')}")
+        if not any(counts_against_founder(r) for r in reasons):
+            evaluate = False
+            budget_stop = {"brake": allowance.get("brake"), "allowed_usd_micros": allowance.get("usd_micros")}
+
+    # An own-head request (E630) is a code push first: its exit is judged only once that code has no reason against it,
+    # on the head itself, whose rival this run has just reviewed (no reason: a valid rival, its reproducers complete).
+    own_head = kind == "code" and bool(meta.get("exit_own_head"))
+    exit_block: dict[str, Any] = {"requested": kind == "exit" or own_head, "transferable": False, "missing": []}
+    if own_head and reasons:
+        exit_block["pinned_sha"] = meta["exit_request"]["sha"] if meta.get("exit_request") else None
+        exit_block["not_judged"] = "code_not_accepted"  # the exit is not judged, and the result says so
+    elif kind == "exit" or own_head:
+        exit_sha = head if own_head else base
         exit_block["pinned_sha"] = (meta.get("exit_request") or {}).get("sha")  # None when malformed (E41)
         missing = exit_block["missing"]
         manifest = meta.get("manifest") or {}
@@ -489,8 +509,10 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
             missing.append("not_all_micro_features_done")
         missing += [f"vector_group_missing:{g}" for g in groups_missing]  # `asama-0/10` #testler: every group passes
         survived = {a["sha"] for a in state["rival_artifacts"] if a["outcome"] == "survived"}  # E20
-        others = survived - {base}
-        if base not in survived:
+        if own_head:  # no reason: this run's rival on the head was valid and complete, recorded below as survived
+            survived.add(head)
+        others = survived - {exit_sha}
+        if exit_sha not in survived:
             missing.append("no_rival_attempt_on_exit_sha")
         if len(others) < rival_min_attempts:
             missing.append(f"rival_attempts:{len(others)}<{rival_min_attempts}")
@@ -517,8 +539,13 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
         for m in exitcanary.missing(exit_block["canary"]):
             missing.append(m)
             detail[m] = exitcanary.DETAIL
-        for m in missing:
-            reasons.append(_reason("exit_condition", ref=m, detail=detail.get(m, "")))
+        found = [_reason("exit_condition", ref=m, detail=detail.get(m, "")) for m in missing]
+        if own_head:  # the request's own reasons and the module-less red the code alone did not ask for, then (A)'s
+            asked = set(meta.get("module_less_code") or [])
+            exit_block["reasons"] = ([_reason(r) for r in meta.get("exit_pre_reasons") or []]
+                                     + _module_less_green([m for m in module_less if m["mf"] not in asked]) + found)
+        else:
+            reasons += found
         exit_block["checks"] = copy.deepcopy(meta.get("exit_checks") or {})
         if excepted:  # named in every exit result, the transferable one too: an exception, never a pass (`02`)
             # An array by anchor, whatever its length (E563): one shape for every reader of the signed result.
@@ -526,17 +553,6 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
                 {"anchor": anchor, "stage": handed[anchor].get("stage"), "carry_to": handed[anchor].get("carry_to"),
                  "reason": handed[anchor].get("reason"), "carry_commitment": handed[anchor].get("carry_commitment"),
                  "measured": False} for anchor in OWNER_EXCEPTABLE if anchor in excepted]
-
-    # A brake stop is neither the Founder's nor the rival's: the head waits for its allowance, unless the run found a
-    # reason of the Founder's to reject it anyway (a reproducer, an exit condition): that head is judged for it, as
-    # `pull` judges a head with a reason of its own before the brake (E550).
-    budget_stop = None
-    allowance = meta.get("rival_allowance") or {}
-    if any(is_brake_stop(r) for r in reasons):
-        warnings.append(f"rival_budget:{allowance.get('brake')}")
-        if not any(counts_against_founder(r) for r in reasons):
-            evaluate = False
-            budget_stop = {"brake": allowance.get("brake"), "allowed_usd_micros": allowance.get("usd_micros")}
 
     accepted = not reasons and kind in ("spec", "code", "exit")
     if kind == "spec":
@@ -594,7 +610,7 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
 
     if meta.get("exit_released"):  # the operator reverted its transfer, or a later stage opened (`cli.exit_pin`)
         state["exit_accepted_sha"] = None
-    if kind == "exit" and accepted:
+    if accepted and (kind == "exit" or (own_head and not exit_block["reasons"])):
         state["exit_accepted_sha"] = head  # (A): the SHA the import takes; later pushes never move it (E333, E590)
         exit_block["transferable"] = True
         exit_block["referee_tree_sha256"] = meta["referee_tree_sha256"]
@@ -605,13 +621,13 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
     ahead = meta.get("referee_ahead_of_exit")  # `main`'s referee/ moved past the pinned SHA's (E590, `29u`)
     if ahead:  # a warning, never a reason: the verdict and the streaks are the push's own
         warnings.append(f"referee_ahead_of_exit:{str(ahead)[:7]}")
-    if kind == "exit":
+    if exit_block["requested"]:
         exit_block["repeat_events"] = state["repeat_events"]
         # Listed, never proven here (E260): no rival runs on an exit head, so the operator, who owns the exit's (B) part,
         # reads what each claim's reproducer showed and on which head (`asama-0/10` #rakip).
         exit_block["open_claims"] = [{"id": c["id"], "claim": c["claim"], "first_head": c["first_head"],
                                       "observed": c["observed"]} for c in state["open_claims"]]
-        if verdict == "rejected" and evaluate and meta.get("exit_request_sha256"):
+        if not exit_block["transferable"] and evaluate and meta.get("exit_request_sha256"):
             # `asama-0/10`, `26c`: the same bytes left in place are ignored in later code pushes (E97), so a request the
             # seed cannot accept yet (E162) never turns every later code push into `exit_request_not_alone`.
             state["rejected_exit_request"] = meta["exit_request_sha256"]

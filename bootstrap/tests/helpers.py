@@ -44,7 +44,8 @@ GREEN_CANARY = "ok"  # the `kanarya` job's output when the exit's canary is gree
 def with_green_canary(meta: dict, jobs: dict) -> dict:
     """``jobs`` with a `kanarya` job that succeeded, on an exit request that names none: what the tests of other exit
     conditions decide beside. The canary's own rules are `test_exit_canary`'s."""
-    return dict(jobs, kanarya="success") if meta.get("kind") == "exit" and "kanarya" not in jobs else jobs
+    asked = meta.get("kind") == "exit" or meta.get("exit_own_head")  # an own-head request too (E630)
+    return dict(jobs, kanarya="success") if asked and "kanarya" not in jobs else jobs
 
 
 def workflow_job(name: str, text: str = BOOTSTRAP_YML) -> str:

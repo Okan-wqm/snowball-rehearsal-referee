@@ -472,6 +472,21 @@ def _well_formed_exit_request(req: Any, table: stages.StageTable) -> bool:
             and ("batch" not in req or (isinstance(req["batch"], str) and bool(stages.BATCH_RE.match(req["batch"])))))
 
 
+def _names_its_code(repo: Path, head: str, raw: bytes | None) -> bool:
+    """The own-head exit request (`29b` "Çıkış isteği", E630): the request's ``sha`` is a commit under the head from
+    which only `exit-request.json` changed (the Founder's ledger rows and reports aside). A commit cannot hold its own
+    SHA, so the request names the commit under it whose code is the head's."""
+    try:
+        req = json.loads((raw or b"").decode("utf-8"))
+    except (UnicodeDecodeError, ValueError, RecursionError):
+        return False
+    sha = req.get("sha") if isinstance(req, dict) else None
+    if not (isinstance(sha, str) and config.SHA_RE.match(sha)) or not gitio.has_commit(repo, sha):
+        return False
+    return (gitio.is_ancestor(repo, sha, head)
+            and [p for p in gitio.changed_paths(repo, sha, head) if not is_founder_record(p)] == [EXIT_FILE])
+
+
 def _base_done(repo: Path, base: str, table: stages.StageTable) -> set[int]:
     """The micro-features the last accepted commit had finished; none when it had no readable manifest (then every
     finished one is new, and module-less red runs for all of them). After the lock opened, a base whose manifest is
@@ -532,6 +547,7 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     exit_raw = gitio.file_at(repo, head, EXIT_FILE)  # from its blob: readable even when another name is not
     exit_sha = hashlib.sha256(exit_raw).hexdigest() if exit_raw is not None else None
     judged = [p for p in own if not is_founder_record(p)]  # the Founder's ledger rows may ride along
+    own_head = False  # a code push whose head is its own exit request (E630)
     if judged == [EXIT_FILE]:
         kind = "exit"  # the same bytes asked for again alone are a request again, judged again
     else:
@@ -543,13 +559,20 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
         kind, reasons = classify(own)
         pre += reasons
         if EXIT_FILE in judged and not left_in_place:
-            pre.append("exit_request_not_alone")
+            # Code beside a request is one exit request when the request is the head's own commit on top of the code
+            # (E630): the push is judged as code, and its exit only once that code is accepted. Anything else is not
+            # alone, as it always was.
+            own_head = not reasons and _names_its_code(repo, head, exit_raw)
+            if not own_head:
+                pre.append("exit_request_not_alone")
     if pinned and kind in ("spec", "code", "exit") and any(p.startswith("referee/") for p in own):
         # After (A) the push is judged as any push (E590, `29u`); one that changes `referee/` while (B) runs the pinned
         # SHA's referee tree is named, never refused: `main`'s referee code now differs from the one the import took.
         meta["referee_ahead_of_exit"] = pinned
     if {"base_unreachable", "history_rewritten", "non_utf8_path", "unsafe_path"} & set(pre):  # nothing can be read safely
         kind = "rejected"
+    own_head = own_head and kind == "code"
+    exit_asked = kind == "exit" or own_head
     pre += [f"not_regular_file:{x}" for x in gitio.special_entries(repo, head)][:20]
     if len(tar_bytes) > boot.limits.max_tree_bytes:
         pre.append("tree_too_large")
@@ -592,8 +615,11 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
             "done_mf": list(manifest.done_mf), "lockfiles": list(manifest.lockfiles)}
         if manifest is not None and base_ok:
             # Module-less red (`asama-0/14`): for the micro-features this push finishes, and at the exit for all.
-            before = set() if kind == "exit" else _base_done(repo, base, table)
+            before = set() if exit_asked else _base_done(repo, base, table)
             meta["module_less"] = [k for k in manifest.done_mf if k not in before]
+            if own_head:  # what the code alone asks for; the rest is the exit's (#modulsuz), judged after the code
+                code_before = _base_done(repo, base, table)
+                meta["module_less_code"] = [k for k in manifest.done_mf if k not in code_before]
         # A finished micro-feature stays finished: its vector group, and for MF17 the wiring check, run on every push
         # after the one it entered done_mf in (`asama-0/14`, `29a`), so no push may declare fewer (E292).
         accepted_done = _base_done(repo, base, table) if base_ok else set()
@@ -611,14 +637,15 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     if kind == "code" and wiring.due(table, finished):
         pre += wiring.check(wiring.files_in(exitchecks.referee_files(tar_bytes)))
 
-    if kind == "exit":
+    if exit_asked:
         meta["exit_request_sha256"] = exit_sha  # rejected, these bytes are ignored in later pushes (E97)
+        exit_pre: list[str] = []
         try:
             req = json.loads((exit_raw or b"").decode("utf-8"))
         except (ValueError, RecursionError):  # bad UTF-8 or JSON, or nested deeper than the parser goes
             req = None
         if not _well_formed_exit_request(req, table):
-            pre.append("exit_request_malformed")
+            exit_pre.append("exit_request_malformed")
         else:
             meta["exit_request"] = req
             # Which exit a request may ask for is the open table's (E402). Before the lock, Stage 0's alone, judged as it
@@ -632,23 +659,28 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
             else:
                 wrong_stage, spec_dir = req["stage"] != 0, "spec/asama-0"
             if wrong_stage:
-                pre.append("exit_request_wrong_stage")
+                exit_pre.append("exit_request_wrong_stage")
             elif batch != table.batch:
-                pre.append("exit_request_wrong_batch")
-            if req["sha"] != base:
-                pre.append("exit_request_sha_is_not_last_accepted")
+                exit_pre.append("exit_request_wrong_batch")
+            if req["sha"] != base and not own_head:  # an own-head request names its own code (E630)
+                exit_pre.append("exit_request_sha_is_not_last_accepted")
             if req["spec_sha256"] != prev["frozen_specs"].get(spec_dir):
-                pre.append("exit_request_spec_hash_mismatch")
+                exit_pre.append("exit_request_spec_hash_mismatch")
         try:
             meta["referee_tree_sha256"] = tree_hash(tar_bytes, "referee")
         except TreeError as exc:
-            pre.append(f"referee_tree:{exc}")
+            exit_pre.append(f"referee_tree:{exc}")
         # The (A) conditions read from the archive (E162's follow-up): their results go to `decide`, not here, so the
         # tests still run and one request hears everything that is missing.
         meta["exit_checks"], meta["toy_tree_sha256"] = exitchecks.run(
             tar_bytes, tar_file(tar_bytes, LEDGER_FILE), ledger_base, summary_cfg.targets)
         # The exit's other reasons may quote the Founder's paths too; none says a target's name in clear (E290).
         names = exitchecks.target_names(summary_cfg.targets)
+        if own_head:  # the request's own reasons wait for the code's verdict (E630): `decide` judges them after it
+            meta["exit_own_head"] = True
+            meta["exit_pre_reasons"] = sorted({exitchecks.withheld_reason(r, names) for r in exit_pre})
+        else:
+            pre += exit_pre
         pre = [exitchecks.withheld_reason(r, names) for r in pre]
         # The owner's exceptions, named in the signed result (`02`, E287, E294, E561), each under its summary key, with
         # the commitment beside it (what the carried stage measures) or None (E297, E562); none leaves meta as it is.
@@ -694,7 +726,8 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     # still in it here is the epoch's (any other seed change is rejected before the rival), not the Founder's (E88).
     (out / "diff.patch").write_text(gitio.diff_text(repo, base, head, exclude=HIDDEN_NAMES, exclude_dirs=HIDDEN_DIRS + SEED_DIRS)
                                     if base_ok else "", encoding="utf-8")
-    output(skip=False, kind=kind, head=head, run_tests=meta["run_tests"], run_rival=meta["run_rival"], repro=repro)
+    output(skip=False, kind=kind, head=head, run_tests=meta["run_tests"], run_rival=meta["run_rival"], repro=repro,
+           exit_request=exit_asked)
     return 0
 
 
@@ -956,6 +989,10 @@ def cmd_decide(args: argparse.Namespace) -> int:
         lines.append(f"- **not learning**: `{sig}` rejected {policy.repeat_reject_limit} or more times in a row")
     for warning in result["warnings"]:
         lines.append(f"- **warning**: `{warning}`")
+    for r in result["exit"].get("reasons", []):  # an own-head request's exit, judged after its code (E630)
+        lines.append(f"- exit reason: `{r['kind']}` `{r['ref']}`")
+    if result["exit"].get("not_judged"):
+        lines.append(f"- exit not judged: `{result['exit']['not_judged']}`")
     if result["exit"].get("transferable"):
         lines.append(f"- **transferable**: referee tree `{result['exit']['referee_tree_sha256']}`")
     summary("\n".join(lines))

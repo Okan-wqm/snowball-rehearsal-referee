@@ -338,7 +338,9 @@ class WorkflowTest(unittest.TestCase):
         job = workflow_job("kanarya")
         self.assertIn("    permissions: {}\n", job)
         self.assertIn("    needs: cek\n", job)
-        self.assertIn("if: needs.cek.result == 'success' && needs.cek.outputs.kind == 'exit'", job)
+        self.assertIn("if: needs.cek.result == 'success' && needs.cek.outputs.exit_request == 'true'", job)
+        # An own-head request is a code push (E630): pull's exit_request output, not its kind, says one is there.
+        self.assertIn("      exit_request: ${{ steps.pull.outputs.exit_request }}\n", workflow_job("cek"))
         for word in ("secrets.", "upload-artifact", "docker pull", "id-token", "contents:", "cache"):
             self.assertNotIn(word, job.split("steps:", 1)[1], word)
         self.assertIn("python3 -m snowball_bootstrap canary --root snap --pulled pulled --work work", job)
