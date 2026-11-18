@@ -1,0 +1,39 @@
+{
+ "mutants": [
+  {
+   "id": "d1_state_without_its_parent",
+   "file": "loop/job.py",
+   "old": "line = ST.verify(source, head, previous, prev)",
+   "new": "line = ST.verify(source, head)",
+   "tests": ["test_rehearsal.py"]
+  },
+  {
+   "id": "yaz_judges_no_gate",
+   "file": "loop/job.py",
+   "old": "gate = yaz_gate(environ, art)",
+   "new": "gate = None",
+   "tests": ["test_rehearsal.py"]
+  },
+  {
+   "id": "stage_0_build_never_ok",
+   "file": "loop/watch.py",
+   "old": "\"build_ok\": build_ok, \"lint\": lint}",
+   "new": "\"build_ok\": False, \"lint\": lint}",
+   "tests": ["test_rehearsal.py"]
+  },
+  {
+   "id": "fake_github_made_up_commit_ids",
+   "file": "tests/fake_github.py",
+   "old": "sha = git_store.commit({}, rec[\"tree\"], rec[\"message\"].encode(\"utf-8\"), tuple(rec[\"parents\"]))",
+   "new": "sha = sha_of(rec)",
+   "tests": ["test_rehearsal.py"]
+  },
+  {
+   "id": "stage_0_build_always_ok",
+   "file": "loop/watch.py",
+   "old": "\"build_ok\": build_ok, \"lint\": lint}",
+   "new": "\"build_ok\": True, \"lint\": lint}",
+   "tests": ["test_rehearsal.py"]
+  }
+ ]
+}

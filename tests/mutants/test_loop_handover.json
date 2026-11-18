@@ -1,0 +1,31 @@
+{
+ "mutants": [
+  {
+   "id": "no_cache",
+   "file": "tests/test_loop_handover.py",
+   "old": "@functools.cache\n",
+   "new": "",
+   "tests": [
+    "test_loop_handover.py"
+   ]
+  },
+  {
+   "id": "cache_ignores_the_jobs",
+   "file": "tests/test_loop_handover.py",
+   "old": "return _recorded(test_id, _artifacts(jobs))",
+   "new": "return _recorded(test_id, _artifacts(J.JOBS))",
+   "tests": [
+    "test_loop_handover.py"
+   ]
+  },
+  {
+   "id": "recording_reads_the_global_jobs",
+   "file": "tests/test_loop_handover.py",
+   "old": "downloads, upload = io.get(name, ((), None))",
+   "new": "downloads, upload = (J.JOBS[name].downloads, J.JOBS[name].upload) if name in J.JOBS else ((), None)",
+   "tests": [
+    "test_loop_handover.py"
+   ]
+  }
+ ]
+}
