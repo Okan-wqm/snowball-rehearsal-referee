@@ -1,0 +1,76 @@
+{
+ "mutants": [
+  {
+   "id": "ns_children_by_the_derivation_rule",
+   "file": "profile/unit_verify.py",
+   "old": "if name != \".git\" and not D.not_staged(derived, child):",
+   "new": "if name != \".git\" and not D.excluded(derived, child):",
+   "tests": [
+    "test_unit_verify.Run.test_a_directory_with_an_output_name_is_copied_under_an_input"
+   ]
+  },
+  {
+   "id": "ns_top_input_by_the_derivation_rule",
+   "file": "profile/unit_verify.py",
+   "old": "if top != \".\" and D.not_staged(derived, top):",
+   "new": "if top != \".\" and D.excluded(derived, top):",
+   "tests": [
+    "test_unit_verify.Run.test_an_input_that_is_an_output_directory_is_copied_and_one_not_loaded_is_not"
+   ]
+  },
+  {
+   "id": "ns_top_input_always_copied",
+   "file": "profile/unit_verify.py",
+   "old": "if top != \".\" and D.not_staged(derived, top):",
+   "new": "if top != \".\" and False:",
+   "tests": [
+    "test_unit_verify.Run.test_an_input_that_is_an_output_directory_is_copied_and_one_not_loaded_is_not"
+   ]
+  },
+  {
+   "id": "ns_agent_workspaces_staged",
+   "file": "profile/derive.py",
+   "old": "for n in INSTALLED_DIR_NAMES + AGENT_WORKSPACE_DIR_NAMES)",
+   "new": "for n in INSTALLED_DIR_NAMES)",
+   "tests": [
+    "test_unit_verify.Run.test_what_is_not_loaded_is_left_out_whatever_holds_it"
+   ]
+  },
+  {
+   "id": "ns_node_modules_staged",
+   "file": "profile/derive.py",
+   "old": "for n in INSTALLED_DIR_NAMES + AGENT_WORKSPACE_DIR_NAMES)",
+   "new": "for n in AGENT_WORKSPACE_DIR_NAMES)",
+   "tests": [
+    "test_unit_verify.Run.test_what_is_not_loaded_is_left_out_whatever_holds_it"
+   ]
+  },
+  {
+   "id": "ns_operator_path_under_an_output_name_staged",
+   "file": "profile/derive.py",
+   "old": "        return \"excluded_dir\"\n    if any(pattern_matches(p, path) for p in derived.get(\"excluded_paths\", [])):\n        return \"excluded_path\"\n    return None\n\n\n# ---------------------------------------------------------------- derive",
+   "new": "        return \"excluded_dir\"\n    return None\n\n\n# ---------------------------------------------------------------- derive",
+   "tests": [
+    "test_unit_verify.Run.test_what_is_not_loaded_is_left_out_whatever_holds_it"
+   ]
+  },
+  {
+   "id": "ns_names_compared_as_written",
+   "file": "profile/derive.py",
+   "old": "    if why != \"excluded_dir\":\n        return why\n    parts = [part.casefold() for part in path.split(\"/\")]",
+   "new": "    if why != \"excluded_dir\":\n        return why\n    parts = [part for part in path.split(\"/\")]",
+   "tests": [
+    "test_unit_verify.Run.test_what_is_not_loaded_is_left_out_whatever_holds_it"
+   ]
+  },
+  {
+   "id": "ns_an_output_name_moved_to_not_staged",
+   "file": "profile/derive.py",
+   "old": "INSTALLED_DIR_NAMES = (\"node_modules\",)\nOUTPUT_DIR_NAMES = (\n    \"bower_components\", ",
+   "new": "INSTALLED_DIR_NAMES = (\"node_modules\", \"bower_components\")\nOUTPUT_DIR_NAMES = (\n    ",
+   "tests": [
+    "test_unit_verify.Run.test_the_name_groups_are_the_excluded_names_in_their_order"
+   ]
+  }
+ ]
+}

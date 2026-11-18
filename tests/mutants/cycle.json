@@ -1,0 +1,95 @@
+{
+ "mutants": [
+  {
+   "id": "roots_not_checked",
+   "file": "ledger/cycle.py",
+   "old": "    verdict = chain.verify_bytes(roots, previous_roots)\n",
+   "new": "    verdict = {\"valid\": True}\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "roots_checked_alone",
+   "file": "ledger/cycle.py",
+   "old": "    verdict = chain.verify_bytes(roots, previous_roots)\n",
+   "new": "    verdict = chain.verify_bytes(roots)\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "schema_not_checked",
+   "file": "ledger/cycle.py",
+   "old": "    reasons = schema.ledger_reasons(cycle.content)\n",
+   "new": "    reasons = []\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "schema_on_old_ledger_only",
+   "file": "ledger/cycle.py",
+   "old": "    reasons = schema.ledger_reasons(cycle.content)\n",
+   "new": "    reasons = schema.ledger_reasons(ledger)\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "root_row_checked_after_signing",
+   "file": "ledger/cycle.py",
+   "old": "    reasons = anchor.root_row_reasons(roots, root_row_id, ts)\n",
+   "new": "    reasons = []\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "root_of_old_ledger",
+   "file": "ledger/cycle.py",
+   "old": "    tip_map = anchor.tips(cycle.content)\n",
+   "new": "    tip_map = anchor.tips(ledger or cycle.content)\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "status_file_dropped",
+   "file": "ledger/cycle.py",
+   "old": "bundle, block.STATUS_PATH: planned[\"status\"]}",
+   "new": "bundle, block.STATUS_PATH: status or b\"\"}",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "status_rows_dropped",
+   "file": "ledger/cycle.py",
+   "old": "    request = json.dumps({\"rows\": planned[\"rows\"]}, sort_keys=True).encode(\"utf-8\")",
+   "new": "    request = json.dumps({\"rows\": rows}, sort_keys=True).encode(\"utf-8\")",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "commit_not_made",
+   "file": "ledger/cycle.py",
+   "old": "    state.commit_files(planned[\"files\"], message)\n",
+   "new": "    pass\n",
+   "tests": [
+    "test_cycle.py"
+   ]
+  },
+  {
+   "id": "root_row_id_reuse_allowed",
+   "file": "ledger/anchor.py",
+   "old": " or any(r.get(\"row_id\") == row_id for r in old):\n        out.append(\"root row_id",
+   "new": ":\n        out.append(\"root row_id",
+   "tests": [
+    "test_cycle.py",
+    "test_anchor.py"
+   ]
+  }
+ ]
+}

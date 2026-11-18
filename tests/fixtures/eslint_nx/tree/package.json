@@ -1,0 +1,1 @@
+{"name":"scratch-nx","private":true,"version":"0.0.0","type":"module","dependencies":{"@nx/eslint-plugin":"^22.7.12","@typescript-eslint/parser":"^8.59.1","eslint":"^9.39.4","nx":"^22.7.12","typescript":"^5.9.3"}}
