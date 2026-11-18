@@ -1,0 +1,184 @@
+{
+ "mutants": [
+  {
+   "id": "hb_not_judged",
+   "file": "httpbody.py",
+   "old": "    if len(data) <= cap and left:\n",
+   "new": "    if False:\n",
+   "tests": [
+    "test_http.HttpBody.test_a_body_short_of_its_length_raises_with_a_cap_as_without"
+   ]
+  },
+  {
+   "id": "hb_not_judged_generated",
+   "file": "httpbody.py",
+   "old": "    if len(data) <= cap and left:\n",
+   "new": "    if False:\n",
+   "tests": [
+    "test_http.HttpBody.test_any_body_within_the_cap_is_judged_as_the_uncapped_read_judges_it"
+   ]
+  },
+  {
+   "id": "hb_over_cap_judged",
+   "file": "httpbody.py",
+   "old": "    if len(data) <= cap and left:\n",
+   "new": "    if left:\n",
+   "tests": [
+    "test_http.HttpBody.test_a_body_over_the_cap_is_its_first_cap_plus_one_bytes"
+   ]
+  },
+  {
+   "id": "hb_at_cap_not_judged",
+   "file": "httpbody.py",
+   "old": "    if len(data) <= cap and left:\n",
+   "new": "    if len(data) < cap and left:\n",
+   "tests": [
+    "test_http.HttpBody.test_a_body_short_of_its_length_raises_with_a_cap_as_without"
+   ]
+  },
+  {
+   "id": "hb_cap_exact",
+   "file": "httpbody.py",
+   "old": "    data = resp.read(cap + 1)\n",
+   "new": "    data = resp.read(cap)\n",
+   "tests": [
+    "test_http.HttpBody.test_a_body_over_the_cap_is_its_first_cap_plus_one_bytes"
+   ]
+  },
+  {
+   "id": "hb_cap_zero_uncapped",
+   "file": "httpbody.py",
+   "old": "    if cap is None:\n        return resp.read()\n    data",
+   "new": "    if not cap:\n        return resp.read()\n    data",
+   "tests": [
+    "test_http.HttpBody.test_a_body_over_the_cap_is_its_first_cap_plus_one_bytes"
+   ]
+  },
+  {
+   "id": "hb_stand_in_needs_length",
+   "file": "httpbody.py",
+   "old": "getattr(resp, \"length\", None)",
+   "new": "resp.length",
+   "tests": [
+    "test_http.HttpBody.test_a_body_with_no_length_and_a_stand_in_without_one_are_not_judged"
+   ]
+  },
+  {
+   "id": "hb_whole_length_expected",
+   "file": "httpbody.py",
+   "old": "raise http.client.IncompleteRead(data, left)",
+   "new": "raise http.client.IncompleteRead(data)",
+   "tests": [
+    "test_http.HttpBody.test_a_body_short_of_its_length_raises_with_a_cap_as_without"
+   ]
+  },
+  {
+   "id": "hb_errors_without_http",
+   "file": "httpbody.py",
+   "old": "ERRORS = (OSError, http.client.HTTPException)",
+   "new": "ERRORS = (OSError,)",
+   "tests": [
+    "test_http.HttpSites"
+   ]
+  },
+  {
+   "id": "hb_errors_without_os",
+   "file": "httpbody.py",
+   "old": "ERRORS = (OSError, http.client.HTTPException)",
+   "new": "ERRORS = (http.client.HTTPException,)",
+   "tests": [
+    "test_http.HttpSites"
+   ]
+  },
+  {
+   "id": "hb_json_own_read",
+   "file": "loop/accepted.py",
+   "old": "body = httpbody.read(resp, MAX_FILE)",
+   "new": "body = resp.read(MAX_FILE + 1)",
+   "tests": [
+    "test_http.Register.test_every_opened_response_is_read_through_cli_and_handled"
+   ]
+  },
+  {
+   "id": "hb_json_own_list",
+   "file": "loop/accepted.py",
+   "old": "        except (*httpbody.ERRORS, ValueError):\n",
+   "new": "        except (OSError, ValueError):\n",
+   "tests": [
+    "test_http.HttpSites.test_accepted_json_is_actions_unreadable"
+   ]
+  },
+  {
+   "id": "hb_redirect_own_list",
+   "file": "loop/accepted.py",
+   "old": "        except httpbody.ERRORS:\n            pass\n",
+   "new": "        except OSError:\n            pass\n",
+   "tests": [
+    "test_http.HttpSites.test_accepted_redirect_is_actions_unreadable"
+   ]
+  },
+  {
+   "id": "hb_blob_own_read",
+   "file": "loop/accepted.py",
+   "old": "body = httpbody.read(resp, limit)",
+   "new": "body = resp.read(limit + 1)",
+   "tests": [
+    "test_http.HttpSites.test_accepted_blob_is_actions_unreadable"
+   ]
+  },
+  {
+   "id": "hb_blob_own_list",
+   "file": "loop/accepted.py",
+   "old": "        except httpbody.ERRORS:\n            raise StateError",
+   "new": "        except OSError:\n            raise StateError",
+   "tests": [
+    "test_http.HttpSites.test_accepted_blob_is_actions_unreadable"
+   ]
+  },
+  {
+   "id": "hb_rekor_own_read",
+   "file": "loop/rekor.py",
+   "old": "data = httpbody.read(resp, MAX_ANSWER)",
+   "new": "data = resp.read(MAX_ANSWER + 1)",
+   "tests": [
+    "test_http.HttpSites.test_rekor_entry_is_a_rekor_error"
+   ]
+  },
+  {
+   "id": "hb_rekor_own_list",
+   "file": "loop/rekor.py",
+   "old": "        except httpbody.ERRORS as exc:",
+   "new": "        except OSError as exc:",
+   "tests": [
+    "test_http.HttpSites.test_rekor_entry_is_a_rekor_error"
+   ]
+  },
+  {
+   "id": "hb_deps_own_list",
+   "file": "runner/deps_npm.py",
+   "old": "    except httpbody.ERRORS as exc:\n        raise FetchAgain(",
+   "new": "    except OSError as exc:\n        raise FetchAgain(",
+   "tests": [
+    "test_http.HttpSites.test_deps_npm_reads_each_again"
+   ]
+  },
+  {
+   "id": "hb_write_own_read",
+   "file": "target/write.py",
+   "old": "httpbody.read(resp)",
+   "new": "resp.read()",
+   "tests": [
+    "test_http.Register.test_every_opened_response_is_read_through_cli_and_handled"
+   ]
+  },
+  {
+   "id": "hb_write_handled",
+   "file": "target/write.py",
+   "old": "        with self.opener.open(req, timeout=self.timeout) as resp:\n            status, raw = resp.status, httpbody.read(resp)\n",
+   "new": "        try:\n            with self.opener.open(req, timeout=self.timeout) as resp:\n                status, raw = resp.status, httpbody.read(resp)\n        except Exception:\n            raise OSError from None\n",
+   "tests": [
+    "test_http.HttpSites.test_the_write_transport_has_no_handler_and_raises_each_as_it_is"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,371 @@
+[
+ {
+  "filePath": "/work/astral.js",
+  "messages": [
+   {
+    "ruleId": "no-var",
+    "severity": 1,
+    "message": "Unexpected var, use let or const instead.",
+    "line": 1,
+    "column": 19,
+    "messageId": "unexpectedVar",
+    "endLine": 1,
+    "endColumn": 39,
+    "fix": {
+     "range": [
+      18,
+      38
+     ],
+     "text": "let q = e[\"length\"];"
+    }
+   },
+   {
+    "ruleId": "dot-notation",
+    "severity": 2,
+    "message": "[\"length\"] is better written in dot notation.",
+    "line": 1,
+    "column": 29,
+    "messageId": "useDot",
+    "endLine": 1,
+    "endColumn": 37,
+    "fix": {
+     "range": [
+      27,
+      37
+     ],
+     "text": ".length"
+    }
+   }
+  ],
+  "suppressedMessages": [],
+  "errorCount": 1,
+  "fatalErrorCount": 0,
+  "warningCount": 1,
+  "fixableErrorCount": 1,
+  "fixableWarningCount": 1,
+  "source": "const e = \"😀😀\"; var q = e[\"length\"];\nmodule.exports = q;\n",
+  "usedDeprecatedRules": []
+ },
+ {
+  "filePath": "/work/bom.js",
+  "messages": [
+   {
+    "ruleId": "no-var",
+    "severity": 1,
+    "message": "Unexpected var, use let or const instead.",
+    "line": 1,
+    "column": 1,
+    "messageId": "unexpectedVar",
+    "endLine": 1,
+    "endColumn": 11,
+    "fix": {
+     "range": [
+      0,
+      10
+     ],
+     "text": "let z = 1;"
+    }
+   }
+  ],
+  "suppressedMessages": [],
+  "errorCount": 0,
+  "fatalErrorCount": 0,
+  "warningCount": 1,
+  "fixableErrorCount": 0,
+  "fixableWarningCount": 1,
+  "source": "﻿var z = 1;\nmodule.exports = z;\n",
+  "usedDeprecatedRules": []
+ },
+ {
+  "filePath": "/work/crlf.js",
+  "messages": [
+   {
+    "ruleId": "no-var",
+    "severity": 1,
+    "message": "Unexpected var, use let or const instead.",
+    "line": 1,
+    "column": 1,
+    "messageId": "unexpectedVar",
+    "endLine": 1,
+    "endColumn": 11,
+    "fix": {
+     "range": [
+      0,
+      10
+     ],
+     "text": "let a = 1;"
+    }
+   },
+   {
+    "ruleId": "no-var",
+    "severity": 1,
+    "message": "Unexpected var, use let or const instead.",
+    "line": 2,
+    "column": 1,
+    "messageId": "unexpectedVar",
+    "endLine": 2,
+    "endColumn": 11,
+    "fix": {
+     "range": [
+      12,
+      22
+     ],
+     "text": "let b = 2;"
+    }
+   }
+  ],
+  "suppressedMessages": [],
+  "errorCount": 0,
+  "fatalErrorCount": 0,
+  "warningCount": 2,
+  "fixableErrorCount": 0,
+  "fixableWarningCount": 2,
+  "source": "var a = 1;\r\nvar b = 2;\r\nmodule.exports = a + b;\r\n",
+  "usedDeprecatedRules": []
+ },
+ {
+  "filePath": "/work/eslint.config.js",
+  "messages": [],
+  "suppressedMessages": [],
+  "errorCount": 0,
+  "fatalErrorCount": 0,
+  "warningCount": 0,
+  "fixableErrorCount": 0,
+  "fixableWarningCount": 0,
+  "usedDeprecatedRules": []
+ },
+ {
+  "filePath": "/work/lonecr.js",
+  "messages": [
+   {
+    "ruleId": "no-var",
+    "severity": 1,
+    "message": "Unexpected var, use let or const instead.",
+    "line": 2,
+    "column": 1,
+    "messageId": "unexpectedVar",
+    "endLine": 2,
+    "endColumn": 11,
+    "fix": {
+     "range": [
+      13,
+      23
+     ],
+     "text": "let x = s;"
+    }
+   }
+  ],
+  "suppressedMessages": [],
+  "errorCount": 0,
+  "fatalErrorCount": 0,
+  "warningCount": 1,
+  "fixableErrorCount": 0,
+  "fixableWarningCount": 1,
+  "source": "const s = 1;\rvar x = s;\nmodule.exports = x;\n",
+  "usedDeprecatedRules": []
+ },
+ {
+  "filePath": "/work/ls.js",
+  "messages": [
+   {
+    "ruleId": "no-var",
+    "severity": 1,
+    "message": "Unexpected var, use let or const instead.",
+    "line": 3,
+    "column": 1,
+    "messageId": "unexpectedVar",
+    "endLine": 3,
+    "endColumn": 11,
+    "fix": {
+     "range": [
+      17,
+      27
+     ],
+     "text": "let y = t;"
+    }
+   }
+  ],
+  "suppressedMessages": [],
+  "errorCount": 0,
+  "fatalErrorCount": 0,
+  "warningCount": 1,
+  "fixableErrorCount": 0,
+  "fixableWarningCount": 1,
+  "source": "const t = \"a b\";\nvar y = t;\nmodule.exports = y;\n",
+  "usedDeprecatedRules": []
+ },
+ {
+  "filePath": "/work/multi.js",
+  "messages": [
+   {
+    "ruleId": "no-useless-return",
+    "severity": 2,
+    "message": "Unnecessary return statement.",
+    "line": 10,
+    "column": 3,
+    "messageId": "unnecessaryReturn",
+    "endLine": 10,
+    "endColumn": 10,
+    "fix": {
+     "range": [
+      111,
+      145
+     ],
+     "text": "function g() {\n  f(1);\n  \n}"
+    }
+   }
+  ],
+  "suppressedMessages": [
+   {
+    "ruleId": "prefer-template",
+    "severity": 2,
+    "message": "Unexpected string concatenation.",
+    "line": 3,
+    "column": 13,
+    "messageId": "unexpectedStringConcatenation",
+    "endLine": 5,
+    "endColumn": 8,
+    "fix": {
+     "range": [
+      74,
+      95
+     ],
+     "text": "`a${ \n    n \n    }b`"
+    },
+    "suppressions": [
+     {
+      "kind": "directive",
+      "justification": ""
+     }
+    ]
+   }
+  ],
+  "errorCount": 1,
+  "fatalErrorCount": 0,
+  "warningCount": 0,
+  "fixableErrorCount": 1,
+  "fixableWarningCount": 0,
+  "source": "function f(n) {\n  // eslint-disable-next-line prefer-template\n  const r = \"a\" +\n    n +\n    \"b\";\n  return r;\n}\nfunction g() {\n  f(1);\n  return;\n}\nmodule.exports = g;\n",
+  "usedDeprecatedRules": []
+ },
+ {
+  "filePath": "/work/noeol.js",
+  "messages": [
+   {
+    "ruleId": "no-var",
+    "severity": 1,
+    "message": "Unexpected var, use let or const instead.",
+    "line": 1,
+    "column": 1,
+    "messageId": "unexpectedVar",
+    "endLine": 1,
+    "endColumn": 11,
+    "fix": {
+     "range": [
+      0,
+      10
+     ],
+     "text": "let w = 1;"
+    }
+   }
+  ],
+  "suppressedMessages": [],
+  "errorCount": 0,
+  "fatalErrorCount": 0,
+  "warningCount": 1,
+  "fixableErrorCount": 0,
+  "fixableWarningCount": 1,
+  "source": "var w = 1;\nmodule.exports = w;",
+  "usedDeprecatedRules": []
+ },
+ {
+  "filePath": "/work/suppressed.js",
+  "messages": [
+   {
+    "ruleId": null,
+    "message": "Unused eslint-disable directive (no problems were reported from 'prefer-const').",
+    "line": 3,
+    "column": 1,
+    "severity": 1,
+    "fix": {
+     "range": [
+      47,
+      87
+     ],
+     "text": " "
+    }
+   }
+  ],
+  "suppressedMessages": [
+   {
+    "ruleId": "no-var",
+    "severity": 1,
+    "message": "Unexpected var, use let or const instead.",
+    "line": 2,
+    "column": 1,
+    "messageId": "unexpectedVar",
+    "endLine": 2,
+    "endColumn": 12,
+    "fix": {
+     "range": [
+      35,
+      46
+     ],
+     "text": "let s1 = 1;"
+    },
+    "suppressions": [
+     {
+      "kind": "directive",
+      "justification": ""
+     }
+    ]
+   }
+  ],
+  "errorCount": 0,
+  "fatalErrorCount": 0,
+  "warningCount": 1,
+  "fixableErrorCount": 0,
+  "fixableWarningCount": 1,
+  "source": "// eslint-disable-next-line no-var\nvar s1 = 1;\n// eslint-disable-next-line prefer-const\nconst s2 = 2;\nmodule.exports = s1 + s2;\n",
+  "usedDeprecatedRules": []
+ },
+ {
+  "filePath": "/work/unused.js",
+  "messages": [
+   {
+    "ruleId": "no-unused-vars",
+    "severity": 2,
+    "message": "'unusedThing' is assigned a value but never used.",
+    "line": 1,
+    "column": 7,
+    "messageId": "unusedVar",
+    "endLine": 1,
+    "endColumn": 18,
+    "suggestions": [
+     {
+      "messageId": "removeVar",
+      "data": {
+       "varName": "unusedThing"
+      },
+      "fix": {
+       "range": [
+        0,
+        22
+       ],
+       "text": ""
+      },
+      "desc": "Remove unused variable 'unusedThing'."
+     }
+    ]
+   }
+  ],
+  "suppressedMessages": [],
+  "errorCount": 1,
+  "fatalErrorCount": 0,
+  "warningCount": 0,
+  "fixableErrorCount": 0,
+  "fixableWarningCount": 0,
+  "source": "const unusedThing = 1;\nmodule.exports = 2;\n",
+  "usedDeprecatedRules": []
+ }
+]
