@@ -9,6 +9,9 @@
       "asama_0": {
         "rival_usd": 1000,
         "canary_usd": 1
+      },
+      "asama_1": {
+        "rival_usd": 1000
       }
     },
     "license_allowlist": [
