@@ -27,6 +27,6 @@
     "9989d78328d913e3ba56fd0de22fe24c0fbdfea8",
     "09c6e05154a1afac06edb28cd83cb327c8feb92c"
   ],
-  "loop_schedule": false,
+  "loop_schedule": true,
   "merge_paused": false
 }
