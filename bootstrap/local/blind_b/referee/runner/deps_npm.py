@@ -16,6 +16,10 @@ are neither fetched nor checked; every other entry, nested "libs/x/node_modules/
 and appears under its lock path. The folder rule was added by the integrator, not by B's blind author: the blind B of
 the first draft skipped any key outside node_modules with neither resolved nor integrity; only the folder an in-repo
 link names is skipped.
+
+Founder report seed-069 (bundled packages, 29g; written by the integrator, not blind): an install script anywhere
+below the tarball's node_modules/ (a package.json with an install hook, or a binding.gyp) is the bundling tarball's
+own; fail closed, any depth and any directory under node_modules/ counts. Bundled packages are no entries of their own.
 """
 import base64
 import hashlib
@@ -115,6 +119,14 @@ def _read_tarball(data: bytes) -> dict:
         with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
             for m in tf.getmembers():
                 comps = [c for c in m.name.split("/") if c not in ("", ".")]
+                if len(comps) >= 4 and comps[1] == "node_modules":  # seed-069: a bundled package's files
+                    if comps[-1] == "binding.gyp":
+                        scripted = True
+                    elif comps[-1] == "package.json" and m.isreg():
+                        pj = json.loads(tf.extractfile(m).read().decode("utf-8"))
+                        scripts = pj.get("scripts") if isinstance(pj, dict) else None
+                        scripted |= isinstance(scripts, dict) and any(k in scripts for k in INSTALL_SCRIPTS)
+                    continue
                 if len(comps) != 2:
                     continue
                 # npm strips the top directory whatever its name; install evidence is taken under any of

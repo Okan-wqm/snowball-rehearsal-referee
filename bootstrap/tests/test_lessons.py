@@ -322,7 +322,7 @@ class PageTest(unittest.TestCase):
         self.assertEqual(said, ["01-hedef-sistem.md"])
 
     def test_the_changelog_names_the_page_and_its_rows(self):  # changelog_drops_epoch_t
-        log = page("spec/tohum/CHANGELOG.md")
+        log = page("spec/tohum/CHANGELOG-8.md")  # moved by the cap (E643)
         self.assertIn("`26g` (E609, E610)", log)
         self.assertLessEqual(len(log.splitlines()), 80)
 

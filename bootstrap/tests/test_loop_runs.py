@@ -519,7 +519,7 @@ class PageTest(LoopRunsBase):
         task = (ROOT / "spec" / "tohum" / "00b-gorev-haritasi.md").read_text(encoding="utf-8")
         for row in ("| Kurulum, aktarım ve etkinleştirme |", "| Hakem bileşeni yazma"):
             self.assertIn("`29y`", next(line for line in task.splitlines() if line.startswith(row)), row)
-        log = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")
+        log = (ROOT / "spec" / "tohum" / "CHANGELOG-8.md").read_text(encoding="utf-8")  # moved by the cap (E634)
         self.assertIn("`/work/logs/loop-runs.jsonl`", " ".join(log.split()))
 
 

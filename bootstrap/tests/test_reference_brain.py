@@ -166,8 +166,15 @@ BREAKS = [
     ("integrity_of_the_unpacked_tar", "runner/deps_npm.py", "hashlib.sha512(tgz)",
      "hashlib.sha512(zlib.decompress(tgz, 47))", ["npmlock.integrity_good_and_one_byte"]),
     ("install_script_from_the_lock_only", "runner/deps_npm.py",
-     "(isinstance(scripts, dict) and any(h in scripts for h in INSTALL_HOOKS))", "False",
-     ["npmlock.install_script_unmarked"]),
+     "has_script = _has_install_hook(manifest) or ", "has_script = ", ["npmlock.install_script_unmarked"]),
+    # seed-069 (E639): an install script in a bundled package directory is the bundling tarball's own
+    ("bundled_install_script_ignored", "runner/deps_npm.py", " or bundled_script or ", " or ",
+     ["npmlock.bundled_install_script_unmarked", "npmlock.bundled_install_script_marked.changed_input"]),
+    ("bundled_package_marked_by_its_own_name", "runner/deps_npm.py",
+     'if has_script and path not in marked and f"{name}@{version}" not in marked:',
+     'if has_script and path not in marked and f"{name}@{version}" not in marked'
+     ' and not (bundled_script and "snowball-fixture-d@1.0.0" in marked):',
+     ["npmlock.bundled_install_script_marked.changed_input"]),
     # E200: a mark is a lock path or name@version (`26c`); anything else, a bare name, refuses the request (`29g`)
     ("lock_path_not_a_mark", "runner/deps_npm.py",
      'if has_script and path not in marked and f"{name}@{version}" not in marked:',
@@ -420,6 +427,10 @@ BREAKS = [
      ["root.verify_entry_other_root"]),
     ("missing_entry_passes", "ledger/anchor.py", 'reasons.append("entry_missing")', "pass",
      ["root.verify_entry_missing"]),
+    # seed-068 (E636): a second Rekor entry for the same root (a repeated signing call) is no chain break
+    ("second_entry_for_the_root_breaks", "ledger/anchor.py", 'if root != last["root"]:',
+     'if root != last["root"] or sum(e["hash"] == last["root"] for e in log["entries"].values()) > 1:',
+     ["root.verify_second_entry_same_root"]),
 
     ("zero_tests_first_run_green", "gate/sentinel.py", 'if first["results"] and not _failed(first):',
      "if not _failed(first):", ["flaky.green_first_run.changed_input"]),
@@ -723,7 +734,7 @@ class SeedVectorsOnReferenceImplementationsTest(unittest.TestCase):
         cases = [c["id"] for g in DATA_GROUPS for c in seed[g]["cases"]]
         data = [r for r in results if not r["id"].startswith("chain.")]
         self.assertEqual([r["id"] for r in data], [i + s for i in cases for s in ("", ".changed_input")])
-        self.assertEqual((len(data), len(results)), (308, 314))  # MF2-MF7 122, MF8-MF13 124, MF14-MF18 62; `chain` 6
+        self.assertEqual((len(data), len(results)), (314, 320))  # MF2-MF7 126, MF8-MF13 126, MF14-MF18 62; `chain` 6
         self.assertEqual([(r["id"], r["detail"]) for r in results if not r["ok"]], [])
         self.assertEqual(brain_manifest().done_mf, (1,))  # reference implementations, not declared done
 
@@ -739,7 +750,7 @@ class SeedVectorsOnReferenceImplementationsTest(unittest.TestCase):
             a = BRAIN / "referee" / rel
             self.assertFalse(a.exists() and a.read_bytes() == (BLIND_B / "referee" / rel).read_bytes(), rel)
         results = vectors.run_vectors(LocalRunner(BLIND_B), VECTORS, B_MFS)
-        self.assertEqual(len(results), 122)
+        self.assertEqual(len(results), 126)
         self.assertEqual([(r["id"], r["detail"]) for r in results if not r["ok"]], [])
 
     def test_its_profile_package_does_not_shadow_the_standard_library_here(self):

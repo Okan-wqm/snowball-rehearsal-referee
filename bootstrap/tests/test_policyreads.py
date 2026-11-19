@@ -416,7 +416,7 @@ class PageTest(unittest.TestCase):
     def test_seed_053_is_answered_by_lines_that_say_it(self):  # changelog_drops_seed_053
         """E342's rule: the epoch's entry names seed-053 whole on one line (the launcher's reader, E527) and each page
         range of its answer holds what the answer says."""
-        log = (ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")
+        log = (ROOT / "spec" / "tohum" / "CHANGELOG-8.md").read_text(encoding="utf-8")  # moved by the cap (E634)
         rid = "seed-053-policy-shape-unseen-before-b"
         self.assertTrue(any(f"`{rid}` →" in line for line in log.splitlines()))
         entry = " ".join(log[log.index("- 2.2 (2026-11-14, E588"):log.index("- 2.2 (2026-11-14, E585")].split())

@@ -345,7 +345,10 @@ class Flow(unittest.TestCase):
             zf.writestr("result.json.sigstore.json", "{}")
         gh = Path(self.tmp.name) / "poll_gh"
         gh.write_text("")
-        env = {"GH_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "GITHUB_OUTPUT": str(gh)}
+        # The hourly run's event, set explicitly: the runner's own GITHUB_EVENT_NAME leaks into the test otherwise, and
+        # in a dispatched CI run (workflow_dispatch) poll rightly tries a parked commit anyway (E12), so the parked
+        # case read "false" there and nowhere else (E646).
+        env = {"GH_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "GITHUB_OUTPUT": str(gh), "GITHUB_EVENT_NAME": "schedule"}
         with contextlib.ExitStack() as stack:
             stack.enter_context(mock.patch.dict(os.environ, env))
             stack.enter_context(mock.patch.object(cli.gitio, "remote_head", return_value=head))

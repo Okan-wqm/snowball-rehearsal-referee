@@ -2073,6 +2073,70 @@
             "licenses": null
           }
         }
+      },
+      {
+        "id": "npmlock.bundled_install_script_unmarked",
+        "purpose": "Package c's registry tarball bundles snowball-fixture-d below package/node_modules/ (its bundleDependencies); the bundled package.json declares a postinstall and neither the lock nor c's own package.json says so. The script is the bundling tarball's own: with c unmarked it is rejected under c's lock path. An implementation that reads only package/package.json and package/binding.gyp is caught.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_bundled.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[]}",
+        "fixture": [
+          "npmlock/lock_bundled.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": false,
+          "rejected": [
+            "install_script_unmarked:node_modules/snowball-fixture-c"
+          ],
+          "artefact": null,
+          "licenses": null
+        },
+        "changed": {
+          "description": "One field: install_scripts_required names c's lock key node_modules/snowball-fixture-c.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_bundled.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"node_modules/snowball-fixture-c\"]}",
+          "fixture": [
+            "npmlock/lock_bundled.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": false,
+            "rejected": [
+              "install_script_unmarked:node_modules/snowball-fixture-c"
+            ],
+            "artefact": null,
+            "licenses": null
+          }
+        }
+      },
+      {
+        "id": "npmlock.bundled_install_script_marked",
+        "purpose": "The same lock with the bundler marked (snowball-fixture-c@1.0.0): the fetch succeeds. The bundled package is part of c's tarball, covered by its integrity and no entry of its own: the content address is c's entry alone. The license report is not pinned here.",
+        "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_bundled.json /vec/npmlock/mirror",
+        "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-c@1.0.0\"]}",
+        "fixture": [
+          "npmlock/lock_bundled.json",
+          "npmlock/mirror"
+        ],
+        "expect": {
+          "ok": true,
+          "rejected": [],
+          "artefact": "sha256:a03958e24a2aef5292e8179e025d44abc040e43cec02f13d9ba7cdb2a96ebee6"
+        },
+        "changed": {
+          "description": "One field: install_scripts_required names the bundled package's own name@version, snowball-fixture-d@1.0.0, which marks nothing of this lock and leaves the bundler unmarked. An implementation that marks a bundled script by the bundled package's name is caught.",
+          "cmd": "python -m runner.deps_npm fetch /vec/npmlock/lock_bundled.json /vec/npmlock/mirror",
+          "stdin": "{\"registry_egress\":[\"https://registry.npmjs.org/\"],\"install_scripts_required\":[\"snowball-fixture-d@1.0.0\"]}",
+          "fixture": [
+            "npmlock/lock_bundled.json",
+            "npmlock/mirror"
+          ],
+          "expect_not": {
+            "ok": true,
+            "rejected": [],
+            "artefact": "sha256:a03958e24a2aef5292e8179e025d44abc040e43cec02f13d9ba7cdb2a96ebee6"
+          }
+        }
       }
     ]
   },
@@ -4224,6 +4288,35 @@
               "entry_missing"
             ],
             "valid": false
+          }
+        }
+      },
+      {
+        "id": "root.verify_second_entry_same_root",
+        "purpose": "The log holds a second entry that signs the same root under the same pinned identity (a signing call repeated after a Rekor failure, tohum/13); the record names the first. Only the named entry is read: the second entry is no chain break and the root is valid.",
+        "cmd": "python -m ledger.anchor verify /vec/root/ledger.jsonl /vec/root/root_ok.jsonl /vec/root/rekor_twice.json",
+        "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/loop.yml@refs/heads/main\"}",
+        "fixture": [
+          "root/ledger.jsonl",
+          "root/root_ok.jsonl",
+          "root/rekor_twice.json"
+        ],
+        "expect": {
+          "reasons": [],
+          "valid": true
+        },
+        "changed": {
+          "description": "One field: the pin is another workflow identity (bootstrap.yml), so the named entry's identity is not the pin.",
+          "cmd": "python -m ledger.anchor verify /vec/root/ledger.jsonl /vec/root/root_ok.jsonl /vec/root/rekor_twice.json",
+          "stdin": "{\"identity\":\"https://github.com/example/referee/.github/workflows/bootstrap.yml@refs/heads/main\"}",
+          "fixture": [
+            "root/ledger.jsonl",
+            "root/root_ok.jsonl",
+            "root/rekor_twice.json"
+          ],
+          "expect_not": {
+            "reasons": [],
+            "valid": true
           }
         }
       }

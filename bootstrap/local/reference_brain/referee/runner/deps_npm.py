@@ -10,6 +10,11 @@ npm workspaces locks (29g, Founder report spec-015): neither fetched nor checked
 true, its resolved an in-repo relative path: not empty, not absolute, no '..' component, no ':') and the workspace
 folder such a link's resolved names (a key outside node_modules). Every other entry is a package, nested ones
 ("libs/x/node_modules/y") included: fetched, checked and named by its lock path.
+
+Bundled packages (29g, Founder report seed-069): a package directory below package/node_modules/ of a registry tarball
+(node_modules/<name> or node_modules/@<scope>/<name>, at any depth) is part of that tarball: covered by its integrity,
+no entry of its own, not fetched. An install script there (preinstall, install or postinstall in its package.json, or
+its binding.gyp) is the bundling tarball's own: install_script_unmarked:<the bundler's lock path> unless it is marked.
 """
 from __future__ import annotations
 
@@ -107,8 +112,26 @@ def _sha512_values(integrity: Any) -> set[str]:
     return {tok[len("sha512-"):].split("?", 1)[0] for tok in integrity.split() if tok.startswith("sha512-")}
 
 
-def _read_package(tgz: bytes) -> tuple[dict[str, Any], bool]:
-    """(package/package.json as an object, whether package/binding.gyp exists)."""
+def _bundled_file(name: str) -> str | None:
+    """The file name of a member that lies directly in a bundled package directory, else None (seed-069): below
+    package/, one or more node_modules/<name> or node_modules/@<scope>/<name> steps, then the file."""
+    parts, i = name.split("/"), 1
+    if parts[0] != "package":
+        return None
+    while i < len(parts) - 1 and parts[i] == "node_modules":
+        i += 3 if parts[i + 1].startswith("@") else 2
+    return parts[i] if i > 1 and i == len(parts) - 1 else None
+
+
+def _has_install_hook(manifest: Any) -> bool:
+    scripts = manifest.get("scripts") if isinstance(manifest, dict) else None
+    return isinstance(scripts, dict) and any(h in scripts for h in INSTALL_HOOKS)
+
+
+def _read_package(tgz: bytes) -> tuple[dict[str, Any], bool, bool]:
+    """(package/package.json as an object, whether package/binding.gyp exists, whether a bundled package directory
+    holds an install script)."""
+    bundled_script = False
     try:
         with tarfile.open(fileobj=io.BytesIO(tgz), mode="r:gz") as tar:
             names = {m.name for m in tar.getmembers()}
@@ -117,11 +140,17 @@ def _read_package(tgz: bytes) -> tuple[dict[str, Any], bool]:
             if fh is None:
                 raise Unusable("package/package.json is not a regular file")
             manifest = json.loads(fh.read().decode("utf-8"))
+            for m in tar.getmembers():
+                kind = _bundled_file(m.name)
+                if kind == "binding.gyp":
+                    bundled_script = True
+                elif kind == "package.json" and m.isreg():
+                    bundled_script |= _has_install_hook(json.loads(tar.extractfile(m).read().decode("utf-8")))
     except (KeyError, OSError, EOFError, tarfile.TarError, zlib.error, ValueError) as exc:
         raise Unusable(f"tarball: {exc}") from exc
     if not isinstance(manifest, dict):
         raise Unusable("tarball: package/package.json is not an object")
-    return manifest, "package/binding.gyp" in names
+    return manifest, "package/binding.gyp" in names, bundled_script
 
 
 def _in_node_modules(path: str) -> bool:
@@ -157,10 +186,8 @@ def check_package(path: str, entry: dict[str, Any], mirror: str, egress: list[st
     digest = base64.b64encode(hashlib.sha512(tgz).digest()).decode("ascii")
     if digest not in _sha512_values(entry.get("integrity")):
         return "integrity_mismatch", None
-    manifest, has_gyp = _read_package(tgz)
-    scripts = manifest.get("scripts")
-    has_script = (isinstance(scripts, dict) and any(h in scripts for h in INSTALL_HOOKS)) \
-        or has_gyp or entry.get("hasInstallScript") is True
+    manifest, has_gyp, bundled_script = _read_package(tgz)
+    has_script = _has_install_hook(manifest) or has_gyp or bundled_script or entry.get("hasInstallScript") is True
     name, version, license_ = manifest.get("name"), manifest.get("version"), manifest.get("license")
     if has_script and path not in marked and f"{name}@{version}" not in marked:
         return "install_script_unmarked", None

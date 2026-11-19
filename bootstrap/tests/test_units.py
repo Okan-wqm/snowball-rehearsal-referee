@@ -449,7 +449,7 @@ class SeedDataVectorsTest(unittest.TestCase):
                                                               if p.startswith("/vec/")])
                     ids.append(case["id"])
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 154)  # MF2-MF7 61, MF8-MF13 62, MF14-MF18 31
+        self.assertEqual(len(ids), 157)  # MF2-MF7 63, MF8-MF13 63, MF14-MF18 31
 
     def test_expected_values_carry_no_floats(self):
         """`tohum/26`: hashed artefacts carry no floats; nor do the vectors' answers (the runner tells 1 from 1.0)."""
