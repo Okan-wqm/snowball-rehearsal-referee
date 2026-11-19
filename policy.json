@@ -1,6 +1,6 @@
 {
   "constitutional": {
-    "monthly_cap_usd": 300,
+    "monthly_cap_usd": 10000,
     "stage_params": {
       "rival_min_attempts": 5,
       "repeat_reject_limit": 3
@@ -11,7 +11,7 @@
         "canary_usd": 1
       },
       "asama_1": {
-        "rival_usd": 1000
+        "rival_usd": 10000
       }
     },
     "license_allowlist": [
