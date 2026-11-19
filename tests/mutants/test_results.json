@@ -1,0 +1,113 @@
+{
+ "mutants": [
+  {
+   "id": "tr_skip_counts",
+   "file": "runner/test_results.py",
+   "old": "if a[\"status\"] not in JEST_NOT_RUN]",
+   "new": "if a[\"status\"] != \"never\"]",
+   "tests": [
+    "test_test_results.Jest.test_tests_that_did_not_run_are_left_out"
+   ]
+  },
+  {
+   "id": "tr_unknown_is_pass",
+   "file": "runner/test_results.py",
+   "old": "\"status\": \"pass\" if a[\"status\"] == JEST_PASSED else \"fail\"}",
+   "new": "\"status\": \"fail\" if a[\"status\"] == \"failed\" else \"pass\"}",
+   "tests": [
+    "test_test_results.Jest.test_a_status_that_is_not_known_is_fail"
+   ]
+  },
+  {
+   "id": "tr_no_file_entry",
+   "file": "runner/test_results.py",
+   "old": "            own.append({\"id\": name, \"status\": \"fail\"})",
+   "new": "            pass",
+   "tests": [
+    "test_test_results.Jest.test_a_file_that_did_not_run_is_red_by_its_name"
+   ]
+  },
+  {
+   "id": "tr_focused_file_red",
+   "file": "runner/test_results.py",
+   "old": "JEST_FILE_OK = (\"passed\", \"focused\", \"skipped\")",
+   "new": "JEST_FILE_OK = (\"passed\",)",
+   "tests": [
+    "test_test_results.Jest.test_file_statuses_that_are_not_failures_add_no_entry"
+   ]
+  },
+  {
+   "id": "tr_several_ignored",
+   "file": "runner/test_results.py",
+   "old": "    if R.earlier_document(extra, shaped):\n        return [{\"id\": SEVERAL, \"status\": \"fail\"}]\n",
+   "new": "",
+   "tests": [
+    "test_test_results.Jest.test_several_documents_are_one_failure"
+   ]
+  },
+  {
+   "id": "tr_exit_ignored",
+   "file": "runner/test_results.py",
+   "old": "    if exit_code != 0 and not any(",
+   "new": "    if False and not any(",
+   "tests": [
+    "test_test_results.Jest.test_the_exit_code_with_no_failed_test_is_a_failure",
+    "test_test_results.Tap.test_exit_code_without_a_failing_line_is_a_failure"
+   ]
+  },
+  {
+   "id": "tr_tap_first",
+   "file": "runner/test_results.py",
+   "old": "    tests = jest(stdout, root)\n    if tests is None:\n        tests = tap(stdout)",
+   "new": "    tests = tap(stdout) or jest(stdout, root) or []",
+   "tests": [
+    "test_test_results.Jest.test_bytes_before_the_document_are_read_past"
+   ]
+  },
+  {
+   "id": "tr_shape_no_count",
+   "file": "runner/test_results.py",
+   "old": "isinstance(doc, dict) and type(doc.get(\"numTotalTests\")) is int",
+   "new": "isinstance(doc, dict)",
+   "tests": [
+    "test_test_results.Jest.test_near_misses_of_the_shape_are_not_jests"
+   ]
+  },
+  {
+   "id": "tr_absolute_id",
+   "file": "runner/test_results.py",
+   "old": "name = R.relative(result[\"name\"], root) or result[\"name\"]",
+   "new": "name = result[\"name\"]",
+   "tests": [
+    "test_test_results.Jest.test_one_entry_per_assertion_with_its_file_and_titles"
+   ]
+  },
+  {
+   "id": "tr_kos_tap_only",
+   "file": "runner/kos.py",
+   "old": "\"tests\": T.read(stdout, exit_code)})",
+   "new": "\"tests\": T.tap(stdout)})",
+   "tests": [
+    "test_kos.Candidates.test_a_jest_run_is_read_from_its_document"
+   ]
+  },
+  {
+   "id": "tr_sentinel_tap_only",
+   "file": "runner/kos.py",
+   "old": "return {\"results\": T.read(stdout, test[\"exit\"])}",
+   "new": "return {\"results\": T.tap(stdout)}",
+   "tests": [
+    "test_kos.Sentinel.test_a_jest_run_is_judged_by_its_document"
+   ]
+  },
+  {
+   "id": "tr_nx_no_json",
+   "file": "profile/nx.py",
+   "old": "\"--config\", config, JEST_JSON],",
+   "new": "\"--config\", config],",
+   "tests": [
+    "test_profile_nx.Test.test_the_command_and_its_config_input"
+   ]
+  }
+ ]
+}

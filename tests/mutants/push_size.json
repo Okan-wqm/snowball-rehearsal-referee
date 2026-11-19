@@ -1,0 +1,230 @@
+{
+ "root": ".",
+ "mutants": [
+  {
+   "id": "reports_measured",
+   "old": "EXCLUDED = (\"founder-ledger.jsonl\", \"reports\")",
+   "new": "EXCLUDED = (\"founder-ledger.jsonl\",)",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "ledger_measured",
+   "old": "EXCLUDED = (\"founder-ledger.jsonl\", \"reports\")",
+   "new": "EXCLUDED = (\"reports\",)",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "nested_reports_left_out",
+   "old": "\":(top,exclude)\" + name",
+   "new": "\":(exclude)\" + name",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "renames_paired",
+   "old": "DIFF = (\"diff\", \"--no-renames\", ",
+   "new": "DIFF = (\"diff\", ",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "count_mismatch_named_by_guess",
+   "old": "    if len(sizes) != len(names):\n",
+   "new": "    if False:\n",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "carriage_return_ends_a_line",
+   "old": "for line in io.BytesIO(diff):",
+   "new": "for line in diff.splitlines(keepends=True):",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "type_change_is_two_paths",
+   "old": "            if line != opened:\n",
+   "new": "            if True:\n",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "any_earlier_section_line_continues",
+   "old": "            opened = line\n",
+   "new": "            opened = opened or line\n",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "preamble_not_refused",
+   "old": "        elif not sizes:\n",
+   "new": "        elif False:\n",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "lines_counted_not_bytes",
+   "old": "sizes[-1] += len(line)",
+   "new": "sizes[-1] += 1",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "hunk_marker_anywhere_in_line",
+   "old": "if line.startswith(SECTION):",
+   "new": "if SECTION in line:",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "failing_git_read",
+   "old": "    if proc.returncode != 0:\n",
+   "new": "    if False:\n",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "accepted_edge_out",
+   "old": "size <= accepted",
+   "new": "size < accepted",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "refused_edge_out",
+   "old": "size >= refused",
+   "new": "size > refused",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "accepted_is_the_smallest",
+   "old": "max((row[2] for row in measured if row[3] == \"accepted\")",
+   "new": "min((row[2] for row in measured if row[3] == \"accepted\")",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "refused_is_the_largest",
+   "old": "min((row[2] for row in measured if row[3] != \"accepted\")",
+   "new": "max((row[2] for row in measured if row[3] != \"accepted\")",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "unknown_is_ok",
+   "old": "\"ok\": name == ACCEPTED",
+   "new": "\"ok\": name != REFUSED",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "ties_in_diff_order",
+   "old": "key=lambda p: (-p[1], p[0])",
+   "new": "key=lambda p: -p[1]",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "top_ignored",
+   "old": "key=lambda p: (-p[1], p[0]))[:top]]",
+   "new": "key=lambda p: (-p[1], p[0]))[:5]]",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "base_is_the_last_evaluated",
+   "old": "state.get(\"last_accepted_sha\")",
+   "new": "state.get(\"last_evaluated_sha\")",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "sha_prefix_is_enough",
+   "old": "SHA.fullmatch(sha)",
+   "new": "SHA.match(sha)",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "head_argument_ignored",
+   "old": "out = measure(root, base, args.head, args.top, git)",
+   "new": "out = measure(root, base, \"HEAD\", args.top, git)",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "result_read_despite_base",
+   "old": "base = args.base if args.base is not None else base_of(args.result)",
+   "new": "base = base_of(args.result) if args.base is None or True else args.base",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "exit_0_always",
+   "old": "return 0 if out[\"ok\"] else 1",
+   "new": "return 0",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  },
+  {
+   "id": "unreadable_is_exit_1",
+   "old": "        print(json.dumps({\"ok\": False, \"reason\": str(e)}))\n        return 2",
+   "new": "        print(json.dumps({\"ok\": False, \"reason\": str(e)}))\n        return 1",
+   "file": "tests/push_size.py",
+   "tests": [
+    "test_push_size.py"
+   ]
+  }
+ ]
+}

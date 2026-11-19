@@ -1,0 +1,95 @@
+{
+ "root": ".",
+ "mutants": [
+  {
+   "id": "normalise_off",
+   "old": "text = pattern.sub(token, text)",
+   "new": "text = text",
+   "file": "tests/vec_compare.py",
+   "tests": [
+    "test_vec_compare.py"
+   ]
+  },
+  {
+   "id": "stdin_dropped",
+   "old": "input=run[\"stdin\"].encode(\"utf-8\")",
+   "new": "input=b\"\"",
+   "file": "tests/vec_compare.py",
+   "tests": [
+    "test_vec_compare.py"
+   ]
+  },
+  {
+   "id": "stderr_not_compared",
+   "old": "FIELDS = (\"exit\", \"timed_out\", \"stdout\", \"stderr\")",
+   "new": "FIELDS = (\"exit\", \"timed_out\", \"stdout\")",
+   "file": "tests/vec_compare.py",
+   "tests": [
+    "test_vec_compare.py"
+   ]
+  },
+  {
+   "id": "environment_leaks",
+   "old": "env=RLR.env(path, tmp)",
+   "new": "env=dict(os.environ, **RLR.env(path, tmp))",
+   "file": "tests/vec_compare.py",
+   "tests": [
+    "test_vec_compare.py"
+   ]
+  },
+  {
+   "id": "sides_paired_wrong",
+   "old": "for r in runs for tree in (before, after)]",
+   "new": "for tree in (before, after) for r in runs]",
+   "file": "tests/vec_compare.py",
+   "tests": [
+    "test_vec_compare.py"
+   ]
+  },
+  {
+   "id": "name_pattern_widened",
+   "old": "\\bsnowball-[0-9a-f]{32}\\b",
+   "new": "\\bsnowball-[0-9a-f]+\\b",
+   "file": "tests/vec_compare.py",
+   "tests": [
+    "test_vec_compare.py"
+   ]
+  },
+  {
+   "id": "only_ignored",
+   "old": "    if only:\n",
+   "new": "    if False:\n",
+   "file": "tests/vec_compare.py",
+   "tests": [
+    "test_vec_compare.py"
+   ]
+  },
+  {
+   "id": "timeout_not_passed",
+   "old": "capture_output=True, timeout=timeout)",
+   "new": "capture_output=True)",
+   "file": "tests/vec_compare.py",
+   "tests": [
+    "test_vec_compare.py"
+   ]
+  },
+  {
+   "id": "runs_from_the_tree",
+   "old": "cwd=os.path.join(tree, \"referee\")",
+   "new": "cwd=tree",
+   "file": "tests/vec_compare.py",
+   "tests": [
+    "test_vec_compare.py"
+   ]
+  },
+  {
+   "id": "unreadable_revision_ignored",
+   "old": "raise Unreadable(\"revision_unreadable:%s\" % rev)",
+   "new": "pass",
+   "file": "tests/vec_compare.py",
+   "tests": [
+    "test_vec_compare.py"
+   ]
+  }
+ ]
+}
