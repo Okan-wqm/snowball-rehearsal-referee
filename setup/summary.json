@@ -297,5 +297,56 @@
     "stage": 0,
     "carry_to": 1,
     "reason": "E286, E561: #spec'in mekanik maddelerinin makine tanımı yok; sahibin kararı 2026-11-06: Aşama 1'in (A)'sına taşınır (stages/carry-spec.json)"
+  },
+  "drift": {
+    "writer_app_id": 5559796,
+    "targets": {
+      "toy": {
+        "rulesets": [
+          26288405,
+          26288408,
+          26288409,
+          26288410,
+          26288412
+        ],
+        "rules": {
+          "brain/integration": "ea6e4f07090d2737eae9ade75951b37b166911d8c5ac13e0fbea8dade69cb95b",
+          "brain/state": "e1999c4cdde05e1aad0600b0f56421ae3575aa6bfa58557845b3d13a26c29105",
+          "main": "534ef58ae00206cbc471971a2b7de8b660c9737480b7aba49d54357e5ae6c4ff"
+        }
+      },
+      "copy": {
+        "rulesets": [
+          26288413,
+          26288414,
+          26288415,
+          26288416,
+          26288417
+        ],
+        "rules": {
+          "brain/integration": "ea6e4f07090d2737eae9ade75951b37b166911d8c5ac13e0fbea8dade69cb95b",
+          "brain/state": "e1999c4cdde05e1aad0600b0f56421ae3575aa6bfa58557845b3d13a26c29105",
+          "main": "534ef58ae00206cbc471971a2b7de8b660c9737480b7aba49d54357e5ae6c4ff"
+        }
+      }
+    },
+    "activity": {
+      "operator_logins": [
+        "Okan-wqm"
+      ],
+      "not_before": "2026-11-20T14:54:07Z"
+    },
+    "hashes": {
+      "constitutional_sha256": "4c6dd24fcb4653666cbbf1ab75b6ea890b170ffdc9f4d2373df47fbb8c543535",
+      "vectors_sha256": "6ce4701e4bc3f8a4a745c0f006373e04ce1d8ad054af4044adc7610b628e33e8",
+      "seats_sha256": "7a3073cedcb923dd14e10e9fa0c92a602f0efb8ca15cbcec9680ac7eb170f8d3"
+    },
+    "visibility": {
+      "Okan-wqm/snowball-rehearsal-referee": "public",
+      "Okan-wqm/snowball-rehearsal-brain": "public",
+      "Okan-wqm/snowball-rehearsal-toy": "public",
+      "Okan-wqm/snowball-rehearsal-copy": "public",
+      "Okan-wqm/snowball-mcp": "public"
+    }
   }
 }
