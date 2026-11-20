@@ -235,7 +235,8 @@ class DifferentialTest(PartsTestCase):
         run = self.same(counts=(2, 3, 7))
         self.assertTrue(run["green"])
         self.assertEqual(len(run["vectors"]), 2 * sum(len(g["cases"]) for g in SEED.values()
-                                                      if isinstance(g, dict) and g.get("runner") == "data") + 6)
+                                                      if isinstance(g, dict) and g.get("runner") == "data"
+                                                      and g.get("owner") == "asama-0") + 6)  # census: exit batch
         self.assertEqual([t["id"] for t in run["tests"]], [t["id"] for t in manifest()["tests"] if t["stage"] == 0])
         self.assertEqual([(m["mf"], m["test_id"]) for m in run["module_less"]],
                          [(k, f"T{n}") for k in MODULE_LESS for n in TABLE.feature(k).tests])

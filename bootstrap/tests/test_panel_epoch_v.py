@@ -38,8 +38,7 @@ def lines(prefix: str, first: int, last: int) -> str:
 class ChainPagesTest(unittest.TestCase):
     def test_13_names_the_integration_head_a_chain_break(self):  # integration_head_break_unsaid
         text = flat(page("13").split("- **Zincir kırığı sert duruştur.**", 1)[1].split("- **Rekor'a yazılamama**", 1)[0])
-        for words in ("son imzalı durum satırının adlandırdığı commit'ten (merge ya da geri alma) başka bir "
-                      "`brain/integration` başı (E637)", "kurcalama kanıtıdır", "Gözcü sert duruş yazar (`28`)",
+        for words in ("son imzalı durum satırının adlandırdığı commit'ten başka bir `brain/integration` başı (E637)", "kurcalama kanıtıdır", "Gözcü sert duruş yazar (`28`)",
                       "bu kırığı (B)'de yalnız `25a` Başarısızlık onarır"):
             self.assertIn(words, text, words)
 
@@ -288,7 +287,7 @@ class MvpRequestHintPageTest(unittest.TestCase):
             self.assertNotIn(recipe, text.casefold(), recipe)
         logs = sorted((ROOT / "spec" / "tohum").glob("CHANGELOG*.md"))
         self.assertIn("2.2 (2026-11-19, E651–E653; sahibin ipuçları ve ilkesi): `00c`. Sahip ilkesi (E653, ilke)",
-                      flat((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")))
+                      flat("\n".join(p.read_text(encoding="utf-8") for p in logs)))  # wherever the cap moved it
         self.assertTrue(all(len(p.read_text(encoding="utf-8").splitlines()) <= 80 for p in logs))
         self.assertLessEqual(len(page("00c").splitlines()), 80)
         register = (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
@@ -337,6 +336,31 @@ class LearnFromOtherReposHintPageTest(unittest.TestCase):
         self.assertLessEqual(len((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()), 80)
         register = (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
         self.assertIn("sahip kararı, ipucu (2026-11-19", next(line for line in register if line.startswith("| E652 |")))
+
+class LessonRecheckHintPageTest(unittest.TestCase):
+    """The owner's hint of 2026-11-20 (E654), labelled a hint, text only, in `00d` (`00c` continued): lessons re-checked
+    automatically and regularly, the result written back; the design is the Founder's; 26g is unchanged."""
+
+    def test_00d_carries_the_labelled_hint_and_00c_points_at_it(self):  # lesson_recheck_hint_unlabelled
+        text = flat(page("00d")).split(
+            "**Sahibin ipucu (2026-11-20, E654; ipucu, reçete değil). Derslerin kendiliğinden yeniden sınanması.**", 1)[1]
+        for words in ("defterde 26 `lesson` satırı var", "hepsi `trust: inferred`",
+                      "hiçbiri bağımsız olarak yeniden koşturulmadı",
+                      "`26g` gereği başlatıcı ve hakem `recheck`'i koşturmaz",
+                      "sahip ilkesi (2026-11-06) her dersin yeniden sınanan, yanlışlanabilir bir kayıt olmasıdır",
+                      "dersler otomatik ve düzenli olarak yeniden sınansın; sonucu derse geri yazılsın",
+                      "`closes:` ile kapanma", "Kurucu'nun tasarımıdır", "Kurucu bunu bir rapor olarak önerir",
+                      "kaç ders yeniden sınandı, kaçı tuttu, kaçı kapandı"):
+            self.assertIn(words, text, words)
+        self.assertIn("`recheck`'i koşturmaz", flat(page("26g")))  # the seed's rule the hint does not change
+        self.assertIn("(E654'ten başlayarak) `00d`'dedir", flat(page("00c")))
+        for prefix in ("00c", "00d"):
+            self.assertLessEqual(len(page(prefix).splitlines()), 80)
+        log = flat((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8"))
+        self.assertIn("2.2 (2026-11-20, E654; sahibin ipucu): yeni `00d`", log)
+        register = (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
+        self.assertIn("sahip kararı, ipucu (2026-11-20", next(line for line in register if line.startswith("| E654 |")))
+
 
 class ReferenceBundledReadingTest(unittest.TestCase):
     """The reference MF5 (`local/reference_brain/referee/runner/deps_npm.py`) reads `29g`'s package directories: a

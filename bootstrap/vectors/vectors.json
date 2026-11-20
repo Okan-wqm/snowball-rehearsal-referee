@@ -5963,5 +5963,132 @@
         }
       }
     ]
+  },
+  "census": {
+    "owner": "asama-1-cikis",
+    "runner": "data",
+    "interface": "spec/tohum/29za-vektor-arayuzleri-asama-1-cikisi.md",
+    "source": "the rules the toy target enables in textkit/eslint.config.js at de5b57c2b411544bfc92169b4da30c89e0c95d5a (owner decision, constitutional, 2026-11-20: the census denominator is fixed on the referee side)",
+    "cases": [
+      {
+        "id": "census.dot_notation",
+        "purpose": "The census denominator is the seed's rule set: `dot-notation` is enabled in the toy's ESLint config (textkit/eslint.config.js at de5b57c) and the shared mutation library must produce it.",
+        "cmd": "python -m cases.build produce eslint dot-notation",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census.no_var",
+        "purpose": "The census denominator is the seed's rule set: `no-var` is enabled in the toy's ESLint config (textkit/eslint.config.js at de5b57c) and the shared mutation library must produce it.",
+        "cmd": "python -m cases.build produce eslint no-var",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census.object_shorthand",
+        "purpose": "The census denominator is the seed's rule set: `object-shorthand` is enabled in the toy's ESLint config (textkit/eslint.config.js at de5b57c) and the shared mutation library must produce it.",
+        "cmd": "python -m cases.build produce eslint object-shorthand",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census.operator_assignment",
+        "purpose": "The census denominator is the seed's rule set: `operator-assignment` is enabled in the toy's ESLint config (textkit/eslint.config.js at de5b57c) and the shared mutation library must produce it.",
+        "cmd": "python -m cases.build produce eslint operator-assignment",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census.prefer_const",
+        "purpose": "The census denominator is the seed's rule set: `prefer-const` is enabled in the toy's ESLint config (textkit/eslint.config.js at de5b57c) and the shared mutation library must produce it.",
+        "cmd": "python -m cases.build produce eslint prefer-const",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census.prefer_template",
+        "purpose": "The census denominator is the seed's rule set: `prefer-template` is enabled in the toy's ESLint config (textkit/eslint.config.js at de5b57c) and the shared mutation library must produce it.",
+        "cmd": "python -m cases.build produce eslint prefer-template",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census.yoda",
+        "purpose": "The census denominator is the seed's rule set: `yoda` is enabled in the toy's ESLint config (textkit/eslint.config.js at de5b57c) and the shared mutation library must produce it.",
+        "cmd": "python -m cases.build produce eslint yoda",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      }
+    ]
   }
 }

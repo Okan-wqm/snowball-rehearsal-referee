@@ -150,7 +150,9 @@
    "evidence_ref_max_lines": 31,
    "match_window_lines": 16,
    "rival_min_attempts": 6,
-   "repeat_reject_limit": 4
+   "repeat_reject_limit": 4,
+   "fix_acceptance_min": 0.81,
+   "live_merge_min": 11
   },
   "stage_budgets": {
    "asama_0": {
@@ -159,7 +161,9 @@
     "canary_usd": 3
    },
    "asama_1": {
-    "rival_usd": 1007
+    "rival_usd": 1007,
+    "founder_usd": 10003,
+    "runtime_llm_usd": 10005
    }
   }
  },

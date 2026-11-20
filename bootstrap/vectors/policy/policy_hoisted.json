@@ -55,7 +55,6 @@
   "noninferiority_margin": 0.051,
   "n_min_paired": 46,
   "mcnemar_min_discordant": 9,
-  "confidence_level": 0.91,
   "look_budget": 4,
   "survival_windows": {
    "K0": 73,
@@ -130,12 +129,10 @@
    }
   },
   "stage_params": {
-   "census_min_groups": 47,
-   "planted_max_cases": 6,
-   "evidence_ref_max_lines": 31,
-   "match_window_lines": 16,
    "rival_min_attempts": 6,
-   "repeat_reject_limit": 4
+   "repeat_reject_limit": 4,
+   "fix_acceptance_min": 0.81,
+   "live_merge_min": 11
   },
   "stage_budgets": {
    "asama_0": {
@@ -143,7 +140,9 @@
     "rival_usd": 1003
    },
    "asama_1": {
-    "rival_usd": 1007
+    "rival_usd": 1007,
+    "founder_usd": 10003,
+    "runtime_llm_usd": 10005
    }
   }
  },
@@ -281,5 +280,12 @@
    536970912,
    4295067296
   ]
+ },
+ "confidence_level": 0.87,
+ "stage_params": {
+  "census_min_groups": 41,
+  "planted_max_cases": 8,
+  "evidence_ref_max_lines": 27,
+  "match_window_lines": 19
  }
 }

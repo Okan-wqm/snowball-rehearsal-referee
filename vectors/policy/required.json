@@ -11,5 +11,12 @@
   "operating.test_total_s",
   "operating.unit_inputs_bytes",
   "operating.worktree_bytes"
+ ],
+ "1": [
+  "constitutional.confidence_level",
+  "constitutional.stage_params.census_min_groups",
+  "constitutional.stage_params.evidence_ref_max_lines",
+  "constitutional.stage_params.match_window_lines",
+  "constitutional.stage_params.planted_max_cases"
  ]
 }

@@ -2114,7 +2114,7 @@ class StageOneTableTest(unittest.TestCase):
         stay declared) and P2's table holds; after P2's too, the seed carries no later table, so none is open: `done_mf`
         is empty and Stage 1's own micro-features are the transferred referee's to judge (`asama-1/06`)."""
         after = stages.load(1, done=("P1",))
-        self.assertEqual((after.stage, after.batch, after.label, after.count), (1, "P2", "stage1-P2", 2))
+        self.assertEqual((after.stage, after.batch, after.label, after.count), (1, "P2", "stage1-P2", 1))
         self.assertEqual([t.label for t in after.before], ["stage0", "stage1-P1"])
         self.assertEqual(after.groups_of(()), self.TABLE.groups_of(range(1, 9)))
         last = stages.load(1, done=("P1", "P2"))
@@ -2169,9 +2169,8 @@ class StageOneTablesPageTest(unittest.TestCase):
 
     def test_p2s_rows_are_asama_1_13s_and_mf1s_test_is_30ds_profile_test(self):  # stage1_p2_test_renumbered
         rows = batch_rows("P2")
-        self.assertEqual(sorted(rows), [1, 2])
+        self.assertEqual(sorted(rows), [1])  # seed-072: P2 brings the profile alone
         p2 = stages.load(1, done=("P1",))
-        self.assertEqual((list(p2.feature(2).tests), list(p2.feature(2).groups)), rows[2])
         self.assertEqual(rows[1], (None, []))  # the page names the tests, `30d`'nin profil testleri, by no number
         page13 = next((ROOT / "spec" / "asama-1").glob("13-*.md")).read_text(encoding="utf-8")
         self.assertIn("| P2 | 1 | `security.derive` ve `security.run` (`tohum/30d`) | `30d`'nin profil testleri | — |", page13)
@@ -2184,9 +2183,15 @@ class StageOneTablesPageTest(unittest.TestCase):
         self.assertEqual(number, max(numbered) + 1)  # §0.9's numbers go on; none is reused (`asama-0/09`: kalıcıdır)
         others = [n for t in [stages.load(0), stages.load(1)] for f in t.mfs for n in f.tests]
         self.assertNotIn(number, others)
-        self.assertEqual(rows[2], ([22], []))
+        # seed-072 (independent review panel, 2026-11-20): test 22 comes with the first tool-using run-time agent, at
+        # the latest Stage 4; the frozen §0.9 still names P2 and 26e, which prevails, says so
         self.assertIn("| 22 | Dispatch kanaryası", tests_page)
         self.assertTrue(re.search(r"^\| 22 \| .* \| P2 \|$", tests_page, re.M))
+        self.assertEqual([n for f in p2.mfs for n in f.tests], [number])  # no MF of P2 carries test 22
+        said = " ".join(tohum_page("26e").split())
+        self.assertIn("**P2'nin tek MF'si** `30d`'nin profilidir (bağımsız inceleme ekibi kararı, 2026-11-20, seed-072): "
+                      "`agent.dispatch` ve dispatch kanaryası (test 22) çalışma zamanında araç kullanan ilk ajanla, en geç "
+                      "Aşama 4'te gelir", said)
 
     def test_module_paths_are_26as_first_tool_of_each_mechanism(self):  # stage1_p2_module_moved
         """Spec sessiz (E372, E491): a module is its mechanism's first tool in `26a`, dots made slashes (`asama-0/14`
@@ -2202,7 +2207,7 @@ class StageOneTablesPageTest(unittest.TestCase):
                 if named:
                     checked += 1
                     self.assertEqual(module, named[0].replace(".", "/") + ".py", line)
-        self.assertEqual(checked, 7)  # P1's 2, 3, 4, 6, 7 and P2's 1, 2 name a tool of 26a's
+        self.assertEqual(checked, 6)  # P1's 2, 3, 4, 6, 7 and P2's 1 name a tool of 26a's (P2's MF2 went, seed-072)
 
     def test_the_exit_batch_is_no_table_of_this_seed_and_the_page_says_why(self):  # stage1_exit_judged_as_stage0
         """E495: `asama-1/13`'s third batch comes with Stage 1's own exit, whose (A) this seed does not judge."""

@@ -107,7 +107,7 @@ class FixtureTest(unittest.TestCase):
             if paths[0].startswith("operating.") or any(f"`{tool}`" in readers for tool in LOOP_TOOLS):
                 derived.update(paths)
         rows = json.loads((FIXTURES / policyreads.REQUIRED).read_text(encoding="utf-8"))
-        self.assertEqual(sorted(rows), ["0"])
+        self.assertEqual(sorted(rows), ["0", "1"])
         self.assertEqual(sorted(rows["0"]), sorted(derived))
         self.assertIn(CANARY, derived)
         self.assertEqual(len(derived), 11)
@@ -119,10 +119,29 @@ class FixtureTest(unittest.TestCase):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 policyreads.required_paths(bad, 0)
 
+    def test_stage_1_reads_the_harness_keys_29v_names(self):  # required_stage_1_row_dropped
+        """seed-076 (independent review panel, 2026-11-20): Stage 1's row is the harness's five keys, each a row of
+        `18a`, named on `29v`; a stage reads the rows before it too."""
+        rows = json.loads((FIXTURES / policyreads.REQUIRED).read_text(encoding="utf-8"))
+        five = ["constitutional.confidence_level", "constitutional.stage_params.census_min_groups",
+                "constitutional.stage_params.evidence_ref_max_lines", "constitutional.stage_params.match_window_lines",
+                "constitutional.stage_params.planted_max_cases"]
+        self.assertEqual(sorted(rows["1"]), five)
+        keyed = {path for paths, _row in key_rows("18a") for path in paths}
+        self.assertTrue(set(five) <= keyed)
+        self.assertEqual(policyreads.required_paths(rows, 1), sorted(set(rows["0"]) | set(five)))
+        self.assertEqual(policyreads.required_paths(rows, 0), sorted(rows["0"]))
+        said = " ".join(page("29v").split())
+        self.assertIn("Aşama 1'in satırı (bağımsız inceleme ekibi kararı, 2026-11-20, seed-076) harness'in beş yoludur", said)
+        for path in five:
+            self.assertIsNot(policyreads.at(PLAN["full"], path.split(".")), policyreads._ABSENT, path)
+
     def test_the_hoisted_file_moves_each_required_path_to_the_top_with_another_value(self):
         # fixture_decoy_equals_the_section_value
         full, hoisted = PLAN["full"], PLAN["hoisted"]
-        for path in PLAN["required"]:
+        stage1 = policyreads.plan(VECTORS, 1)  # seed-076: Stage 1's five paths are hoisted too, so a fallback shows
+        self.assertTrue(set(PLAN["required"]) < set(stage1["required"]))
+        for path in stage1["required"]:
             keys = path.split(".")
             with self.subTest(path=path):
                 self.assertIs(policyreads.at(hoisted, keys), policyreads._ABSENT)
@@ -186,6 +205,23 @@ class JudgeTest(unittest.TestCase):
         self.assertEqual(found, [(policyreads.ROOT_FALLBACK, p) for p in PLAN["required"]])
         strict = names(policyreads.findings(PLAN, loop(lambda doc: reads_of(doc, PLAN["required"]))))
         self.assertEqual(strict, [])  # null where the path is absent: no finding
+
+    def test_a_stage_1_loop_that_falls_back_to_the_top_level_is_named(self):
+        """seed-076: with Stage 1's plan, a loop that reads `stage_params` at the top level of the hoisted file is
+        named; one that names its paths in their section is clean."""
+        stage1 = policyreads.plan(VECTORS, 1)
+        clean = record(answer(reads_of(stage1["full"], stage1["required"])),
+                       answer(reads_of(stage1["hoisted"], stage1["required"])))
+        self.assertEqual(policyreads.findings(stage1, clean), [])
+        path = "constitutional.stage_params.match_window_lines"
+        decoy = policyreads.at(stage1["hoisted"], path.split(".")[1:])
+        fell = record(answer(reads_of(stage1["full"], stage1["required"])),
+                      answer(dict(reads_of(stage1["hoisted"], stage1["required"]), **{path: decoy})))
+        self.assertEqual(names(policyreads.findings(stage1, fell)), [(policyreads.ROOT_FALLBACK, path)])
+        missing = record(answer(reads_of(stage1["full"], PLAN["required"])),
+                         answer(reads_of(stage1["hoisted"], PLAN["required"])))
+        self.assertEqual({name for name, _path in names(policyreads.findings(stage1, missing))},
+                         {policyreads.REQUIRED_ABSENT})  # seed-076: red until the brain's reads name the five
 
     def test_a_hoisted_run_that_fails_or_defaults_is_no_finding(self):  # policy_reads_root_fallback_accepted
         good = answer(reads_of(PLAN["full"], PLAN["required"]))
