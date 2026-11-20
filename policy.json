@@ -7,7 +7,9 @@
       "census_min_groups": 45,
       "planted_max_cases": 5,
       "evidence_ref_max_lines": 30,
-      "match_window_lines": 15
+      "match_window_lines": 15,
+      "fix_acceptance_min": 0.8,
+      "live_merge_min": 10
     },
     "stage_budgets": {
       "asama_0": {
@@ -15,7 +17,9 @@
         "canary_usd": 1
       },
       "asama_1": {
-        "rival_usd": 10000
+        "rival_usd": 10000,
+        "founder_usd": 10000,
+        "runtime_llm_usd": 10000
       }
     },
     "license_allowlist": [
