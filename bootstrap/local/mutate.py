@@ -42,6 +42,7 @@ DEFS = "seed/founder/brain_defs.py"  # the capsule's loader of the brain's defin
 LINDEX = "seed/founder/ledger_index.py"  # the capsule's read-only index of the Founder's ledger (E506)
 EPOCH = "seed/founder/deliver_epoch.py"  # the operator's one-command seed epoch delivery (E526)
 DFX = f"{PKG}/drillfixtures.py"  # the operator's drill-fixtures command (E499)
+MIRROR = "seed/founder/mirror.py"  # the launcher's measurement mirror (E647)
 
 # (name, file, old text found exactly once, new text, what the mutant stands for)
 MUTANTS = [
@@ -3419,8 +3420,10 @@ MUTANTS = [
     ("loop_note_not_called", "seed/founder/launch.py", "        self.loop_note(stamp)\n", "",
      "E596: no session sees the loop's runs; a red (B) waits for the operator again"),
     ("loop_note_after_the_session", "seed/founder/launch.py",
-     "        self.loop_note(stamp)\n        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, "
+     "        self.loop_note(stamp)\n        self.mirror_note(stamp)\n"
+     "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, "
      "args.session_timeout,\n                            getattr(args, \"effort\", None))\n",
+     "        self.mirror_note(stamp)\n"
      "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, args.session_timeout,\n"
      "                            getattr(args, \"effort\", None))\n        self.loop_note(stamp)\n",
      "E596: the file is written after the session it is for"),
@@ -3878,10 +3881,10 @@ MUTANTS = [
     ("lessons_note_not_called", "seed/founder/launch.py", "        self.lessons_note(stamp, before)\n", "",
      "E610: no session sees its lessons; retrieval is luck again"),
     ("lessons_note_after_the_session", "seed/founder/launch.py",
-     "        self.lessons_note(stamp, before)\n        self.loop_note(stamp)\n"
+     "        self.lessons_note(stamp, before)\n        self.loop_note(stamp)\n        self.mirror_note(stamp)\n"
      "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, args.session_timeout,\n"
      "                            getattr(args, \"effort\", None))\n",
-     "        self.loop_note(stamp)\n"
+     "        self.loop_note(stamp)\n        self.mirror_note(stamp)\n"
      "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, args.session_timeout,\n"
      "                            getattr(args, \"effort\", None))\n        self.lessons_note(stamp, before)\n",
      "E610: the index is written after the session it is for"),
@@ -4098,6 +4101,135 @@ MUTANTS = [
     # ---- seed epoch V: the owner's hint on reading the imported result (E645), labelled as a hint, text only
     ("imported_result_hint_unlabelled", "spec/tohum/00b-gorev-haritasi.md", "(2026-11-19, E645; ipucu, reçete değil)",
      "(2026-11-19, E645)", "E645: the owner's hint is no longer labelled a hint, so measurement cannot tell it apart"),
+    # ---- seed epoch W: the owner's hint on an adversarial gate set (E648), labelled as a hint, text only
+    ("adversarial_hint_unlabelled", "spec/tohum/00b-gorev-haritasi.md", "(2026-11-19, E648; ipucu, reçete değil)",
+     "(2026-11-19, E648)", "E648: the owner's hint is no longer labelled a hint, so measurement cannot tell it apart"),
+    ("adversarial_hint_drops_a_class", "spec/tohum/00b-gorev-haritasi.md",
+     "  değişiklikler, gizlenmiş ya da kodlanmış secret'lar. Seti hakem koşar.\n",
+     "  değişiklikler. Seti hakem koşar.\n", "E648: the adversarial set no longer covers hidden or encoded secrets"),
+    # ---- seed epoch W: the owner's hints on learning (E649) and on prevention and structure (E650), text only
+    ("learning_hint_unlabelled", "spec/tohum/00c-gorev-haritasi-sahibin-ipuclari.md", "2026-11-19, E649; ipucu, reçete değil)",
+     "2026-11-19, E649)", "E649: the owner's hint is no longer labelled a hint, so measurement cannot tell it apart"),
+    ("prevention_hint_unlabelled", "spec/tohum/00c-gorev-haritasi-sahibin-ipuclari.md", "2026-11-19, E650; ipucu, reçete değil)",
+     "2026-11-19, E650)", "E650: the owner's hint is no longer labelled a hint, so measurement cannot tell it apart"),
+    # ---- seed epoch X: the owner's principle of consistent growth (E653), labelled a principle, text only
+    ("consistent_growth_relabelled_a_hint", "spec/tohum/00c-gorev-haritasi-sahibin-ipuclari.md",
+     "(sahip ilkesi, 2026-11-19, E653; ilke, ipucu değil)", "(sahibin ipucu, 2026-11-19, E653; ipucu)",
+     "E653: the owner's principle reads as a hint the Founder may set aside"),
+    # ---- seed epoch X: the owner's MVP request (E651), labelled as a hint, text only
+    ("mvp_hint_unlabelled", "spec/tohum/00c-gorev-haritasi-sahibin-ipuclari.md", "2026-11-19, E651; ipucu, reçete değil)",
+     "2026-11-19, E651)", "E651: the owner's MVP request is no longer labelled a hint, so measurement cannot tell it apart"),
+    ("other_repos_hint_unlabelled", "spec/tohum/00c-gorev-haritasi-sahibin-ipuclari.md",
+     "2026-11-19, E652; ipucu, reçete değil)", "2026-11-19, E652)",
+     "E652: the owner's hint on learning from other repositories is no longer labelled a hint"),
+    ("other_repos_compass_made_a_recipe", "spec/tohum/00c-gorev-haritasi-sahibin-ipuclari.md",
+     "Operatörün önerisi (bağlayıcı değil; Kurucu kabul eder, değiştirir ya da",
+     "Operatörün kuralı (bağlayıcı; Kurucu uygular ya da",
+     "E652: the operator's suggested sources read as a binding rule, not a proposal the Founder may reject"),
+    ("other_repos_criteria_dropped", "spec/tohum/00c-gorev-haritasi-sahibin-ipuclari.md",
+     "  sabitlenebilir mi; o aşamanın hata sınıfına uygun mu; etkisi ölçülebilir mi.\n",
+     "  sabitlenebilir mi.\n", "E652: the selection criteria lose the stage's error class and measurability"),
+    # ---- seed epoch W: the measurement mirror, /work/logs/mirror.json (the owner's decision of 2026-11-19, E647)
+    ("mirror_version_ignores_effort", MIRROR,
+     '(word(row.get("effort")) or "default") if "effort" in row else "unrecorded")', '"default")',
+     "E647: two efforts of one model are one version; a success is carried across versions"),
+    ("mirror_median_is_the_mean", MIRROR, "round(statistics.median(g[\"minutes\"]), 1)",
+     "round(statistics.mean(g[\"minutes\"]), 1)", "E647: one long session moves the typical session's minutes"),
+    ("mirror_rejection_reasons_of_accepted", MIRROR, "            if verdict in REJECTED:\n", "            if True:\n",
+     "E647: an accepted push's reasons are counted as rejection reasons"),
+    ("mirror_late_verdict_ignored", MIRROR, 'verdict = word(late.get(row["stamp"]))', "verdict = None",
+     "E647: a push the next start judged reads as never judged, and its acceptance costs nothing"),
+    ("mirror_usd_per_accepted_without_reason", MIRROR,
+     'nulls["founder_cli_usd_per_accepted"] = "no accepted verdict" if not g["accepted"] else "no cost recorded"',
+     "pass",
+     "E647: a null cost per accepted change says no reason"),
+    ("mirror_models_keep_the_oldest", MIRROR,
+     'models.sort(key=lambda m: (m["last_session"], m["model"], m["effort"]), reverse=True)',
+     'models.sort(key=lambda m: (m["last_session"], m["model"], m["effort"]))',
+     "E647: past the cap the oldest model versions are kept, the current one left out"),
+    ("mirror_newest_read_loses", MIRROR, 'if one["run"] is not None})', 'if one["run"] is not None and rid not in runs})',
+     "E647: a run's first read (in progress) hides how it ended"),
+    ("mirror_red_job_ignored", MIRROR, '        if job.get("conclusion") not in RED:\n', "        if True:\n",
+     "E647: a red run's job and recorded reason are not shown"),
+    ("mirror_transfer_not_from_cek", MIRROR, "            return sha\n", "            return None\n",
+     "E647: no run is tied to the transfer its cek named"),
+    ("mirror_unread_tarball_reads_as_none", MIRROR, '    if not referee or referee.get("error"):\n',
+     "    if not referee:\n", "E647: a tarball that could not be read reads as a control.json that is missing"),
+    ("mirror_repeats_list_singles", MIRROR, "if len(days) > 1]", "if len(days) > 0]",
+     "E647: a class seen once is listed as a repeat"),
+    ("mirror_repeats_window_ignored", MIRROR, "since = at - timedelta(days=WINDOW_DAYS)",
+     "since = at - timedelta(days=10 * WINDOW_DAYS)", "E647: the repeats count outside their stated window"),
+    ("mirror_red_class_without_output", MIRROR, '    if reason is None and job["output"]:\n', "    if False:\n",
+     "E647: a red that printed no summary has no class but its summary_why"),
+    ("mirror_repeats_count_reasons", MIRROR,
+     '                seen.setdefault(("rejection", kind), []).append(row["stamp"][:8])\n',
+     '                seen.setdefault(("rejection", kind), []).extend([row["stamp"][:8]] * 4)\n',
+     "E647 review: one rejected row with four reasons of a kind counts as four rejections"),
+    ("mirror_reason_kinds_per_reason", MIRROR,
+     'return sorted({word(r.get("kind")) or "unknown" for r in row.get("reasons") or [] if isinstance(r, dict)})',
+     'return sorted(word(r.get("kind")) or "unknown" for r in row.get("reasons") or [] if isinstance(r, dict))',
+     "E647 review: a row counts once per reason, not once per reason kind"),
+    ("mirror_red_class_per_job", MIRROR, "for name in sorted({red_class(job) for job in red_jobs(one)}):",
+     "for name in sorted(red_class(job) for job in red_jobs(one)):",
+     "E647 review: one run with two red jobs of a class counts as two"),
+    ("mirror_repeats_ranked", MIRROR, 'found.sort(key=lambda f: (f["kind"], f["class"]))',
+     'found.sort(key=lambda f: (-f["count"], f["kind"], f["class"]))', "E647 review: the repeats are ranked by size"),
+    ("mirror_unattributed_reds_unsaid", MIRROR, '"unattributed_red_runs": sum(f["red"] for f in loose),',
+     '"unattributed_red_runs": 0,', "E647 review: a red run tied to no transfer leaves every outcome looking clean"),
+    ("mirror_operator_tree_counted", MIRROR,
+     '            tree_file = not (top.casefold() in folded or top.startswith(".")) and (\n',
+     "            tree_file = (\n", "E647: the operator's files and the bootstrap referee count as the brain's size"),
+    ("mirror_tests_counted_as_code", MIRROR, 'part = "tests" if rel.startswith("tests/") else "code"', 'part = "code"',
+     "E647: the referee's tests count as its code"),
+    ("mirror_mutants_by_file", MIRROR, 'tree["mutants"] += len(mutants) if isinstance(mutants, list) else 0',
+     'tree["mutants"] += 1', "E647: kept mutants are counted by file, not by mutant"),
+    ("mirror_agent_model_dropped", MIRROR, 'models[word(given.get("model")) or "inherit"] += 1',
+     'models["inherit"] += 1', "E647: every agent call reads as the session's own model"),
+    ("mirror_task_tool_missed", MIRROR, 'AGENT_TOOLS = ("Agent", "Task")', 'AGENT_TOOLS = ("Agent",)',
+     "E647: a subagent called under the CLI's other name is not counted"),
+    ("mirror_delegation_keeps_the_oldest", MIRROR, "[f for f in folders(logs, stamp) if f < stamp][-SESSIONS_MAX:]",
+     "[f for f in folders(logs, stamp) if f < stamp][:SESSIONS_MAX]", "E647: past the cap the oldest sessions are read"),
+    ("mirror_gap_from_the_start", MIRROR, "            ended = began + timedelta(minutes=minutes)\n",
+     "            ended = began\n", "E647: the session's own minutes count as waiting"),
+    ("mirror_restarts_uncounted", MIRROR,
+     'fact["launcher_starts_in_gap"] = sum(1 for ts in launched if ended < iso_time(ts) <= following)',
+     'fact["launcher_starts_in_gap"] = 0', "E647: a gap the launcher was stopped in reads as a verdict wait"),
+    ("mirror_one_section_fails_all", MIRROR,
+     "        except Exception as exc:  # one section's failure is its own null",
+     "        except ValueError as exc:  # one section's failure is its own null",
+     "E647: one section that fails takes the whole mirror with it"),
+    ("mirror_note_not_called", "seed/founder/launch.py", "        self.mirror_note(stamp)\n", "",
+     "E647: no session sees the mirror"),
+    ("mirror_note_after_the_session", "seed/founder/launch.py",
+     "        self.mirror_note(stamp)\n"
+     "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, args.session_timeout,\n"
+     "                            getattr(args, \"effort\", None))\n",
+     "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, args.session_timeout,\n"
+     "                            getattr(args, \"effort\", None))\n        self.mirror_note(stamp)\n",
+     "E647: the mirror is written after the session it is for"),
+    ("mirror_note_not_written", "seed/founder/launch.py",
+     "        (folder / MIRROR_NOTE).write_text(data, encoding=\"utf-8\")\n", "        pass\n",
+     "E647: the mirror is computed and never written"),
+    ("mirror_names_shown", "seed/founder/launch.py", "json.dumps(loop_shown(note, self.withheld), ",
+     "json.dumps(loop_shown(note, []), ", "E647: a target's name in a recorded text reaches the session"),
+    ("mirror_failure_stops_the_cycle", "seed/founder/launch.py",
+     "        except Exception as exc:  # no session is lost to the mirror;",
+     "        except ValueError as exc:  # no session is lost to the mirror;",
+     "E647: a mirror that fails stops the session"),
+    ("mirror_say_carries_the_text", "seed/founder/launch.py",
+     'say(f"{MIRROR_NOTE} not written for {stamp}: {type(exc).__name__}")',
+     'say(f"{MIRROR_NOTE} not written for {stamp}: {exc}")', "E647: a warning carries a row's text to the operator's log"),
+    ("mirror_secret_unscanned", "seed/founder/launch.py", "        if secretscan.scan(data):\n", "        if False:\n",
+     "E647: a secret's shape in a recorded text reaches the session"),
+    ("mirror_facts_failure_stops_the_inputs", "seed/founder/launch.py",
+     "        except Exception as exc:  # a tarball the mirror cannot read",
+     "        except ValueError as exc:  # a tarball the mirror cannot read",
+     "E647: a tarball the mirror cannot read stops the vector inputs and the session"),
+    ("mirror_facts_kept_across_cycles", "seed/founder/launch.py",
+     "        self.referee_facts = None  # an earlier cycle's facts are never this cycle's\n", "",
+     "E647: a cycle whose tarball read failed shows an earlier cycle's referee"),
+    ("prompt_mirror_unnamed", "seed/founder/prompt.md", "`/work/logs/mirror.json`'dadır", "`/work/logs/ayna.json`'dadır",
+     "E647: the prompt names a file the launcher never writes"),
 ]
 
 

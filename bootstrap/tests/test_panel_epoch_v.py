@@ -205,6 +205,139 @@ class ReadTheImportedResultHintPageTest(unittest.TestCase):
             self.assertIn(words, text, words)
         self.assertIn("result_sha256", flat(page("26c")))
 
+class AdversarialGateHintPageTest(unittest.TestCase):
+    """The owner's hint of 2026-11-19 (E648), labelled a hint, text only: before a real product repository the
+    gates pass an adversarial set the referee runs; the design is the Founder's."""
+
+    def test_00b_carries_the_labelled_hint(self):  # adversarial_hint_unlabelled adversarial_hint_drops_a_class
+        text = flat(page("00b").split("**Sahibin ipucu (2026-11-19, E648; ipucu, reçete değil).**", 1)[1])
+        for words in ("bir dosyanın içine yazılmış bir talimat (prompt injection)",
+                      "(`30a`) hedefin kendi enjeksiyon açıklarını anlatır, modele yöneleni anlatmaz",
+                      "Snowball gerçek ürün reposunda çalışmadan önce, kapılar saldırgan bir test setinden kanıtla",
+                      "hedef dosyalara gömülü prompt injection, diff denetiminden kaçmaya çalışan değişiklikler, "
+                      "gizlenmiş ya da kodlanmış secret'lar", "Seti hakem koşar", "Tasarım Kurucu'nundur."):
+            self.assertIn(words, text, words)
+        self.assertNotIn("prompt injection", flat(page("30a")).casefold())
+        self.assertLessEqual(len(page("00b").splitlines()), 80)
+        logs = sorted((ROOT / "spec" / "tohum").glob("CHANGELOG*.md"))  # wherever the 80-line cap moved it (E651)
+        self.assertIn("Sahibin ipucu (E648; ipucu olarak işaretli): `00b`",
+                      flat("\n".join(p.read_text(encoding="utf-8") for p in logs)))
+        self.assertTrue(all(len(p.read_text(encoding="utf-8").splitlines()) <= 80 for p in logs))
+        register = (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
+        self.assertIn("sahip kararı, ipucu (2026-11-19",
+                      next(line for line in register if line.startswith("| E648 |")))
+
+class LearningAndPreventionHintsPageTest(unittest.TestCase):
+    """The owner's hints of 2026-11-19 (E649 learning, E650 prevention and structure), labelled hints, text only, in
+    `00c`, where `00b` continues past its 80 lines (`15` 1)."""
+
+    def test_00c_carries_both_labelled_hints_and_00b_points_at_it(self):
+        # learning_hint_unlabelled prevention_hint_unlabelled
+        text = flat(page("00c"))
+        learning = text.split("**Öğrenme (sahibin ipucu, 2026-11-19, E649; ipucu, reçete değil).**", 1)[1]
+        for words in ("20 `lesson` satırı var; 9'una sonraki kararlarda adıyla atıf var, 11'ine hiç yok",
+                      "Hiçbirinde `scope` yok (`22`", "eski kodu yeni derse göre yeniden okuyan olmadı",
+                      "geçerli olduğu iş geldiğinde bulunabilir olmalı", "ondan önce yazılmış kodu da kapsamalı",
+                      "`superseded_at` almalı", "model sürümüne bağlı dersler de buna dahil olmalı (E644)"):
+            self.assertIn(words, learning, words)
+        prevention = text.split("**Önleme ve yapı (sahibin ipucu, 2026-11-19, E650; ipucu, reçete değil).**", 1)[1]
+        for words in ("(f1538, f1546, f1553, f1560, f1567); hiçbiri kurulmadı", "`/work/logs/mirror.json`",
+                      "`cli`'yı 45 modül içe aktarır, `loop.job` 36 modülü içe aktarır",
+                      "`@nx/enforce-module-boundaries`", "en az biri kurulup ölçülsün",
+                      "Yapı da ölçülerek sadeleşsin", "hiçbiri sessizce atlanmamalı"):
+            self.assertIn(words, prevention, words)
+        self.assertIn("(E649 öğrenme, E650 önleme ve yapı) `00c`'dedir", flat(page("00b")))
+        self.assertIn("`scope`", flat(page("22")))
+        register = (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
+        for row in ("| E649 |", "| E650 |"):
+            self.assertIn("sahip kararı, ipucu (2026-11-19", next(line for line in register if line.startswith(row)))
+
+class ConsistentGrowthPrinciplePageTest(unittest.TestCase):
+    """The owner's principle of 2026-11-19 (E653), labelled a principle, not a hint, text only, before E651 in `00c`."""
+
+    def test_00c_states_the_principle_before_the_mvp_request(self):  # consistent_growth_relabelled_a_hint
+        raw = flat(page("00c"))
+        head = "**Tutarlı gelişim (sahip ilkesi, 2026-11-19, E653; ilke, ipucu değil).**"
+        self.assertLess(raw.index(head), raw.index("E651; ipucu, reçete değil)"))
+        text = raw.split(head, 1)[1].split("**Sahibin ipucu (2026-11-19, E651", 1)[0]
+        for words in ("kod, hakem, hafıza ve dersler, ajanlar ve skill'ler, araçlar, ölçüm, belgeler",
+                      "Yeni bir parça var olanla çelişmez ve onu tekrar etmez", "Aynı işi yapan iki yol bırakılmaz",
+                      "Tek doğruluk kaynağı korunur", "Eski kod yeni derse göre yeniden okunur",
+                      "Her değişiklik ölçülür ve belgesiyle birlikte gelir",
+                      "Tutarsızlık bulunduğunda kayda geçer ve kapatılır; susularak geçilmez."):
+            self.assertIn(words, text, words)
+        register = (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
+        self.assertIn("sahip kararı, ilke (2026-11-19", next(line for line in register if line.startswith("| E653 |")))
+
+
+class MvpRequestHintPageTest(unittest.TestCase):
+    """The owner's hint of 2026-11-19 (E651), labelled a hint, text only: the owner asks for an MVP; what it is, what it
+    proves and in which order is the Founder's, written as a proposal for the owner's approval; no recipe."""
+
+    def test_00c_carries_the_labelled_request_and_no_recipe(self):  # mvp_hint_unlabelled
+        text = flat(page("00c")).split("**Sahibin ipucu (2026-11-19, E651; ipucu, reçete değil). MVP isteği.**", 1)[1]
+        for words in ("dışarıdan değerlendirecek birine göstermek ve yatırım başvurusunda kullanmak için bir MVP",
+                      "bir yatırımcı ya da ilk pilot müşteri olabilir",
+                      "neyi kanıtlayacağına ve hangi sırayla geleceğine Kurucu karar verir",
+                      "ölçülebilir kanıtlarıyla bir öneri olarak yazar", "sahibin onayına gider",
+                      "gerçek ürün reposu için sahip şartları (E648)", "merge'ü sahibin yapması",
+                      "her merge'ün geri alınabilir olması", "aşama merdiveni ve hakem kuralları",
+                      "ölçüm aynasının sayılarıyla izlenebilir"):
+            self.assertIn(words, text, words)
+        for recipe in ("içermeli", "içermelidir", "şunları", "özellikleri", "demo"):
+            self.assertNotIn(recipe, text.casefold(), recipe)
+        logs = sorted((ROOT / "spec" / "tohum").glob("CHANGELOG*.md"))
+        self.assertIn("2.2 (2026-11-19, E651–E653; sahibin ipuçları ve ilkesi): `00c`. Sahip ilkesi (E653, ilke)",
+                      flat((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8")))
+        self.assertTrue(all(len(p.read_text(encoding="utf-8").splitlines()) <= 80 for p in logs))
+        self.assertLessEqual(len(page("00c").splitlines()), 80)
+        register = (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
+        self.assertIn("sahip kararı, ipucu (2026-11-19", next(line for line in register if line.startswith("| E651 |")))
+
+class LearnFromOtherReposHintPageTest(unittest.TestCase):
+    """The owner's hint of 2026-11-19 (E652), labelled a hint, text only: memory may also learn from well-known trusted
+    open-source projects; the system is the Founder's; the owner's limits are stated."""
+
+    def test_00c_carries_the_labelled_hint_and_its_limits(self):  # other_repos_hint_unlabelled
+        text = flat(page("00c")).split(
+            "**Sahibin ipucu (2026-11-19, E652; ipucu, reçete değil). Başka repolardan öğrenme.**", 1)[1]
+        for words in ("iyi bilinen ve güvenilir açık kaynak projelerden de öğrenebilir",
+                      "Bunu yapacak sistemi Kurucu tasarlar: hangi repo, ne okunur, nasıl saklanır, nasıl ölçülür",
+                      "genelliği gösterir (`21`)", "okuma salt okunurdur, sürüm commit'e ve hash'e sabitlenir",
+                      "Yalnız izin verici lisanslı repolar okunur; kod kopyalanmaz, kalıp ve fikir öğrenilir",
+                      "`21a`'daki gibi hipotezdir", "kendi hedefimizde kanıtlanana kadar karar vermez",
+                      "E648'in saldırgan test seti bu okumaya da uygulanır",
+                      "kabul edilen iş başına maliyet okumalı ve okumasız karşılaştırılır (E644)",
+                      "daha küçük ve ucuz modeller Snowball'da çalıştığında onlara yol gösteren hipotezler olsun",
+                      "Bilgi modelde değil repoda durur (`01` sahibin hedefi)",
+                      "yazıldığı gibi koşan bir kontrolüyle birlikte tutulur (`26g`)",
+                      "şirketin kendi `tromso-mvp` reposudur (Python/Django, özel; çiftlik yazılımı)",
+                      "operatörün kuracağı özel bir kopyası üzerinden okur ya da onda çalışır",
+                      "(`snowball-rehearsal-copy` gibi bir kopya, ama özel)",
+                      "Şirketin kendi repoları bu lisans kuralının dışındadır; hakları şirkettedir.",
+                      "hakemin bugünkü desteği (npm) yetmez"):
+            self.assertIn(words, text, words)
+        self.assertTrue(text.lstrip().startswith("- Amaç:"), text[:40])
+        # other_repos_compass_made_a_recipe other_repos_criteria_dropped
+        for words in ("Kaynak türleri, güçlüden zayıfa. Operatörün önerisi (bağlayıcı değil; Kurucu kabul eder, "
+                      "değiştirir ya da reddeder, gerekçesini yazar).",
+                      "Amaç, Kurucu'nun kendi öğrenme sistemini kurmasıdır. Bu liste yalnız bir başlangıç önerisidir.",
+                      "1. Snowball'un kendi sonuçları: hakem kararları ve dersler",
+                      "OSV / GitHub Advisory (açıklı ve düzeltilmiş kod çiftleri)", "(güvenlik, K6)",
+                      "(mantık hataları, K5)", "öğrenmekten çok bağımsız sınav olarak kullanılır",
+                      "hipotez olarak tutulur, kural olarak değil",
+                      "Kaçınılacaklar: rastgele popüler repolar; doğrulanamayan forum veya blog tavsiyeleri",
+                      "Seçim ölçütleri: otoriter mi; izin verici lisanslı mı; içinde bir doğrulama (test, kural) taşıyor "
+                      "mu; sürümü sabitlenebilir mi; o aşamanın hata sınıfına uygun mu; etkisi ölçülebilir mi."):
+            self.assertIn(words, text, words)
+        self.assertIn("Mantık hataları", flat(page("03")))
+        self.assertNotIn("pusula", text)
+        self.assertIn("**İthal bilgi hipotezdir.**", page("21a"))
+        self.assertLessEqual(len(page("00c").splitlines()), 80)
+        self.assertLessEqual(len((ROOT / "spec" / "tohum" / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()), 80)
+        register = (ROOT / "docs" / "eksik-kaydi.md").read_text(encoding="utf-8").splitlines()
+        self.assertIn("sahip kararı, ipucu (2026-11-19", next(line for line in register if line.startswith("| E652 |")))
+
 class ReferenceBundledReadingTest(unittest.TestCase):
     """The reference MF5 (`local/reference_brain/referee/runner/deps_npm.py`) reads `29g`'s package directories: a
     scoped one, a nested one, a `binding.gyp`, and not a package.json that only sits deeper in a bundled package."""

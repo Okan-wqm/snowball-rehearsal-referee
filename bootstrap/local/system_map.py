@@ -65,6 +65,8 @@ LINKS = (
     ("brain", "launcher", "founder-ledger.jsonl at the session head: live lesson rows",
      (LAUNCHER, r"def lesson_index\(data: bytes")),
     ("launcher", "capsule", "live lessons, read-only: /work/logs/lessons.json", (CAPSULE[2], r"/work/logs/lessons\.json")),
+    ("launcher", "capsule", "measurement mirror, read-only: /work/logs/mirror.json",
+     (CAPSULE[2], r"/work/logs/mirror\.json")),
     ("operator", "brain", "seed epoch: delivers spec/tohum alone", ("seed/founder/README.md",
                                                                     r"beyne tohum kodu\s+\(`seed/`\) gitmez")),
     ("operator", "referee", "installs bootstrap/, vectors/, kill switch, seed_epochs row",
