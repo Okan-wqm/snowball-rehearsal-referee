@@ -11,6 +11,7 @@ is capped; the same files give the same bytes. Nothing reaches GitHub here.
 import importlib.util
 import json
 import re
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -93,8 +94,8 @@ class Work:
             (folder / name).write_text(text, encoding="utf-8")
         return folder
 
-    def mirror(self, stamp=STAMP, facts=None, spec=None):
-        return M.mirror(stamp, self.metrics, self.logs, facts, spec or self.root / "no-spec")
+    def mirror(self, stamp=STAMP, facts=None, spec=None, accepted=None, stages=None):
+        return M.mirror(stamp, self.metrics, self.logs, facts, spec or self.root / "no-spec", accepted, stages)
 
 
 class PerModelTest(unittest.TestCase):
@@ -545,6 +546,142 @@ class LauncherTest(unittest.TestCase):
             with self.assertRaises(launch.GitHubUnavailable):
                 pilot.refresh_inputs()
         self.assertIsNone(pilot.referee_facts)
+
+
+class SessionTimeTest(unittest.TestCase):
+    """Epoch Z (E677): per session, the wall time the launcher measured, the model's API time, the time a session waited
+    on its own checks (the heartbeat method, a lower bound) and the seven-day quota at its start and end."""
+
+    @staticmethod
+    def bash(tid, command, background=False):
+        given = {"command": command, **({"run_in_background": True} if background else {})}
+        return {"type": "assistant", "message": {"content": [{"type": "tool_use", "id": tid, "name": "Bash",
+                                                             "input": given}]}}
+
+    @staticmethod
+    def beat(tid, seconds, tool="Bash"):
+        return {"type": "tool_progress", "tool_name": tool, "parent_tool_use_id": tid, "elapsed_time_seconds": seconds,
+                "heartbeat": True}
+
+    @staticmethod
+    def quota(overage, seven_day, five_hour=None):
+        windows = {"seven_day": {"utilization": seven_day}, "seven_day_overage_included": {"utilization": overage}}
+        if five_hour is not None:
+            windows["five_hour"] = {"utilization": five_hour}
+        return {"type": "rate_limit_event", "rate_limit_info": {"unifiedWindows": windows}}
+
+    def test_the_four_facts_of_a_session(self):
+        # mirror_wall_from_transcript mirror_api_takes_last mirror_blocked_counts_all mirror_blocked_counts_background
+        # mirror_quota_wrong_window mirror_quota_end_first mirror_blocked_zero_without_result
+        w = Work()
+        one, two = "20261118T010000Z", "20261118T020000Z"
+        w.rows(cycle(one, minutes=50.5), cycle(two, minutes=None))
+        w.folder(one, **{f"session-{one}.jsonl": [
+            {"type": "system", "subtype": "init"}, self.quota(0.25, 0.50, 0.10),
+            self.bash("t1", "python3 local/mutate.py --only x"), self.beat("t1", 30), self.beat("t1", 59),
+            self.bash("t2", "python3 tests/prepush.py"), self.beat("t2", 120),
+            self.bash("t3", "sleep 300; ls"), self.beat("t3", 300),
+            self.bash("t4", "python3 -m unittest discover", background=True), self.beat("t4", 900),
+            self.beat("t9", 40), self.beat("t1", 70, tool="Read"),
+            {"type": "result", "duration_ms": 1000, "duration_api_ms": 600_400},
+            self.quota(0.31, 0.56), {"type": "result", "duration_ms": 10, "duration_api_ms": 2_000}]})
+        w.folder(two)
+        out = w.mirror()["session_time"]
+        first, second = out["sessions"]
+        self.assertEqual((first["wall_s"], first["api_s"], first["blocked_on_own_checks_s"], first["null_reasons"]),
+                         (3030, 600, 179, {}))
+        self.assertEqual(first["quota_start"], {"seven_day_overage_included": 0.25, "seven_day": 0.50, "five_hour": 0.10})
+        self.assertEqual(first["quota_end"], {"seven_day_overage_included": 0.31, "seven_day": 0.56, "five_hour": 0.10})
+        self.assertIn("so it can exceed wall_s", out["blocked_on_own_checks_is"])
+        self.assertEqual((second["stamp"], second["wall_s"], second["api_s"]), (two, None, None))
+        self.assertEqual(second["null_reasons"]["wall_s"], "no cycle row of this session carries minutes")
+        self.assertEqual(second["null_reasons"]["blocked_on_own_checks_s"], "no transcript")
+        self.assertEqual((out["own_checks_pattern"], out["quota_buckets"]),
+                         (M.OWN_CHECKS.pattern, ["seven_day_overage_included", "seven_day", "five_hour"]))
+        w.folder(one, **{f"session-{one}.jsonl": [self.bash("t1", "python3 local/mutate.py"), self.beat("t1", 59)]})
+        cut = w.mirror()["session_time"]["sessions"][0]  # a transcript cut before its result event
+        self.assertEqual((cut["blocked_on_own_checks_s"], cut["null_reasons"]["blocked_on_own_checks_s"]),
+                         (None, "no result event: the transcript does not reach the session's end"))
+
+    def test_a_transcript_without_the_events_says_so(self):
+        w = Work()
+        w.rows(cycle("20261118T010000Z"))
+        w.folder("20261118T010000Z", **{"session-20261118T010000Z.jsonl": [{"type": "system", "subtype": "init"}]})
+        fact = w.mirror()["session_time"]["sessions"][0]
+        self.assertEqual((fact["wall_s"], fact["api_s"], fact["blocked_on_own_checks_s"], fact["quota_start"]),
+                         (1800, None, None, {"seven_day_overage_included": None, "seven_day": None, "five_hour": None}))
+        self.assertEqual(fact["null_reasons"], {
+            "api_s": "no result event with duration_api_ms",
+            "blocked_on_own_checks_s": "no result event: the transcript does not reach the session's end",
+            **{f"quota.{b}": f"no rate_limit_event with {b}.utilization" for b in M.QUOTA_WINDOWS}})
+
+
+class PathTest(unittest.TestCase):
+    """Epoch Z (E677, `26h`): the first slice's micro-features not accepted yet, from the seed's P1 table and the
+    accepted manifest's `done_mf` the launcher read; Stage 1's own ones apart; `organ_merges_copy` is null, said why."""
+
+    STAGES = ROOT / "seed" / "bootstrap" / "stages"
+
+    def path(self, accepted, facts):
+        return Work().mirror(facts=facts, accepted=accepted, stages=self.STAGES)["path"]
+
+    def test_the_p1_rows_not_in_the_accepted_done_mf(self):
+        # mirror_path_counts_done mirror_organ_merges_guessed
+        out = self.path({"sha": A, "done_mf": [1, 2, 3, 4, 5, 6]}, referee(imports=[{"stage": 0, "brain_sha": B}]))
+        self.assertEqual((out["accepted_sha"], out["path_mfs_left"], out["path_mfs_left_count"]),
+                         (A, ["P1:MF7", "P1:MF8", "P1:MF9"], 3))
+        self.assertEqual(out["path_mfs_unrecorded"], ["stage1:MF1", "stage1:MF2", "stage1:MF3", "stage1:MF5",
+                                                      "stage1:MF6"])
+        self.assertIsNone(out["organ_merges_copy"])
+        self.assertIn("tells an organ's merge from a ready-made candidate's", out["null_reasons"]["organ_merges_copy"])
+
+    def test_a_transferred_p1_leaves_none_and_an_unread_input_is_null(self):
+        # mirror_path_ignores_transfer mirror_path_unread_tarball
+        done = {"stage": 1, "batch": "P1", "brain_sha": C}
+        self.assertEqual(self.path({"sha": A, "done_mf": [1]}, referee(imports=[done]))["path_mfs_left"], [])
+        unread = self.path({"sha": A, "done_mf": [1]}, None)
+        self.assertEqual((unread["path_mfs_left"], unread["null_reasons"]["path_mfs_left"]),
+                         (None, "the referee tarball was not read this cycle"))
+        failed = self.path({"error": "GitHubUnavailable"}, referee())
+        self.assertEqual(failed["null_reasons"]["path_mfs_left"], "the accepted manifest was not read: GitHubUnavailable")
+        other = self.path({"sha": A, "done_mf": [1, 2, 18]}, referee())
+        self.assertEqual(other["null_reasons"]["path_mfs_left"], "the accepted done_mf is not P1's numbering")
+        self.assertEqual(Work().mirror()["path"]["null_reasons"]["path_mfs_left"], "the seed's P1 table was not given")
+
+    def test_the_launcher_reads_the_accepted_manifest_and_passes_it(self):
+        # launcher_accepted_not_passed launcher_accepted_wrong_ref
+        launch = load_launch()
+        pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+        calls = []
+
+        def gh(*args, **kw):
+            calls.append(args)
+            return json.dumps({"tests": [], "done_mf": [1, 2], "lockfiles": []}).encode()
+        prior = {"state": {"last_accepted_sha": A}}
+        with mock.patch.object(launch, "gh_read", gh), mock.patch.object(launch, "say"):
+            self.assertEqual(pilot.accepted_manifest(prior), {"sha": A, "done_mf": [1, 2]})
+            pilot.mirror_note(STAMP, prior)
+        self.assertEqual(calls[0][:2], ("api", f"repos/o/brain/contents/snowball-tests.json?ref={A}"))
+        note = json.loads((pilot.session_logs(STAMP) / "mirror.json").read_text(encoding="utf-8"))
+        self.assertEqual(note["path"]["accepted_sha"], A)
+        self.assertEqual(pilot.accepted_manifest(None), {"error": "no_signed_state"})
+        with mock.patch.object(launch, "gh_read", side_effect=launch.GitHubUnavailable("down")):
+            self.assertEqual(pilot.accepted_manifest(prior), {"error": "GitHubUnavailable"})
+
+    def test_a_failed_manifest_read_is_one_attempt_and_never_waits(self):
+        # manifest_read_retries
+        # E679: with gh failing, the read is tried once and no retry delay is slept (the suite ran nine minutes longer)
+        launch = load_launch()
+        pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+        calls = []
+
+        def run(*args, **kw):
+            calls.append(args)
+            return subprocess.CompletedProcess(args, 4, b"", b"gh: not logged in")
+        with mock.patch.object(launch, "run", run),                 mock.patch.object(launch.time, "sleep", side_effect=AssertionError("a retry delay was slept")):
+            self.assertEqual(pilot.accepted_manifest({"state": {"last_accepted_sha": A}}),
+                             {"error": "GitHubUnavailable"})
+        self.assertEqual(len(calls), 1)
 
 
 class PageTest(unittest.TestCase):

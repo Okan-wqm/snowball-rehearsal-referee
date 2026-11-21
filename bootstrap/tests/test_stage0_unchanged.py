@@ -67,10 +67,14 @@ SELF_MAP = "self_map"  # the meta key and the warnings' prefix of the brain's ow
 
 
 def without_self_map(found: dict) -> dict:
-    """``found`` without the map check's own additions: the meta's plan and the Stage 0 warnings, nothing else."""
-    meta = {k: v for k, v in found["meta"].items() if k != SELF_MAP}
+    """``found`` without the map check's own additions: the meta's plan and the Stage 0 warnings, nothing else; and
+    without the hashes of the operator's files (`25`, E678), a record beside the judgement that changes no verdict while
+    the summary names no `drift.hashes` (``compared`` empty, as in the recording's summary)."""
+    for doc in ("meta", "result"):
+        assert found[doc]["operator_hashes"]["compared"] == [], found[doc]["operator_hashes"]
+    meta = {k: v for k, v in found["meta"].items() if k not in (SELF_MAP, "operator_hashes")}
     kept = [w for w in found["result"]["warnings"] if not w.startswith(SELF_MAP + "_")]
-    result = dict(found["result"], warnings=kept)
+    result = dict({k: v for k, v in found["result"].items() if k != "operator_hashes"}, warnings=kept)
     if result["exit"].get("canary") == {"job": "success", "status": ["ok"]}:  # the green canary's record (E600)
         result["exit"] = {k: v for k, v in result["exit"].items() if k != "canary"}
     return {"meta": meta, "result": result}

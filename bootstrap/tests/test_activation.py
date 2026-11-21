@@ -2069,7 +2069,7 @@ class StageOneTableTest(unittest.TestCase):
         first (`asama-1/06`: P1 ends before Stage 1's MF1 runs live). Tests and groups are the page's; module and calls
         are spec sessiz (E372)."""
         rows = batch_rows("P1")
-        self.assertEqual(sorted(rows), list(range(1, 9)))
+        self.assertEqual(sorted(rows), list(range(1, 10)))  # MF8 and MF9 from `26h` (E672)
         self.assertEqual((self.TABLE.stage, self.TABLE.batch, self.TABLE.label), (1, "P1", "stage1-P1"))
         self.assertEqual({f.mf: (list(f.tests), list(f.groups)) for f in self.TABLE.mfs}, rows)
 
@@ -2092,7 +2092,8 @@ class StageOneTableTest(unittest.TestCase):
     def test_its_tests_are_section_09s_p1_tests_and_its_groups_the_seeds_p1_vectors(self):
         page = (ROOT / "spec" / "asama-0" / "09-harness-in-kendi-testleri.md").read_text(encoding="utf-8")
         p1 = {int(m.group(1)) for m in re.finditer(r"^\| (\d+) \| .* \| P1 \|$", page, re.M)}
-        self.assertEqual({n for f in self.TABLE.mfs for n in f.tests}, p1)
+        # `26h` (E672) prevails over the frozen page: 52 waits for P3, 55 is P1 MF9's new number
+        self.assertEqual({n for f in self.TABLE.mfs for n in f.tests}, p1 - {52} | {55})
         seed = json.loads((BOOT / "vectors" / "vectors.json").read_text(encoding="utf-8"))
         owned = {name for name, group in seed.items() if isinstance(group, dict) and group.get("owner") == "P1"}
         self.assertEqual({g for f in self.TABLE.mfs for g in f.groups}, owned)
@@ -2116,7 +2117,7 @@ class StageOneTableTest(unittest.TestCase):
         after = stages.load(1, done=("P1",))
         self.assertEqual((after.stage, after.batch, after.label, after.count), (1, "P2", "stage1-P2", 1))
         self.assertEqual([t.label for t in after.before], ["stage0", "stage1-P1"])
-        self.assertEqual(after.groups_of(()), self.TABLE.groups_of(range(1, 9)))
+        self.assertEqual(after.groups_of(()), self.TABLE.groups_of(range(1, 10)))
         last = stages.load(1, done=("P1", "P2"))
         self.assertEqual((last.stage, last.batch, last.count), (1, None, 0))
         self.assertEqual([t.label for t in last.before], ["stage0", "stage1-P1", "stage1-P2"])
@@ -2207,12 +2208,13 @@ class StageOneTablesPageTest(unittest.TestCase):
                 if named:
                     checked += 1
                     self.assertEqual(module, named[0].replace(".", "/") + ".py", line)
-        self.assertEqual(checked, 6)  # P1's 2, 3, 4, 6, 7 and P2's 1 name a tool of 26a's (P2's MF2 went, seed-072)
+        self.assertEqual(checked, 8)  # P1's 2, 3, 4, 6, 7, 8, 9 and P2's 1 name a tool of 26a's (P2's MF2 went, seed-072)
 
     def test_the_exit_batch_is_no_table_of_this_seed_and_the_page_says_why(self):  # stage1_exit_judged_as_stage0
         """E495: `asama-1/13`'s third batch comes with Stage 1's own exit, whose (A) this seed does not judge."""
-        self.assertEqual(page_batches()[2], "Aşama 1 çıkışı")
-        self.assertNotIn(page_batches()[2], stages.BATCHES[1])
+        self.assertEqual(page_batches()[3], "Aşama 1 çıkışı")  # after P3, the batch `26h` defers (E672)
+        self.assertNotIn(page_batches()[3], stages.BATCHES[1])
+        self.assertNotIn("P3", stages.BATCHES[1])
         exit_part = next(b for b in re.split(r"\n\s*\n", tohum_page("26e")) if b.startswith("**Çıkış partisi.**"))
         for words in ("bu tohumda tablo değildir", "Aşama 1'in kendi çıkışının (A)'sıyla gelir",
                       "(`batch`'siz istek `exit_request_wrong_stage`'dir)", "P1 ve P2 aktarılınca açık tablo boştur"):
@@ -2264,15 +2266,15 @@ class StageOneManifestTest(unittest.TestCase):
         """E378: under the table after P1's transfer, P1's tests stay declared at stage 1 (named by their table) and
         `done_mf` is the next table's, empty here."""
         after = stages.load(1, done=("P1",))
-        self.assertEqual(check_stage(self.manifest(stage1_done=range(1, 9), done=[]), after), [])
-        self.assertEqual(check_stage(self.manifest(stage1_done=range(1, 9)), after), ["done_mf_not_in_order"])
-        self.assertEqual(check_stage(self.manifest(stage1_done=range(1, 9), stage1_tests=[51, 8], done=[]), after),
+        self.assertEqual(check_stage(self.manifest(stage1_done=range(1, 10), done=[]), after), [])
+        self.assertEqual(check_stage(self.manifest(stage1_done=range(1, 10)), after), ["done_mf_not_in_order"])
+        self.assertEqual(check_stage(self.manifest(stage1_done=range(1, 10), stage1_tests=[51, 8], done=[]), after),
                          ["missing_test:stage1-P1:MF3:T2", "missing_test:stage1-P1:MF3:T4",
                           "missing_test:stage1-P1:MF4:T1", "missing_test:stage1-P1:MF4:T6",
-                          "missing_test:stage1-P1:MF4:T7", "missing_test:stage1-P1:MF4:T12",
-                          "missing_test:stage1-P1:MF4:T28", "missing_test:stage1-P1:MF5:T9",
-                          "missing_test:stage1-P1:MF5:T11", "missing_test:stage1-P1:MF6:T24",
-                          "missing_test:stage1-P1:MF7:T41", "missing_test:stage1-P1:MF8:T52"])
+                          "missing_test:stage1-P1:MF4:T7", "missing_test:stage1-P1:MF4:T28",
+                          "missing_test:stage1-P1:MF5:T9", "missing_test:stage1-P1:MF5:T11",
+                          "missing_test:stage1-P1:MF6:T24", "missing_test:stage1-P1:MF7:T41",
+                          "missing_test:stage1-P1:MF8:T12", "missing_test:stage1-P1:MF9:T55"])
 
     def test_stage_0_is_judged_as_before(self):
         table = stages.load(0)
@@ -2458,7 +2460,7 @@ class StageOnePullTest(unittest.TestCase):
         """E378: the counter's P1 transfer finishes P1: its tests stay declared, `done_mf` is the next table's (P2's,
         E491), and a P1 request is the wrong batch."""
         self.write_counter(batches=("P1",))
-        self.state["last_accepted_sha"] = commit(self.brain, {"snowball-tests.json": self.manifest_text(range(1, 9))},
+        self.state["last_accepted_sha"] = commit(self.brain, {"snowball-tests.json": self.manifest_text(range(1, 10))},
                                                  "P1 done")
         commit(self.brain, {"referee/y.py": "y = 1\n", "snowball-tests.json": self.manifest_text(p1_finished=True)},
                "after P1")
@@ -2632,7 +2634,7 @@ class BatchExitDecisionTest(unittest.TestCase):
     state = test_exit_checks.ExitDecision.state
     ok = staticmethod(test_exit_checks.ExitDecision.ok)
 
-    def meta(self, done=range(1, 9), **request):
+    def meta(self, done=range(1, 10), **request):
         meta = test_exit_checks.ExitDecision.meta(self, self.state(), self.ok())
         meta.update(manifest={"tests": [], "done_mf": list(done), "lockfiles": []},
                     exit_request=dict({"stage": 1, "sha": meta["base"], "spec_sha256": "e" * 64, "batch": "P1"},

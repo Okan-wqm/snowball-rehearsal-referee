@@ -333,6 +333,88 @@ class DeliveryTest(unittest.TestCase):
 
 
 
+class DriftHashesTest(unittest.TestCase):
+    """E678 follow-up: step 3 re-stages `vectors/` and the seats page, so step 5 recomputes the summary's
+    `drift.hashes.vectors_sha256` and `seats_sha256` from the staged copy with the referee's own `dir_hash`, only when
+    the summary has `drift`, naming the old and new values; step 7's run then passes the referee's own check."""
+
+    OLD = {"constitutional_sha256": "c" * 64, "vectors_sha256": "1" * 64, "seats_sha256": "2" * 64}
+
+    @staticmethod
+    def referee_check(world):
+        """What the bootstrap run of step 7 does first (`cli.operator_hashes`): the referee's main, checked out, against
+        its summary's `drift.hashes`; the run stops (ConfigError) on a mismatch."""
+        from snowball_bootstrap import cli, config
+        root = Path(tempfile.mkdtemp(dir=world.tmp))
+        from snowball_bootstrap import gitio, treehash  # git's blobs as they are: no line-end filter, as on the runner
+        treehash.extract(gitio.archive(world.referee, "main"), root, max_bytes=10 ** 8)
+        doc = json.loads((root / "setup" / "summary.json").read_text(encoding="utf-8"))
+        summary = config.Summary("a" * 40, "b" * 64, drift_hashes=config.drift_hashes(doc, "setup/summary.json"))
+        return cli.operator_hashes(root, summary)
+
+    def world(self, drift):
+        summary = {"seed_commit": "a" * 40, "seed_tree_sha256": "b" * 64,
+                   "seed_epochs": [{"bootstrap_sha256": "c" * 64, "commit": "d" * 40, "seed_sha256": None,
+                                    "spec_tohum_sha256": "e" * 64}], **({"drift": drift} if drift is not None else {})}
+        world = World(referee_extra={"setup/summary.json": dumps(summary)})
+        real = world.gh.dispatch
+
+        def dispatch(timeout_s):
+            run, result = real(timeout_s)
+            try:
+                world.checked = self.referee_check(world)
+            except Exception as exc:  # the referee stops: no signed result
+                return {"id": 77, "conclusion": "failure"}, {"kind": "stopped", "verdict": str(exc)[:80], "head": None}
+            return run, result
+        world.gh.dispatch = dispatch
+        return world
+
+    def test_the_baseline_follows_the_staged_copy_and_step_7_passes(self):  # epoch_drift_hashes_stale
+        from snowball_bootstrap.treehash import tree_hash
+        world = self.world({"writer_app_id": 7, "hashes": dict(self.OLD), "operator_checked_at": None})
+        code, _ = world.run()
+        self.assertEqual(code, 0)
+        drift = json.loads(show(world.referee, "main", "setup/summary.json"))["drift"]
+        for key, folder in deliver.DRIFT_TREES:  # the operator's recipe (01c): 25a 1's hash over the git archive
+            # with core.autocrlf=false: on Windows git archive would otherwise turn LF into CRLF
+            tar = subprocess.run(["git", "-C", str(world.referee), "-c", "core.autocrlf=false", "archive", "main",
+                                  folder], capture_output=True, check=True).stdout
+            self.assertEqual(drift["hashes"][key], tree_hash(tar, folder, forbid_operator_names=False), key)
+        self.assertEqual(drift["hashes"]["constitutional_sha256"], "c" * 64)  # nothing else of drift changes
+        self.assertEqual((drift["writer_app_id"], drift["operator_checked_at"]), (7, None))
+        self.assertEqual(world.checked["compared"], ["vectors_sha256", "seats_sha256"])  # step 7's run compared them
+        message = g(world.referee, "log", "-1", "--format=%s", "main~1")
+        self.assertIn(f"drift.hashes recomputed (seats_sha256 {'2' * 12} -> {drift['hashes']['seats_sha256'][:12]}, "
+                      f"vectors_sha256 {'1' * 12} -> {drift['hashes']['vectors_sha256'][:12]})", message)
+        log = (world.work / "pilot-log.md").read_text(encoding="utf-8")
+        self.assertIn(f"drift.hashes: seats_sha256 {'2' * 12} -> {drift['hashes']['seats_sha256'][:12]}", log)
+
+    def test_a_summary_without_drift_is_left_without_it(self):
+        world = self.world(None)
+        code, _ = world.run()
+        self.assertEqual(code, 0)
+        self.assertNotIn("drift", json.loads(show(world.referee, "main", "setup/summary.json")))
+        self.assertEqual(world.checked["compared"], [])
+
+    def test_unchanged_trees_move_nothing_and_a_broken_drift_refuses(self):  # epoch_drift_hashes_made_up
+        world = World()
+        root = Path(tempfile.mkdtemp(dir=world.tmp))
+        for rel, data in (("vectors/a.json", b"{}\n"), ("seats/29.md", b"# s\n")):
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (root / rel).write_bytes(data)
+        raw = deliver.dumps({"drift": {"hashes": dict(self.OLD)}})
+        text, moved = deliver.with_drift_hashes(raw, root)
+        self.assertEqual(sorted(moved), ["seats_sha256", "vectors_sha256"])
+        self.assertEqual(deliver.with_drift_hashes(text, root), (text, {}))
+        for drift in ([], {}, {"hashes": {}}, {"hashes": {"vectors_sha256": "a" * 64}},
+                      {"hashes": {"vectors_sha256": "A" * 64, "seats_sha256": "a" * 64}}):
+            with self.subTest(drift=drift), self.assertRaisesRegex(deliver.Refused, "step 5: .*edit it by hand"):
+                deliver.with_drift_hashes(deliver.dumps({"drift": drift}), root)  # never made up: refused
+        with self.assertRaisesRegex(deliver.Refused, "no vectors/"):
+            deliver.with_drift_hashes(raw, root.parent / "nowhere")
+        self.assertEqual(deliver.with_drift_hashes(deliver.dumps({"x": 1}), root), (deliver.dumps({"x": 1}), {}))
+
+
 class DeliveryGuardTest(unittest.TestCase):
     """What the delivery waits for and what it leaves: the referee's verdicts, the launcher, the operator's STOP."""
 

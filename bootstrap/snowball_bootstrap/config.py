@@ -321,6 +321,15 @@ class Target:
 
 
 @dataclass(frozen=True)
+class TreeHashes:
+    """`01c`'s ``drift.hashes`` as far as this referee reads them: the tree hashes of the referee repository's `vectors/`
+    and `seats/` (the hash of `25a` 1's referee code recipe). `25`: the bootstrap referee stops when its own hashes of
+    the two differ from the summary's."""
+    vectors_sha256: str
+    seats_sha256: str
+
+
+@dataclass(frozen=True)
 class OwnerException:
     """The owner's named exception to one of Stage 0's exit conditions (`02` "Sahip istisnası", `26c`): the condition
     can be neither measured nor passed there, so Stage 0's exit names it and Stage 1's (A) must measure it, with no
@@ -360,6 +369,7 @@ class Summary:
     honesty_exception: OwnerException | None = None  # with a commitment beside it, the plant is the carried stage's
     spec_commitment: str | None = None  # sha256(canonical(record)) of the seed's `stages/carry-spec.json` (E562)
     spec_exception: OwnerException | None = None  # takes #spec off only beside that record's hash (`decide`)
+    drift_hashes: TreeHashes | None = None  # `drift.hashes` (`01c`); None in a summary written before `drift` (`25`)
 
     @property
     def epoch(self) -> SeedEpoch | None:
@@ -469,7 +479,29 @@ def summary_of(data: Any) -> Summary:
         elif fields.seed_record and fields.commitment in owned:
             raise ConfigError(f"{where}.{fields.commitment} without {fields.exception}: it commits to the seed's carry "
                               f"record of #{anchor}, which only the owner's exception carries (`02`)")
-    return Summary(seed_commit=seed_commit, seed_tree_sha256=seed_tree, epochs=epochs, targets=targets, **owned)
+    return Summary(seed_commit=seed_commit, seed_tree_sha256=seed_tree, epochs=epochs, targets=targets,
+                   drift_hashes=drift_hashes(data, where), **owned)
+
+
+DRIFT_HASH_KEYS = ("vectors_sha256", "seats_sha256")  # the two `25` stops on; `01c`'s third is the loop's to compare
+
+
+def drift_hashes(data: dict[str, Any], where: str) -> TreeHashes | None:
+    """The reference the bootstrap referee compares its own `vectors/` and `seats/` hashes to (`25`): the summary's
+    `drift.hashes` (`01c`), the one place the operator writes them, never a second copy. A summary without `drift` was
+    written before `01c`'s baseline and stays usable here: the signed result names its hashes as not compared (`drift`
+    is `drift.check`'s input, and that is the loop's to refuse, `01c`). A `drift` whose `hashes` lacks either value, or
+    holds one that is not 64 lower-case hex characters, stops the run: half a baseline would compare nothing unseen."""
+    if "drift" not in data:
+        return None
+    drift = data["drift"]
+    hashes = drift.get("hashes") if isinstance(drift, dict) else None
+    if not isinstance(hashes, dict):
+        raise ConfigError(f"{where}.drift must be an object with a hashes object (`01c`)")
+    for key in DRIFT_HASH_KEYS:
+        if not isinstance(hashes.get(key), str) or not HEX64_RE.match(hashes[key]):
+            raise ConfigError(f"{where}.drift.hashes.{key} must be 64 lower-case hex characters (`01c`)")
+    return TreeHashes(hashes["vectors_sha256"], hashes["seats_sha256"])
 
 
 def _owner_exception(row: Any, where: str) -> OwnerException:

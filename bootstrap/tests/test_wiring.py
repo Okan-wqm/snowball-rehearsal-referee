@@ -1731,9 +1731,28 @@ class MutationShardTest(unittest.TestCase):
     50 minutes and five hit the 60-minute timeout, so the run was cancelled and no commit of that day was green. A
     mutant added without more shards drifts into that again; this turns it red here first. E502: on 2026-11-02 (run
     41366571302, 931 mutants in 24 shards, 39 a shard) the suite had grown and a mutant took up to 177 seconds; eight
-    shards hit the timeout. The bound is now set by the worst mutant seen, three minutes."""
+    shards hit the timeout. The bound is now set by the worst mutant seen, three minutes. 2026-11-20: a shard runs four
+    mutants at a time (`--jobs`, the runner's four cores), so the bound holds per worker: with no hint at all (each
+    mutant runs the whole suite), a worker's share at the worst mutant seen ends in three quarters of the timeout. Four
+    at a time a mutant takes longer: run 44763833954 (1513 mutants, 20 shards, no hint) took 118 s on average (88 s
+    alone in run 44718091394) and at worst 332 s, so the worst is now six minutes."""
 
-    PER_SHARD = 15  # at three minutes a mutant, the worst seen (E502), a shard ends in 45 of its 60 minutes
+    WORST_MINUTES = 6  # the worst mutant seen, the whole suite, four at a time (run 44763833954: 332 s)
+    SHARE = 0.75  # of the job's timeout, as before (E410: 15 mutants at 3 minutes in 60)
+    CORES = 4  # a standard Linux runner of a public repository
+
+    @staticmethod
+    def mutate():
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("mutate", BOOT / "local" / "mutate.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    @staticmethod
+    def ci_job(name: str) -> str:
+        ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        return re.search(rf"(?ms)^  {name}:\n(.*?)(?=^  \S|\Z)", ci).group(1)
 
     def test_a_pages_only_push_runs_only_its_pages_mutants(self):  # pages_mode_skips_a_code_change
         """Owner 2026-11-14: a seed epoch that changes only pages must not wait an hour of every mutant. A push of
@@ -1789,14 +1808,134 @@ class MutationShardTest(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("mutate", BOOT / "local" / "mutate.py")
         mutate = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mutate)
-        ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-        job = re.search(r"(?ms)^  mutation:\n(.*?)(?=^  \S|\Z)", ci).group(1)
+        job = self.ci_job("mutation")
         shards = json.loads(re.search(r"(?m)^        shard: (\[[0-9, ]+\])$", job).group(1))
         count = int(re.search(r'--shard "\$SHARD/([0-9]+)"', job).group(1))
         self.assertEqual(shards, list(range(count)), "the matrix and --shard K/N name different shards")
-        self.assertIn("timeout-minutes: 60", job)
-        self.assertLessEqual(-(-len(mutate.MUTANTS) // count), self.PER_SHARD,
-                             f"{len(mutate.MUTANTS)} mutants in {count} shards: add shards to ci.yml")
+        jobs = int(re.search(r'--shard "\$SHARD/[0-9]+" --jobs ([0-9]+) ', job).group(1))
+        minutes = int(re.search(r"(?m)^    timeout-minutes: ([0-9]+)$", job).group(1))
+        self.assertTrue(1 <= jobs <= self.CORES, jobs)
+        per_shard = -(-len(mutate.MUTANTS) // count)
+        per_worker = -(-per_shard // jobs)
+        self.assertLessEqual(per_worker * self.WORST_MINUTES, minutes * self.SHARE,
+                             f"{len(mutate.MUTANTS)} mutants in {count} shards of {jobs} workers: add shards to ci.yml")
+
+    def test_the_shards_are_every_mutant_exactly_once(self):  # mutate_shard_partition_overlaps
+        mutate = self.mutate()
+        count = int(re.search(r'--shard "\$SHARD/([0-9]+)"', self.ci_job("mutation")).group(1))
+        every = list(enumerate(mutate.MUTANTS))
+        for n in (1, 7, count):
+            ran = [i for k in range(n) for i, _m in mutate.shard(every, k, n)]
+            self.assertEqual(sorted(ran), list(range(len(every))), n)  # nothing lost, nothing twice
+            self.assertTrue(all(mutate.shard(every, k, n) for k in range(n)), n)  # no shard runs nothing
+        for k, n in ((count, count), (-1, count), (0, 0)):
+            with self.assertRaises(ValueError):
+                mutate.shard(every, k, n)
+
+    def test_the_completeness_check_names_every_gap(self):  # mutate_check_misses_a_mutant mutate_check_passes_a_survivor
+        mutate = self.mutate()
+        mutants = [("a_x", "f", "o", "n", "w"), ("b_x", "f", "o", "n", "w"), ("c_x", "f", "o", "n", "w")]
+
+        def row(name, killed=True):
+            return {"name": name, "killed": killed, "killer": "test_m.T.test_t", "via": "suite"}
+        self.assertEqual(mutate.check_records([row("a_x"), row("b_x"), row("c_x")], mutants), [])
+        self.assertEqual(mutate.check_records([row("a_x"), row("c_x")], mutants), ["no shard ran b_x"])
+        self.assertEqual(mutate.check_records([row("a_x"), row("b_x"), row("b_x"), row("c_x")], mutants),
+                         ["b_x ran 2 times"])
+        self.assertEqual(mutate.check_records([row("a_x"), row("b_x", False), row("c_x")], mutants), ["b_x survived"])
+        self.assertEqual(mutate.check_records([row("a_x"), row("b_x"), row("c_x"), row("d_x")], mutants),
+                         ["d_x is no mutant"])
+        self.assertEqual(mutate.check_records([row("a_x")], mutants + [mutants[0]]),
+                         ["two mutants are named a_x", "no shard ran b_x", "no shard ran c_x"])
+        with tempfile.TemporaryDirectory() as tmp:
+            records = Path(tmp) / "records"
+            for k, names in enumerate((["a_x"], ["b_x", "c_x"])):
+                folder = records / f"mutation-records-{k}"
+                folder.mkdir(parents=True)
+                (folder / f"shard-{k}.jsonl").write_text("".join(json.dumps(row(n)) + "\n" for n in names),
+                                                         encoding="utf-8")
+            out = Path(tmp) / "hints.json"
+            with mock.patch.object(mutate, "MUTANTS", mutants), mock.patch("sys.stdout", io.StringIO()):
+                self.assertEqual(mutate.check_main(str(records), str(out)), 0)
+                self.assertEqual(json.loads(out.read_text(encoding="utf-8")),
+                                 {n: "test_m.T.test_t" for n in ("a_x", "b_x", "c_x")})
+                (records / "mutation-records-0" / "shard-0.jsonl").unlink()  # a shard whose records never arrived
+                self.assertEqual(mutate.check_main(str(records), None), 1)
+
+    def test_a_hint_is_rerun_and_verified_never_replayed(self):  # mutate_hint_replayed mutate_hint_not_a_test
+        """A hint is the killer of an earlier run. It kills only when its test fails alone with the mutant and passes
+        alone on the unmutated tree; anything else runs the whole suite, as with no hint."""
+        mutate = self.mutate()
+        mutant = ("m_x", "f", "o", "n", "w")
+
+        def world(fails_with_mutant: bool, fails_alone_unmutated: bool, suite_kills: bool):
+            calls = []
+
+            def run(index, m, tests=()):
+                calls.append((m is not None, tests))
+                if tests and m is None:
+                    return fails_alone_unmutated, "test_m.T.test_t", 1.0
+                if tests:
+                    return fails_with_mutant, "test_m.T.test_t", 1.0
+                return suite_kills, "test_z.Z.test_z", 9.0
+            return calls, run
+        for hinted, unmutated, suite, want in (
+                (True, False, False, (True, "test_m.T.test_t", 1.0, "hint")),  # a verified kill: no suite
+                (True, True, False, (False, "test_z.Z.test_z", 10.0, "suite")),  # fails alone anyway: the suite judges
+                (True, True, True, (True, "test_z.Z.test_z", 10.0, "suite")),
+                (False, False, True, (True, "test_z.Z.test_z", 10.0, "suite")),
+                (False, False, False, (False, "test_z.Z.test_z", 10.0, "suite"))):
+            calls, run = world(hinted, unmutated, suite)
+            with mock.patch.object(mutate, "run_mutant", run):
+                got = mutate.judge(3, mutant, "test_m.T.test_t", mutate.IsolatedBaseline())
+            self.assertEqual(got, want, (hinted, unmutated, suite))
+            self.assertEqual(calls[0], (True, ("test_m.T.test_t",)))
+            self.assertEqual(calls[-1] == (True, ()), want[3] == "suite")
+        for forged in ("os", "antigravity", "test_m;rm", "../test_m", "test_m.T.t.x", "", None):
+            calls, run = world(True, False, True)
+            with mock.patch.object(mutate, "run_mutant", run):
+                self.assertEqual(mutate.judge(3, mutant, forged, mutate.IsolatedBaseline())[3], "suite", forged)
+            self.assertEqual(calls, [(True, ())], forged)  # a hint that names no test of tests/ is never run
+        calls, run = world(True, False, False)
+        baseline = mutate.IsolatedBaseline()
+        with mock.patch.object(mutate, "run_mutant", run):
+            mutate.judge(3, mutant, "test_m.T.test_t", baseline)
+            mutate.judge(4, mutant, "test_m.T.test_t", baseline)
+        self.assertEqual([c for c in calls if not c[0]], [(False, ("test_m.T.test_t",))])  # its baseline runs once
+
+    def test_the_failing_tests_id_is_the_killer(self):
+        mutate = self.mutate()
+        self.assertEqual(mutate.failed_test("FAIL: test_a (test_wiring.MutationShardTest.test_a)"),
+                         "test_wiring.MutationShardTest.test_a")
+        self.assertEqual(mutate.failed_test("ERROR: setUpClass (test_wiring.MutationShardTest)"),
+                         "test_wiring.MutationShardTest")
+        self.assertEqual(mutate.failed_test("FAIL: test_a (test_wiring.MutationShardTest.test_a) (kind='x (y)')"),
+                         "test_wiring.MutationShardTest.test_a")  # a subtest: run 44789512937 lost 287 hints to it
+        self.assertEqual(mutate.failed_test("FAIL: test_a (test_wiring.MutationShardTest.test_a) [case 1]"),
+                         "test_wiring.MutationShardTest.test_a")
+        self.assertEqual(mutate.failed_test("FAIL: test_a"), "test_a")
+
+    def test_main_runs_are_never_cancelled_and_the_check_sees_every_shard(self):
+        # ci_main_run_cancellable mutation_hints_on_the_daily_run mutation_check_skipped_after_a_red_shard
+        """Delivery step 1 reads the last push run on main: a run there is never cancelled or replaced by the next push;
+        on other refs a new push cancels the stale run. The completeness check runs even after a red shard, and the
+        daily run uses no hint, so every mutant meets the whole suite at least once a day."""
+        ci = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        top = ci.split("\njobs:\n", 1)[0]
+        self.assertIn("concurrency:\n  group: ci-${{ github.ref == 'refs/heads/main' && format('main-{0}', "
+                      "github.run_id) || github.ref }}\n  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}\n",
+                      top)
+        self.assertRegex(top, r'(?m)^    - cron: "[0-9]+ [0-9]+ \* \* \*"')  # daily
+        mutation = self.ci_job("mutation")
+        self.assertIn('if [ "$EVENT" != schedule ] && [ "$HINTS_INPUT" != off ]; then hints=', mutation)
+        self.assertIn('--record "$RUNNER_TEMP/records/shard-$SHARD.jsonl"', mutation)
+        self.assertIn("name: mutation-records-${{ matrix.shard }}", mutation)
+        self.assertIn("if-no-files-found: error", mutation)
+        check = self.ci_job("mutation-complete")
+        self.assertIn("    needs: [mutation-plan, mutation]\n", check)
+        self.assertIn("    if: ${{ !cancelled() && needs.mutation-plan.outputs.mode == 'full' }}\n", check)
+        self.assertIn("pattern: mutation-records-*", check)
+        self.assertIn('python3 local/mutate.py --check-records "$RUNNER_TEMP/records"', check)
 
     def test_the_shards_leave_the_referee_room_on_the_account(self):  # mutation_shards_fill_the_account
         """E525: the account runs at most 20 jobs at once, and a push to main started every mutation shard together, so on

@@ -5,20 +5,32 @@ The check copies the repository layout to a temporary directory, applies the cha
 tests there and demands a failure. A mutant that survives names behaviour no test measures. An
 anchor that no longer matches fails loudly, so the list cannot rot while the code moves on.
 
-    cd seed/bootstrap && python3 local/mutate.py [--only NAME[,NAME...]] [--list] [--shard K/N]
+    cd seed/bootstrap && python3 local/mutate.py [--only NAME[,NAME...]] [--list] [--shard K/N] [--jobs J]
+                                                 [--hints FILE] [--record FILE]
+    cd seed/bootstrap && python3 local/mutate.py --check-records DIR [--hints-out FILE]
 
 Run it on Linux (several tests need a POSIX shell). Exit 0 means every mutant was killed.
+
+`--jobs J` runs J mutants at a time, each in its own copy and its own interpreter (CI: four on a four-core runner).
+`--hints FILE` names, per mutant, the test that killed it in an earlier run. A hint is never a verdict: that test runs
+alone against this tree with the mutant, and the mutant counts as killed only when it fails there and passes alone on
+the unmutated tree; otherwise the whole suite runs, as without a hint. A stale or forged hint can only cost time.
+`--record FILE` writes one line per mutant run; `--check-records` reads the shards' records and fails unless every
+mutant was run exactly once and killed (the CI job `mutation-complete`).
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 BOOT = Path(__file__).resolve().parents[1]
@@ -364,8 +376,12 @@ MUTANTS = [
     ("dispatch_failure_crashes", "seed/founder/launch.py",
      "        if proc.returncode != 0:  # a write is not repeated here", "        if False:  # a write is not repeated here",
      "E248: a referee dispatch that cannot reach GitHub is not seen as an outage"),
-    ("github_read_never_retried", "seed/founder/launch.py", "    for delay in (*GH_RETRY_DELAYS_S, None):",
+    ("github_read_never_retried", "seed/founder/launch.py", "    for delay in (*delays, None):",
      "    for delay in (None,):", "E245: one dropped connection to GitHub ends the pilot"),
+    ("manifest_read_retries", "seed/founder/launch.py",
+     '"-H", "Accept: application/vnd.github.raw", delays=()))',
+     '"-H", "Accept: application/vnd.github.raw"))',
+     "E679: a failed read of the accepted manifest holds every session's start for the retry delays"),
     ("github_outage_ends_the_pilot", "seed/founder/launch.py",
      "        except Outage as exc:  # an outage is waited out",
      "        except ZeroDivisionError as exc:  # an outage is waited out",
@@ -2689,6 +2705,34 @@ MUTANTS = [
      "        shard: [" + ", ".join(str(k) for k in range(_ci_mutation_shards())) + "]\n",
      "        shard: [0, 1, 2, 3, 4, 5, 6, 7]\n",
      "E410: fewer shards than the mutants need, and the mutation run hits its timeout and is cancelled"),
+    # CI speed (2026-11-20): main's runs are never cancelled, the shards are every mutant once, a hint is re-run and
+    # verified, never replayed, and the daily run uses none
+    ("ci_main_run_cancellable", ".github/workflows/ci.yml",
+     "  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}\n", "  cancel-in-progress: true\n",
+     "a second push to main cancels the first run, so delivery step 1 finds no green run for it (E383)"),
+    ("mutation_hints_on_the_daily_run", ".github/workflows/ci.yml",
+     '          if [ "$EVENT" != schedule ] && [ "$HINTS_INPUT" != off ]; then hints=',
+     '          if [ "$HINTS_INPUT" != off ]; then hints=',
+     "no run on main ever runs every mutant against the whole suite without an earlier run's killers"),
+    ("mutation_check_skipped_after_a_red_shard", ".github/workflows/ci.yml",
+     "    if: ${{ !cancelled() && needs.mutation-plan.outputs.mode == 'full' }}\n",
+     "    if: needs.mutation-plan.outputs.mode == 'full'\n",
+     "a red shard skips the completeness check, so a shard that ran nothing is never named"),
+    ("mutate_shard_partition_overlaps", "seed/bootstrap/local/mutate.py",
+     "    return [(i, m) for i, m in chosen if i % n == k]\n", "    return [(i, m) for i, m in chosen if i % n <= k]\n",
+     "the shards overlap: a mutant runs in several, and the run costs more than the whole list"),
+    ("mutate_check_misses_a_mutant", "seed/bootstrap/local/mutate.py",
+     '    problems += [f"no shard ran {name}" for name in names if name not in seen]\n', "",
+     "a mutant no shard ran passes the completeness check"),
+    ("mutate_check_passes_a_survivor", "seed/bootstrap/local/mutate.py",
+     "    problems += [f\"{row.get('name')} survived\" for row in records if row.get(\"killed\") is not True]\n", "",
+     "a shard's survivor passes the completeness check"),
+    ("mutate_hint_replayed", "seed/bootstrap/local/mutate.py",
+     "        if failed and baseline.passes(hint):\n", "        if failed:\n",
+     "a hinted test that fails alone on the unmutated tree too counts as the mutant's killer"),
+    ("mutate_hint_not_a_test", "seed/bootstrap/local/mutate.py",
+     "    if hint and HINT.fullmatch(hint):\n", "    if hint:\n",
+     "a hint that names no test of tests/ (a forged cache) is run as a module"),
     # E450: the brain's agent and skill definitions, checked in the capsule before claude starts (seed/founder/brain_defs.py)
     ("brain_agent_tools_unchecked", DEFS, "        for tool in tools:\n            if tool in DENIED_TOOLS:",
      "        for tool in tools[:0]:\n            if tool in DENIED_TOOLS:",
@@ -3420,10 +3464,10 @@ MUTANTS = [
     ("loop_note_not_called", "seed/founder/launch.py", "        self.loop_note(stamp)\n", "",
      "E596: no session sees the loop's runs; a red (B) waits for the operator again"),
     ("loop_note_after_the_session", "seed/founder/launch.py",
-     "        self.loop_note(stamp)\n        self.mirror_note(stamp)\n"
+     "        self.loop_note(stamp)\n        self.mirror_note(stamp, prior)\n"
      "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, "
      "args.session_timeout,\n                            getattr(args, \"effort\", None))\n",
-     "        self.mirror_note(stamp)\n"
+     "        self.mirror_note(stamp, prior)\n"
      "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, args.session_timeout,\n"
      "                            getattr(args, \"effort\", None))\n        self.loop_note(stamp)\n",
      "E596: the file is written after the session it is for"),
@@ -3881,10 +3925,10 @@ MUTANTS = [
     ("lessons_note_not_called", "seed/founder/launch.py", "        self.lessons_note(stamp, before)\n", "",
      "E610: no session sees its lessons; retrieval is luck again"),
     ("lessons_note_after_the_session", "seed/founder/launch.py",
-     "        self.lessons_note(stamp, before)\n        self.loop_note(stamp)\n        self.mirror_note(stamp)\n"
+     "        self.lessons_note(stamp, before)\n        self.loop_note(stamp)\n        self.mirror_note(stamp, prior)\n"
      "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, args.session_timeout,\n"
      "                            getattr(args, \"effort\", None))\n",
-     "        self.loop_note(stamp)\n        self.mirror_note(stamp)\n"
+     "        self.loop_note(stamp)\n        self.mirror_note(stamp, prior)\n"
      "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, args.session_timeout,\n"
      "                            getattr(args, \"effort\", None))\n        self.lessons_note(stamp, before)\n",
      "E610: the index is written after the session it is for"),
@@ -4195,6 +4239,102 @@ MUTANTS = [
     ("drift_missing_falls_back", "spec/tohum/01c-surukleme-taban-cizgisi.md",
      "nedenlerine asla geri düşmez.", "nedenlerine geri düşer.",
      "E668: a summary without drift falls back to the current reasons instead of stopping"),
+    # ---- seed epoch Z: the summary's vectors and seats hashes (`25`, E678)
+    ("dir_hash_drops_folders", f"{PKG}/treehash.py", "rel = path.relative_to(root).as_posix()", "rel = path.name",
+     "E678: a nested file hashes under its name alone"),
+    ("dir_hash_follows_links", f"{PKG}/treehash.py",
+     "            if not stat.S_ISREG(mode):\n                raise TreeError",
+     "            if False:\n                raise TreeError", "E678: a link in vectors/ or seats/ is followed"),
+    ("hashes_not_in_result", f"{PKG}/decide.py", '"operator_hashes": meta.get("operator_hashes"),',
+     '"operator_hashes": None,', "E678: the signed result carries no hashes of the operator's files"),
+    ("hash_mismatch_passes", f"{PKG}/cli.py", "        if found[key] != getattr(reference, key):",
+     "        if False:", "E678: a vectors or seats hash that differs from the summary does not stop"),
+    ("seats_unchecked", f"{PKG}/config.py", 'DRIFT_HASH_KEYS = ("vectors_sha256", "seats_sha256")',
+     'DRIFT_HASH_KEYS = ("vectors_sha256",)', "E678: the seats' hash is never compared"),
+    ("drift_hash_form_unchecked", f"{PKG}/config.py",
+     "if not isinstance(hashes.get(key), str) or not HEX64_RE.match(hashes[key]):",
+     "if not isinstance(hashes.get(key), str):", "E678: a malformed drift hash is read as a reference"),
+    ("drift_absent_stops", f"{PKG}/config.py", '    if "drift" not in data:\n        return None',
+     '    if "drift" not in data:\n        raise ConfigError("no drift")', "E678: a summary written before 01c stops the run"),
+    ("pull_skips_hash_check", f"{PKG}/cli.py", "    hashes = operator_hashes(root, summary_cfg)  #",
+     "    hashes = None  #", "E678: pull judges a head without comparing the hashes"),
+    ("hash_reference_unnamed", "spec/tohum/25-kurulum-gunu.md", "(`01c`, tek yer);", "(özetin üst düzeyi);",
+     "E678: the comparison's reference is a second copy, not drift.hashes"),
+    ("epoch_drift_hashes_stale", EPOCH,
+     "            text, moved = with_drift_hashes(with_epoch(summary_raw, row, self.summary_edit), referee)\n",
+     "            text, moved = with_epoch(summary_raw, row, self.summary_edit), {}\n",
+     "E678: a delivery re-stages vectors/ and seats/ but leaves drift.hashes stale; the next run stops"),
+    ("epoch_drift_hashes_made_up", EPOCH, "        config.drift_hashes(doc, SUMMARY)\n", "        pass\n",
+     "E678: a delivery writes a drift.hashes the operator never wrote, instead of refusing a broken baseline"),
+    # ---- seed epoch Z: the mirror's session time and the first slice's path (E677)
+    ("mirror_wall_from_transcript", MIRROR, 'fact["wall_s"] = round(minutes[stamp] * 60)',
+     'fact["wall_s"] = round(minutes[stamp])', "E677: the wall time is the minutes, not seconds"),
+    ("mirror_api_takes_last", MIRROR, 'api_ms = max(api_ms or 0.0, number(event["duration_api_ms"]))',
+     'api_ms = number(event["duration_api_ms"])', "E677: the API time is the last result's, not the session's"),
+    ("mirror_blocked_counts_all", MIRROR, "if i in commands and OWN_CHECKS.search(commands[i]))",
+     "if i in commands)", "E677: every long Bash call counts as waiting on own checks"),
+    ("mirror_blocked_counts_background", MIRROR, ' and given.get("run_in_background") is not True):', "):",
+     "E677: a background call counts as blocking"),
+    ("mirror_quota_wrong_window", MIRROR, "window = windows.get(bucket) if",
+     'window = windows.get("seven_day") if', "E677: every bucket's quota is read from another window"),
+    ("mirror_quota_end_first", MIRROR, '"quota_end": {b: seen[-1] if seen else None',
+     '"quota_end": {b: seen[0] if seen else None', "E677: the quota's end is its start"),
+    ("mirror_blocked_zero_without_result", MIRROR,
+     '"blocked_on_own_checks_s": None if api_ms is None else round(blocked),',
+     '"blocked_on_own_checks_s": round(blocked),', "E677: a transcript cut before its end reads as no wait"),
+    ("mirror_path_ignores_transfer", MIRROR, '    elif any(r["batch"] == "P1" for r in imports):', "    elif False:",
+     "E677: a transferred P1 still counts its micro-features as left"),
+    ("mirror_path_counts_done", MIRROR, 'left = [f"P1:MF{k}" for k in mfs if k not in accepted["done_mf"]]',
+     'left = [f"P1:MF{k}" for k in mfs]', "E677: accepted micro-features count as left"),
+    ("mirror_path_unread_tarball", MIRROR, "    elif imports is None:", "    elif False:",
+     "E677: without the transfer rows a later batch's done_mf reads as P1's"),
+    ("mirror_organ_merges_guessed", MIRROR, '"organ_merges_copy": None,', '"organ_merges_copy": 0,',
+     "E677: organ-made merges on the copy are reported as zero, a number nothing derives"),
+    ("launcher_accepted_not_passed", "seed/founder/launch.py", "self.accepted_manifest(prior), SEED",
+     "None, SEED", "E677: the mirror never gets the accepted manifest"),
+    ("launcher_accepted_wrong_ref", "seed/founder/launch.py", "contents/snowball-tests.json?ref={sha}",
+     "contents/snowball-tests.json", "E677: the manifest is read at main's head, not the accepted SHA"),
+    # ---- seed epoch Z: the owner's decision on Stage 1's first slice (E672) and on the release of H1-H3 (E673)
+    ("slice_llm_first", "spec/tohum/26h-semalar-asama-1-ilk-dilim.md", "İlk düzeltme yolunda LLM yoktur.",
+     "İlk düzeltme yolu LLM'le başlar.", "E672: the first fix path carries an LLM again"),
+    ("slice_mf4_before_merge", "spec/tohum/26h-semalar-asama-1-ilk-dilim.md",
+     "MF4 `fixer.llm` ilk organ merge'ünden sonradır.", "MF4 `fixer.llm` ilk organ merge'ünden öncedir.",
+     "E672: fixer.llm comes before the first organ merge"),
+    ("findings_writer_unowned", "spec/tohum/26h-semalar-asama-1-ilk-dilim.md",
+     "bu yüzden oyuncu MF'si değil parti\nsatırıdır", "bu yüzden parti satırı değil\noyuncu MF'sidir",
+     "E672: the referee's findings writer and allowlist are left to a player MF"),
+    ("allowlist_trusts_package", "spec/tohum/26h-semalar-asama-1-ilk-dilim.md",
+     "`definition_sha256[]` beyanı değildir.", "`definition_sha256[]` beyanıdır.",
+     "E672: the gate compares the hash the candidate package declares"),
+    ("p1_test12_left_in_score", "seed/bootstrap/stages/stage1-P1.json", '"tests": [1, 6, 7, 28]',
+     '"tests": [1, 6, 7, 12, 28]', "E672: the fingerprint test stays with harness.score, not the findings writer"),
+    ("p1_mf9_dropped", "seed/bootstrap/stages/stage1-P1.json",
+     ',\n    {"mf": 9, "tests": [55], "groups": [], "module": "gate/allowlist.py", "calls": []}', "",
+     "E672: P1 has no allowlist and accept-row writer"),
+    ("mcnemar_withdrawn", "seed/bootstrap/stages/stage1-P1.json", '"groups": ["match", "cp_lower", "mcnemar"]',
+     '"groups": ["match", "cp_lower"]', "E672: the accepted mcnemar vectors stop running on MF4's code"),
+    ("operating_tuned_in_p1", "spec/tohum/18a-politika-baslangic-degerleri.md", "ayarı P3'le gelir (`26h`).",
+     "ayarı P1'le gelir (`asama-1/13`).", "E672: the operating{} tuning is back in P1"),
+    ("round_trip_in_p1", "spec/tohum/26h-semalar-asama-1-ilk-dilim.md", "`fixer.llm` (MF4) bu satırla birlikte gelir.",
+     "`fixer.llm` (MF4) P1'le gelir.", "E672: fixer.llm and its round trip come with P1"),
+    ("p1_rows_unpointed", "spec/tohum/26e-semalar-asama-1.md", "55'inki `26h`'dedir.", "55'inki `30d`'dedir.",
+     "E672: 26e points test 55 at the wrong page"),
+    ("p3_rows_in_p1", "spec/asama-1/13-aktarim-partileri.md", "| P3 | 2 | Düzeltme gidiş-dönüşü",
+     "| P1 | 10 | Düzeltme gidiş-dönüşü", "E672: asama-1/13 puts the round trip in P1 again"),
+    ("release_unlabelled", "spec/tohum/26h-semalar-asama-1-ilk-dilim.md", "bulduğu tablo düzeltmeleridir;",
+     "bulduğu Kurucu raporlarıdır;", "E673: H1-H3 are no longer labelled the outside review's table corrections"),
+    # ---- seed epoch Z: seed-081 (E674), F13 (E675), the owner's hint E676
+    ("seed081_limit_shared", "spec/tohum/29b-onyukleme-hakemi.md", "her komutu ayrı ayrı, paylaşmadan en çok",
+     "bütün komutları birlikte en çok", "E674: the manifest's commands share one time limit"),
+    ("seed081_runner_assumes", "spec/tohum/29b-onyukleme-hakemi.md", "Yerel bir koşucu bu sınırı dosyadan okur, varsaymaz",
+     "Yerel bir koşucu 1800 saniye varsayar", "E674: a local runner assumes the limit instead of reading it"),
+    ("provenance_in_frontmatter", "spec/tohum/09-takim-kurma.md", "köken ön maddeye yazılmaz.", "köken ön maddeye yazılır.",
+     "E675: provenance goes into the front matter, where the loader drops the definition"),
+    ("search_hint_prescribes", "spec/tohum/00d-gorev-haritasi-sahibin-ipuclari-devam.md", "Bunu kurarsa tasarım",
+     "Bunu kurarsa tasarım operatörün, ölçüm", "E676: the hint takes the design from the Founder"),
+    # the mirror's page in `26h` (E677)
+    ("mirror_page_advises", "spec/tohum/26h-semalar-asama-1-ilk-dilim.md", "Türetilemeyen değer `null`'dır",
+     "Türetilemeyen değer tahmin edilir", "E677: a value the mirror cannot derive is guessed"),
     # ---- seed epoch W: the measurement mirror, /work/logs/mirror.json (the owner's decision of 2026-11-19, E647)
     ("mirror_version_ignores_effort", MIRROR,
      '(word(row.get("effort")) or "default") if "effort" in row else "unrecorded")', '"default")',
@@ -4264,14 +4404,14 @@ MUTANTS = [
      "        except Exception as exc:  # one section's failure is its own null",
      "        except ValueError as exc:  # one section's failure is its own null",
      "E647: one section that fails takes the whole mirror with it"),
-    ("mirror_note_not_called", "seed/founder/launch.py", "        self.mirror_note(stamp)\n", "",
+    ("mirror_note_not_called", "seed/founder/launch.py", "        self.mirror_note(stamp, prior)\n", "",
      "E647: no session sees the mirror"),
     ("mirror_note_after_the_session", "seed/founder/launch.py",
-     "        self.mirror_note(stamp)\n"
+     "        self.mirror_note(stamp, prior)\n"
      "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, args.session_timeout,\n"
      "                            getattr(args, \"effort\", None))\n",
      "        sess = self.session(stamp, args.model, args.max_turns, args.budget_usd, args.session_timeout,\n"
-     "                            getattr(args, \"effort\", None))\n        self.mirror_note(stamp)\n",
+     "                            getattr(args, \"effort\", None))\n        self.mirror_note(stamp, prior)\n",
      "E647: the mirror is written after the session it is for"),
     ("mirror_note_not_written", "seed/founder/launch.py",
      "        (folder / MIRROR_NOTE).write_text(data, encoding=\"utf-8\")\n", "        pass\n",
@@ -4317,8 +4457,10 @@ def stale_anchors(root: Path = ROOT, mutants=MUTANTS) -> list[str]:
 ROOT_FILES_READ = ("README.md", ".gitattributes")  # the repo-root files the unit tests read, copied with each mutant
 
 
-def run_mutant(index: int, mutant: tuple[str, str, str, str, str] | None) -> tuple[bool, str, float]:
-    """Apply one mutant (or none: the baseline) to a fresh copy and run the unit tests there."""
+def run_mutant(index: int, mutant: tuple[str, str, str, str, str] | None,
+               tests: tuple[str, ...] = ()) -> tuple[bool, str, float]:
+    """Apply one mutant (or none: the baseline) to a fresh copy and run the unit tests there: the whole suite, or only
+    `tests` (a hint's test, `judge`). Returns (failed, the first failing test's id, seconds)."""
     started = time.monotonic()
     with tempfile.TemporaryDirectory(prefix=f"mutant-{index}-") as tmp:
         work = Path(tmp)
@@ -4346,11 +4488,54 @@ def run_mutant(index: int, mutant: tuple[str, str, str, str, str] | None) -> tup
         boot = work / "seed" / "bootstrap"
         env = {"PATH": "/usr/local/bin:/usr/bin:/bin", "PYTHONDONTWRITEBYTECODE": "1", "PYTHONPATH": ".:tests",
                "HOME": str(work)}
-        proc = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-f"], cwd=boot, env=env,
+        argv = ([sys.executable, "-m", "unittest", "-f", *tests] if tests
+                else [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-f"])
+        proc = subprocess.run(argv, cwd=boot, env=env,
                               capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900)
     output = proc.stdout + proc.stderr
-    killers = [line.split(" ")[1] for line in output.splitlines() if line.startswith(("FAIL: ", "ERROR: "))]
+    killers = [failed_test(line) for line in output.splitlines() if line.startswith(("FAIL: ", "ERROR: "))]
     return proc.returncode != 0, (killers[0] if killers else "(no test named)"), time.monotonic() - started
+
+
+def failed_test(line: str) -> str:
+    """The test id of unittest's `FAIL: name (module.Class.name)` line, a subtest's parameters after it or not (a hint
+    that is the name alone names no module, so it never verifies and costs the whole suite); the name alone when no id
+    follows it."""
+    found = re.search(r"\(([\w.]+)\)", line)
+    return found.group(1) if found else line.split(" ")[1]
+
+
+HINT = re.compile(r"test_\w+(\.\w+){0,2}")  # a module, class or test of tests/: nothing else is run as a hint
+
+
+class IsolatedBaseline:
+    """Whether a test passes when it runs alone on the unmutated tree; each test is run once, whichever worker asks."""
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.known: dict[str, bool] = {}
+
+    def passes(self, test: str) -> bool:
+        with self.lock:
+            if test in self.known:
+                return self.known[test]
+        failed, _detail, _seconds = run_mutant(-1, None, (test,))
+        with self.lock:
+            self.known[test] = not failed
+        return not failed
+
+
+def judge(index: int, mutant, hint: str | None, baseline: IsolatedBaseline) -> tuple[bool, str, float, str]:
+    """(killed, killer, seconds, via) of one mutant. With a hint, its test runs alone with the mutant first; a failure
+    there kills the mutant only when the same test passes alone on the unmutated tree (so it is the mutant that failed
+    it, not the test's isolation). Anything else runs the whole suite, exactly as a run without hints."""
+    spent = 0.0
+    if hint and HINT.fullmatch(hint):
+        failed, killer, spent = run_mutant(index, mutant, (hint,))
+        if failed and baseline.passes(hint):
+            return True, killer, spent, "hint"
+    killed, killer, seconds = run_mutant(index, mutant)
+    return killed, killer, spent + seconds, "suite"
 
 
 PAGE_PREFIXES = ("spec/", "docs/")  # what a pages-only push may change; anything else is code and runs every mutant
@@ -4371,6 +4556,54 @@ def mutants_for_changed(mutants, paths: list[str]):
     return [m for m in mutants if m[1] in changed]
 
 
+def shard(chosen: list, k: int, n: int) -> list:
+    """Shard K of N: every N-th mutant from K on, by its place in MUTANTS. The N shards hold each mutant exactly once."""
+    if not 0 <= k < n:
+        raise ValueError(f"shard {k}/{n} does not exist")
+    return [(i, m) for i, m in chosen if i % n == k]
+
+
+def check_records(records: list[dict], mutants=MUTANTS) -> list[str]:
+    """What is wrong with the shards' records of one full run: a mutant no shard ran, one run twice, a name that is
+    no mutant's, a mutant that survived. Empty: the union of the shards is every mutant, once, and every one killed."""
+    names = [m[0] for m in mutants]
+    problems = [f"two mutants are named {name}" for name in sorted({n for n in names if names.count(n) > 1})]
+    seen: dict[str, int] = {}
+    for row in records:
+        seen[str(row.get("name"))] = seen.get(str(row.get("name")), 0) + 1
+    problems += [f"no shard ran {name}" for name in names if name not in seen]
+    problems += [f"{name} ran {count} times" for name, count in sorted(seen.items()) if count > 1]
+    problems += [f"{name} is no mutant" for name in sorted(set(seen) - set(names))]
+    problems += [f"{row.get('name')} survived" for row in records if row.get("killed") is not True]
+    return problems
+
+
+def read_hints(path: str | None) -> dict[str, str]:
+    """{mutant name: test id} from an earlier run's records, or {} when there is none or it cannot be read."""
+    if not path:
+        return {}
+    try:
+        doc = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        print(f"no readable hints at {path}: every mutant runs the whole suite", flush=True)
+        return {}
+    return {str(k): str(v) for k, v in doc.items()} if isinstance(doc, dict) else {}
+
+
+def check_main(folder: str, hints_out: str | None) -> int:
+    records = []
+    for path in sorted(Path(folder).rglob("*.jsonl")):
+        records += [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    problems = check_records(records, MUTANTS)
+    for problem in problems:
+        print(problem)
+    print(f"{len(records)} records, {len(MUTANTS)} mutants: {'complete' if not problems else 'INCOMPLETE'}")
+    if hints_out:
+        hints = {r["name"]: r["killer"] for r in records if r.get("killed") is True and HINT.fullmatch(str(r.get("killer")))}
+        Path(hints_out).write_text(json.dumps(hints, indent=0, sort_keys=True) + "\n", encoding="utf-8")
+    return 1 if problems else 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--only", help="run only the mutants with these names (comma-separated)")
@@ -4378,7 +4611,17 @@ def main() -> int:
     parser.add_argument("--shard", help="K/N: run every N-th mutant starting at K, so N containers can share the list")
     parser.add_argument("--changed", help="a file of the paths a push changed, one a line: a pages-only push runs only "
                                           "the mutants anchored in its pages (`mutants_for_changed`)")
+    parser.add_argument("--jobs", type=int, default=1, help="run this many mutants at a time")
+    parser.add_argument("--hints", help="JSON {mutant: test} of earlier kills; each is re-run here, never replayed")
+    parser.add_argument("--record", help="write one JSON line per mutant run to this file")
+    parser.add_argument("--check-records", help="a folder of the shards' records: fail unless they are every mutant "
+                                                "once, each killed")
+    parser.add_argument("--hints-out", help="with --check-records: write the killers as the next run's hints")
     args = parser.parse_args()
+    if args.check_records:
+        return check_main(args.check_records, args.hints_out)
+    if args.jobs < 1:
+        parser.error("--jobs must be at least 1")
     if args.changed:
         paths = [line.strip() for line in Path(args.changed).read_text(encoding="utf-8").splitlines() if line.strip()]
         names = {m[0] for m in mutants_for_changed(MUTANTS, paths)}
@@ -4394,7 +4637,7 @@ def main() -> int:
     chosen = [(i, m) for i, m in enumerate(MUTANTS) if not wanted or m[0] in wanted]
     if args.shard:
         k, n = (int(part) for part in args.shard.split("/"))
-        chosen = [(i, m) for i, m in chosen if i % n == k]
+        chosen = shard(chosen, k, n)
     if not chosen:
         print("no such mutant", file=sys.stderr)
         return 2
@@ -4410,17 +4653,26 @@ def main() -> int:
     if killed:
         print(f"the unmutated code already fails its tests ({detail}); fix that first", file=sys.stderr)
         return 2
-    survivors = []
-    for i, m in chosen:
-        killed, detail, seconds = run_mutant(i, m)
-        print(f"{'killed  ' if killed else 'SURVIVED'} {m[0]:34} {seconds:5.1f}s  {detail}", flush=True)
-        if not killed:
-            survivors.append(m[0])
-    print(f"\n{len(chosen) - len(survivors)}/{len(chosen)} mutants killed")
+    hints, baseline = read_hints(args.hints), IsolatedBaseline()
+    rows: dict[int, dict] = {}
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        running = {pool.submit(judge, i, m, hints.get(m[0]), baseline): (i, m) for i, m in chosen}
+        for done in as_completed(running):
+            i, m = running[done]
+            killed, detail, seconds, via = done.result()
+            print(f"{'killed  ' if killed else 'SURVIVED'} {m[0]:34} {seconds:5.1f}s  {detail}  [{via}]", flush=True)
+            rows[i] = {"name": m[0], "killed": killed, "killer": detail, "via": via, "seconds": round(seconds, 1)}
+    survivors = [rows[i]["name"] for i, _m in chosen if not rows[i]["killed"]]
+    if args.record:
+        Path(args.record).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.record).write_text("".join(json.dumps(rows[i], sort_keys=True) + "\n" for i, _m in chosen),
+                                     encoding="utf-8")
+    by_hint = sum(1 for row in rows.values() if row["via"] == "hint")
+    print(f"\n{len(chosen) - len(survivors)}/{len(chosen)} mutants killed ({by_hint} by a re-run hint, "
+          f"{len(chosen) - by_hint} by the whole suite; {args.jobs} at a time)")
     if survivors:
         print("not measured by any test:", ", ".join(survivors))
     return 1 if survivors else 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

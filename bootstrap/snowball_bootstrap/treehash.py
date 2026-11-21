@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import io
+import os
+import stat
 import tarfile
 from pathlib import Path, PurePosixPath
 
@@ -113,6 +115,28 @@ def tree_hash(tar_bytes: bytes, prefix: str, forbid_operator_names: bool = True,
         lines.append(f"{hashlib.sha256(content).hexdigest()}  {rel.as_posix()}\n")
     if not lines:
         raise TreeError(f"no files under {prefix}/")
+    return hashlib.sha256("".join(sorted(lines)).encode("utf-8")).hexdigest()
+
+
+def dir_hash(root: Path) -> str | None:
+    """`tree_hash`'s recipe over a directory on disk, None when it is not there: the bootstrap referee's own hash of the
+    run's snapshot of the operator's `vectors/` and `seats/` (`25`). The snapshot is a byte copy of the referee
+    checkout, where git writes each blob as it is (the referee repository has no `.gitattributes`), so the hash is the
+    blobs' and the line ends are the repository's own. A link or anything but a regular file is refused, as in an
+    archive; an empty directory hashes as no lines."""
+    if not root.is_dir() or root.is_symlink():
+        return None
+    lines = []
+    for here, dirs, files in os.walk(root, followlinks=False):
+        for name in sorted(dirs + files):
+            path = Path(here) / name
+            mode = os.lstat(path).st_mode
+            rel = path.relative_to(root).as_posix()
+            if stat.S_ISDIR(mode):
+                continue
+            if not stat.S_ISREG(mode):
+                raise TreeError(f"not a regular file: {root.name}/{rel}")
+            lines.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {rel}\n")
     return hashlib.sha256("".join(sorted(lines)).encode("utf-8")).hexdigest()
 
 

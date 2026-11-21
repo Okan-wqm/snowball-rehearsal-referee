@@ -30,7 +30,7 @@ from .parts import PartError
 from .reproduce import run_reproducers, run_state_reproducers
 from .rival import (HIDDEN_DIRS, HIDDEN_NAMES, RivalOutcome, build_context, extract_seat_prompt, hidden, resolve_claude,
                     run_rival)
-from .treehash import path_problem, TreeError, extract, is_utf8_name, iter_files, shown, tree_hash
+from .treehash import path_problem, TreeError, dir_hash, extract, is_utf8_name, iter_files, shown, tree_hash
 from .vectors import applied, call_inputs, fixtures, missing_groups
 
 EXIT_FILE = "exit-request.json"
@@ -40,7 +40,8 @@ SEATS_FILE = "29-tohum-koltuklari.md"
 PIP_PLATFORMS = ("manylinux_2_39_x86_64", "manylinux_2_34_x86_64", "manylinux_2_28_x86_64",
                  "manylinux_2_17_x86_64", "manylinux2014_x86_64", "any")
 SPEC_PAGES = ("00-", "00a-", "02-", "03-")
-CODE_PAGES = ("00-", "00a-", "04-", "04a-", "08-", "29a-", "29b-", "29c-")  # and the open stage's (`stages.STAGE_PAGES`)
+CODE_PAGES = ("00-", "00a-", "04-", "04a-", "08-", "26e-", "26h-", "29a-", "29b-", "29c-")  # and the open stage's
+# (`stages.STAGE_PAGES`); 26e and 26h are the batch tables' pages, which prevail over the stage pages (`02`, epoch Z)
 
 
 # ---------------------------------------------------------------- helpers
@@ -332,6 +333,7 @@ def cmd_pull(args: argparse.Namespace) -> int:
     boot = config.load_bootstrap(root)
     policy = config.load_policy(root)
     summary_cfg = config.load_summary(root)
+    hashes = operator_hashes(root, summary_cfg)  # a vectors or seats hash the summary does not name stops the run (`25`)
     # The seed's stage table is loaded here, outside the content guard below: a broken table stops the run
     # (a seed defect, `26a`) instead of turning into the Founder's `pull_error` rejection. It is the table that holds
     # (`stagelock.open_table`): Stage 0's before the operator's lock (`setup/stage.json`, `asama-0/10a`), then the open
@@ -346,7 +348,7 @@ def cmd_pull(args: argparse.Namespace) -> int:
     remote = args.remote or f"https://github.com/{boot.brain_repo}.git"
     base = prev["last_accepted_sha"]
     head = gitio.fetch(repo, remote, boot.brain_branch, base)
-    meta = _pull_meta(head, base, prev)
+    meta = _pull_meta(head, base, prev, hashes)
     if head in (base, prev["last_evaluated_sha"]):
         write_json(out / "meta.json", meta)
         output(skip=True, kind="none", head=head, run_tests=False, run_rival=False, repro=False)
@@ -364,22 +366,49 @@ def cmd_pull(args: argparse.Namespace) -> int:
         # answer that does not wedge the referee: without a signed result the same head comes back every
         # hour and nothing is ever parked (E02). Git, network and operator-file errors still stop the run.
         print(f"::warning::pull could not classify {head}: {type(exc).__name__}: {str(exc)[:200]!r}")
-        meta = _pull_meta(head, base, prev)
+        meta = _pull_meta(head, base, prev, hashes)
         meta.update(kind="rejected", pre_reasons=["pull_error"], waived=waived, exam_faults=faults)
         write_json(out / "meta.json", meta)
         output(skip=False, kind="rejected", head=head, run_tests=False, run_rival=False, repro=False)
         return 0
 
 
-def _pull_meta(head: str, base: str, prev: dict[str, Any]) -> dict[str, Any]:
+def _pull_meta(head: str, base: str, prev: dict[str, Any], hashes: dict[str, Any] | None = None) -> dict[str, Any]:
     # Nothing of the stage lock is here: every job reads the table that holds from the run's snapshot itself
     # (`stagelock.open_table`), so Stage 0's meta is the one it always was (E402).
-    return {"schema": "snowball-bootstrap-pull/1", "head": head, "base": base, "state": prev,
+    return {"schema": "snowball-bootstrap-pull/1", "head": head, "base": base, "state": prev, "operator_hashes": hashes,
             "kind": "none", "changed": [], "pre_reasons": [], "evaluate": True,
             "run_tests": False, "run_rival": False, "manifest": None, "exit_request": None, "exit_request_sha256": None,
             "referee_tree_sha256": None, "spec_dir_hashes": {}, "state_repro": [], "reuse_rival": False,
             "waived": [], "module_less": [], "exit_checks": {}, "toy_tree_sha256": None, "honesty_exception": None,
             "reports": [], "exam_faults": []}
+
+
+OPERATOR_HASHED = (("summary_sha256", "setup/summary.json"), ("vectors_sha256", "vectors"), ("seats_sha256", "seats"),
+                   ("policy_sha256", "policy.json"))
+
+
+def operator_hashes(root: Path, summary_cfg: config.Summary) -> dict[str, Any]:
+    """`25` "Bu bölümün özeti": the hashes of the setup summary, `vectors/`, `seats/` and `policy.json` this run read
+    (a file's the sha256 of its bytes, a folder's `treehash.dir_hash`), for every signed result and so for Rekor.
+    The reference is the summary's `drift.hashes` (`01c`; `config.drift_hashes`): a vectors or seats hash that differs
+    from it stops the run here, before any head is judged, with the reason named (`vectors_hash_mismatch`,
+    `seats_hash_mismatch`; the operator's to fix, never the Founder's rejection). ``compared`` names what was compared:
+    nothing while the summary has no `drift` yet, and the result then says so instead of a check that did not happen.
+    A file or folder that is not there hashes as None, and differs from any reference."""
+    found: dict[str, Any] = {}
+    for key, rel in OPERATOR_HASHED:
+        path = root / rel
+        found[key] = dir_hash(path) if key in config.DRIFT_HASH_KEYS else (
+            hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None)
+    reference = summary_cfg.drift_hashes
+    found["compared"] = [] if reference is None else list(config.DRIFT_HASH_KEYS)
+    for key in found["compared"]:
+        if found[key] != getattr(reference, key):
+            raise config.ConfigError(f"{key.split('_')[0]}_hash_mismatch: setup/summary.json drift.hashes.{key} is "
+                                     f"{getattr(reference, key)}, this run's {dict(OPERATOR_HASHED)[key]}/ hashes to "
+                                     f"{found[key]} (`25`, `01c`)")
+    return found
 
 
 def exam_faults_in_force(repo: Path, summary_cfg: config.Summary, faults: list[config.ExamFault]) -> list[str]:

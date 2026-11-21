@@ -666,6 +666,9 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
         "warnings": warnings,
         "waived": waived,
         "exam_faults": sorted(exam_faults),  # the signatures kept off the streaks this run (`29e` "Sınav hatası")
+        # `25`: the summary's, the vectors', the seats' and the policy's hashes this run read, and what was compared to
+        # the summary's `drift.hashes` (`cli.operator_hashes`; a mismatch never reaches here, it stopped `pull`)
+        "operator_hashes": meta.get("operator_hashes"),
         "licenses": (run or {}).get("licenses", []),
         "state": state,
         "rejection": rejection,
