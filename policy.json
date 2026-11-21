@@ -8,7 +8,7 @@
       "planted_max_cases": 5,
       "evidence_ref_max_lines": 30,
       "match_window_lines": 15,
-      "fix_acceptance_min": 0.8,
+      "fix_acceptance_min": "0.800000",
       "live_merge_min": 10
     },
     "stage_budgets": {
@@ -54,7 +54,17 @@
       "billing",
       "pii"
     ],
-    "confidence_level": 0.9
+    "confidence_level": "0.900000",
+    "regression_freeze": {
+      "min_merges": 50,
+      "window_days": 30,
+      "revert_rate": "0.020000",
+      "min_reverts": 2
+    },
+    "gate_rules": {
+      "soft_freeze_limit": 2,
+      "containment_freeze": 2
+    }
   },
   "operating": {
     "unit_inputs_bytes": {
@@ -105,6 +115,19 @@
         1048576,
         104857600
       ]
+    }
+  },
+  "performance": {
+    "windows": {
+      "measure": 14
+    },
+    "rules": {
+      "drift_bound": "0.200000",
+      "seat_similarity": "0.800000",
+      "genesis_drafts": {
+        "per_window": 3,
+        "queue": 10
+      }
     }
   }
 }
