@@ -1303,7 +1303,7 @@ class YamlSubsetPageTest(unittest.TestCase):
         self.assertIn("`29r`", flat(spec_page("tohum", "29p")))
 
 
-VECTOR_PAGES = ("29f", "29g", "29h", "29i", "29j", "29k", "29m", "29n", "29o", "29za")
+VECTOR_PAGES = ("29f", "29g", "29h", "29i", "29j", "29k", "29m", "29n", "29o", "29za", "29zb")
 
 
 class VectorInterfacePagesTest(unittest.TestCase):
@@ -1328,8 +1328,8 @@ class VectorInterfacePagesTest(unittest.TestCase):
 
     def test_every_data_group_its_commands_and_every_case_are_on_its_page(self):
         self.assertEqual(set(self.DATA), {"secrets", "contained", "profile", "npmlock", "recipe", "diffguard",
-                                          "k0map", "refs", "append", "root", "flaky", "cause", "revert_drill", "prompt",
-                                          "status", "genesis", "census"})
+                                          "k0map", "refs", "append", "root", "root_files", "flaky", "cause", "revert_drill",
+                                          "prompt", "status", "genesis", "census"})
         for name, group in self.DATA.items():
             page = (ROOT / group["interface"]).read_text(encoding="utf-8")
             self.assertIn(f"`{name}`", page)

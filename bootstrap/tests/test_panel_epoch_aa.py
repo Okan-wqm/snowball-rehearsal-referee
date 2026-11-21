@@ -62,14 +62,13 @@ class GozcuRowsTest(unittest.TestCase):
             self.assertIn(words, text, words)
 
     def test_the_scope_and_the_views(self):
-        # gozcu_drill_reverts_counted gozcu_empty_views_unjudged gozcu_budget_scope_class spend_per_target_answered
+        # gozcu_drill_reverts_counted gozcu_empty_views_unjudged gozcu_budget_scope_class
         text = flat(page("26i"))
-        for words in ("Kapsamda `loop` varsa hiçbir merge yapılmaz; hakemin okuma işleri sürer",
+        for words in ("Kapsamda `loop` varsa hiçbir aday merge edilmez; hakemin okuma işleri sürer",
                       "Regresyon dondurmasının kapsamı sayılan geri almaların sınıflarıdır, bütçe dondurmasınınki "
                       "`loop`'tur", "Yalnız sıradan bir `events`/`merge` satırının geri alınması sayılır",
                       "provanındır (`29m`) ve hiçbir görünümde sayılmaz (seed-085 i)",
-                      "bu hedefin defterinde `ts`'si `now`'ın UTC takvim ayında olan `cost` satırlarının `usd_micros` "
-                      "toplamıdır; birden çok hedefte ayın harcamasının nerede toplandığı yanıtsızdır (seed-085 c)",
+                      "`ts`'si `now`'ın UTC takvim ayında olan `cost` satırlarının `usd_micros` toplamıdır",
                       "Görünümleri boştur, kuralları yine yargılanır ve devrin çıktısı onları ölçülmemiş olarak "
                       "adlandırır (seed-085 d, e)"):
             self.assertIn(words, text, words)

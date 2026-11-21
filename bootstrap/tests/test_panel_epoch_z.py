@@ -87,7 +87,7 @@ class FirstSliceTest(unittest.TestCase):
 
     def test_the_table_carries_the_two_rows_and_test_12_moved(self):  # p1_test12_left_in_score p1_mf9_dropped mcnemar_withdrawn
         table = stages.load(1)
-        self.assertEqual((table.count, [f.mf for f in table.mfs]), (9, list(range(1, 10))))
+        self.assertEqual((table.count, [f.mf for f in table.mfs]), (12, list(range(1, 13))))  # MF10-MF12: E688
         self.assertEqual((table.feature(8).tests, table.feature(8).module), ((12,), "findings/write.py"))
         self.assertEqual((table.feature(9).tests, table.feature(9).module), ((55,), "gate/allowlist.py"))
         self.assertEqual(table.feature(4).tests, (1, 6, 7, 28))

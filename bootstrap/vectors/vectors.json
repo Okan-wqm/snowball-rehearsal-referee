@@ -4322,6 +4322,85 @@
       }
     ]
   },
+  "root_files": {
+    "owner": "P1",
+    "runner": "data",
+    "interface": "spec/tohum/29zb-vektor-arayuzleri-p1-durum-dosyalari.md",
+    "source": "epoch AB (seed-086, E685): computed by the seed's RFC 8785 canonical and by sorted compact JSON, the two equal",
+    "cases": [
+      {
+        "id": "root_files.state_files_keyed",
+        "purpose": "The findings and unresolved files are chained state files: each one with a row adds a key, its file name, valued with its last row's stored row_hash; the parts' tips stay as they are.",
+        "cmd": "python -m ledger.anchor root /vec/root/ledger_plus.jsonl /vec/root_files/two/findings.jsonl /vec/root_files/two/unresolved.jsonl",
+        "fixture": [
+          "root/ledger_plus.jsonl",
+          "root_files/two/findings.jsonl",
+          "root_files/two/unresolved.jsonl"
+        ],
+        "expect": {
+          "root": "386df3b07b9692c8c851b76b2d512547421aa512a027eea4095df6ade1ae6fb4",
+          "tips": {
+            "cost": "cc15b544a23d7161447f6e25fa4e9275a247bfa57caf638a8b43d28f3d1999e0",
+            "drill": "47254fde1689bb26d628d41110bc367b65f096da1e0c496c235f910c658e3dc6",
+            "events": "a52c09894259e4d9925229fb8cd04ca053c01128f33faa47b92115da8775278a",
+            "findings.jsonl": "d7f7d76394b82b1cf98a1fc1a9194b435ef5def4c78a687813975dbe763c774d",
+            "unresolved.jsonl": "35dd5da190da18cb0cd4aec1b5a8811f5d692a93e8b8e440c2147b12792003cc"
+          }
+        },
+        "changed": {
+          "description": "One field: the findings file without its last row, so its key is the first row's hash and the unresolved file is not given.",
+          "cmd": "python -m ledger.anchor root /vec/root/ledger_plus.jsonl /vec/root_files/short/findings.jsonl",
+          "fixture": [
+            "root/ledger_plus.jsonl",
+            "root_files/short/findings.jsonl"
+          ],
+          "expect_not": {
+            "root": "386df3b07b9692c8c851b76b2d512547421aa512a027eea4095df6ade1ae6fb4",
+            "tips": {
+              "cost": "cc15b544a23d7161447f6e25fa4e9275a247bfa57caf638a8b43d28f3d1999e0",
+              "drill": "47254fde1689bb26d628d41110bc367b65f096da1e0c496c235f910c658e3dc6",
+              "events": "a52c09894259e4d9925229fb8cd04ca053c01128f33faa47b92115da8775278a",
+              "findings.jsonl": "d7f7d76394b82b1cf98a1fc1a9194b435ef5def4c78a687813975dbe763c774d",
+              "unresolved.jsonl": "35dd5da190da18cb0cd4aec1b5a8811f5d692a93e8b8e440c2147b12792003cc"
+            }
+          }
+        }
+      },
+      {
+        "id": "root_files.empty_file_adds_nothing",
+        "purpose": "A state file with no row adds no key: the root is the ledger's alone, so every root of a state without a finding row is unchanged.",
+        "cmd": "python -m ledger.anchor root /vec/root/ledger_plus.jsonl /vec/root_files/empty/findings.jsonl",
+        "fixture": [
+          "root/ledger_plus.jsonl",
+          "root_files/empty/findings.jsonl"
+        ],
+        "expect": {
+          "root": "aa5cd3a2973dac466402f09c45c8cc9f34b9d53d85a8937a34b962ed179c83de",
+          "tips": {
+            "cost": "cc15b544a23d7161447f6e25fa4e9275a247bfa57caf638a8b43d28f3d1999e0",
+            "drill": "47254fde1689bb26d628d41110bc367b65f096da1e0c496c235f910c658e3dc6",
+            "events": "a52c09894259e4d9925229fb8cd04ca053c01128f33faa47b92115da8775278a"
+          }
+        },
+        "changed": {
+          "description": "One row: the findings file holds one row, so it adds its key.",
+          "cmd": "python -m ledger.anchor root /vec/root/ledger_plus.jsonl /vec/root_files/short/findings.jsonl",
+          "fixture": [
+            "root/ledger_plus.jsonl",
+            "root_files/short/findings.jsonl"
+          ],
+          "expect_not": {
+            "root": "aa5cd3a2973dac466402f09c45c8cc9f34b9d53d85a8937a34b962ed179c83de",
+            "tips": {
+              "cost": "cc15b544a23d7161447f6e25fa4e9275a247bfa57caf638a8b43d28f3d1999e0",
+              "drill": "47254fde1689bb26d628d41110bc367b65f096da1e0c496c235f910c658e3dc6",
+              "events": "a52c09894259e4d9925229fb8cd04ca053c01128f33faa47b92115da8775278a"
+            }
+          }
+        }
+      }
+    ]
+  },
   "flaky": {
     "owner": "asama-0",
     "runner": "data",

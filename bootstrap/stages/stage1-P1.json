@@ -10,7 +10,10 @@
     {"mf": 5, "tests": [9, 11], "groups": [], "module": "harness/offline.py", "calls": []},
     {"mf": 6, "tests": [24], "groups": [], "module": "drift/check.py", "calls": []},
     {"mf": 7, "tests": [41], "groups": [], "module": "gozcu/evaluate.py", "calls": []},
-    {"mf": 8, "tests": [12], "groups": [], "module": "findings/write.py", "calls": []},
-    {"mf": 9, "tests": [55], "groups": [], "module": "gate/allowlist.py", "calls": []}
+    {"mf": 8, "tests": [12], "groups": ["root_files"], "module": "findings/write.py", "calls": []},
+    {"mf": 9, "tests": [55], "groups": [], "module": "gate/allowlist.py", "calls": []},
+    {"mf": 10, "tests": [56], "groups": [], "module": "runner/organ_output.py", "calls": []},
+    {"mf": 11, "tests": [57], "groups": [], "module": "runner/candidate_rerun.py", "calls": []},
+    {"mf": 12, "tests": [58], "groups": [], "module": "loop/candidates.py", "calls": []}
   ]
 }

@@ -629,7 +629,7 @@ class PathTest(unittest.TestCase):
         # mirror_path_counts_done mirror_organ_merges_guessed
         out = self.path({"sha": A, "done_mf": [1, 2, 3, 4, 5, 6]}, referee(imports=[{"stage": 0, "brain_sha": B}]))
         self.assertEqual((out["accepted_sha"], out["path_mfs_left"], out["path_mfs_left_count"]),
-                         (A, ["P1:MF7", "P1:MF8", "P1:MF9"], 3))
+                         (A, ["P1:MF7", "P1:MF8", "P1:MF9", "P1:MF10", "P1:MF11", "P1:MF12"], 6))  # MF10-MF12: E688
         self.assertEqual(out["path_mfs_unrecorded"], ["stage1:MF1", "stage1:MF2", "stage1:MF3", "stage1:MF5",
                                                       "stage1:MF6"])
         self.assertIsNone(out["organ_merges_copy"])
