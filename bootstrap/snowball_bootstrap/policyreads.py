@@ -82,7 +82,7 @@ def plan(vectors_dir: Path, stage: int) -> dict[str, Any] | None:
 
 
 def digest(plan_: dict[str, Any] | None) -> str | None:
-    """The plan's sha256 (sorted-key JSON; the fixtures hold numbers canonical JSON refuses): what a part's plan hash
+    """The plan's sha256 (sorted-key JSON, kept as it was when the fixtures still held floats): what a part's plan hash
     binds, so a part run on other fixtures or another stage's paths never joins."""
     if plan_ is None:
         return None

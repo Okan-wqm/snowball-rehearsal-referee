@@ -14,9 +14,16 @@
  ],
  "1": [
   "constitutional.confidence_level",
+  "constitutional.gate_rules.soft_freeze_limit",
+  "constitutional.monthly_cap_usd",
+  "constitutional.regression_freeze.min_merges",
+  "constitutional.regression_freeze.min_reverts",
+  "constitutional.regression_freeze.revert_rate",
+  "constitutional.regression_freeze.window_days",
   "constitutional.stage_params.census_min_groups",
   "constitutional.stage_params.evidence_ref_max_lines",
   "constitutional.stage_params.match_window_lines",
-  "constitutional.stage_params.planted_max_cases"
+  "constitutional.stage_params.planted_max_cases",
+  "performance.windows.measure"
  ]
 }

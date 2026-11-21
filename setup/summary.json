@@ -193,6 +193,12 @@
       "commit": "c58b168e79b9c49ee5c81186cd30d79e78a81623",
       "seed_sha256": null,
       "spec_tohum_sha256": "9f2c0ec03c66dd7f322eb563a9800477373d8b0f797781c8aabf61a0c5bd6491"
+    },
+    {
+      "bootstrap_sha256": "b39a8b201a9d8924b18e802ffcf079bc2de22ef7ce6fe2827a9bf359a51c5183",
+      "commit": "eab713934e13bbf0cf4b729f047fb3aabe334780",
+      "seed_sha256": null,
+      "spec_tohum_sha256": "616aa824db7b7c326211004ea8fa35972842b31001fed48bb1e633adc46f9779"
     }
   ],
   "honesty_exception": {
@@ -343,8 +349,8 @@
       "not_before": "2026-11-20T14:54:07Z"
     },
     "hashes": {
-      "constitutional_sha256": "4c6dd24fcb4653666cbbf1ab75b6ea890b170ffdc9f4d2373df47fbb8c543535",
-      "vectors_sha256": "6ce4701e4bc3f8a4a745c0f006373e04ce1d8ad054af4044adc7610b628e33e8",
+      "constitutional_sha256": "8f9fd7841e639e1e4278ea0fae228ad67d60973a962e8ad52b3d792ecdbf8ba5",
+      "vectors_sha256": "557775a9df03b26678348702997084012a9923967efedbc4bea3d92b688df908",
       "seats_sha256": "7a3073cedcb923dd14e10e9fa0c92a602f0efb8ca15cbcec9680ac7eb170f8d3"
     },
     "visibility": {

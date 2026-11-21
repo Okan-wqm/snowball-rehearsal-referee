@@ -119,25 +119,55 @@ class FixtureTest(unittest.TestCase):
             with self.subTest(bad=bad), self.assertRaises(ValueError):
                 policyreads.required_paths(bad, 0)
 
-    def test_stage_1_reads_the_harness_keys_29v_names(self):  # required_stage_1_row_dropped
+    def test_stage_1_reads_the_harness_keys_29v_names(self):  # required_stage_1_row_dropped required_gozcu_path_dropped
         """seed-076 (independent review panel, 2026-11-20): Stage 1's row is the harness's five keys, each a row of
-        `18a`, named on `29v`; a stage reads the rows before it too."""
+        `18a`, named on `29v`; a stage reads the rows before it too. seed-084 (2026-11-21, epoch AA): the watcher's
+        seven keys join it, each a row of `18a` or `18b`."""
         rows = json.loads((FIXTURES / policyreads.REQUIRED).read_text(encoding="utf-8"))
         five = ["constitutional.confidence_level", "constitutional.stage_params.census_min_groups",
                 "constitutional.stage_params.evidence_ref_max_lines", "constitutional.stage_params.match_window_lines",
                 "constitutional.stage_params.planted_max_cases"]
-        self.assertEqual(sorted(rows["1"]), five)
-        keyed = {path for paths, _row in key_rows("18a") for path in paths}
-        self.assertTrue(set(five) <= keyed)
-        self.assertEqual(policyreads.required_paths(rows, 1), sorted(set(rows["0"]) | set(five)))
+        seven = ["constitutional.gate_rules.soft_freeze_limit", "constitutional.monthly_cap_usd",
+                 "constitutional.regression_freeze.min_merges", "constitutional.regression_freeze.min_reverts",
+                 "constitutional.regression_freeze.revert_rate", "constitutional.regression_freeze.window_days",
+                 "performance.windows.measure"]
+        self.assertEqual(sorted(rows["1"]), sorted(five + seven))
+        keyed = {path for prefix in ("18a", "18b") for paths, _row in key_rows(prefix) for path in paths}
+        self.assertTrue(set(five + seven) <= keyed)
+        self.assertEqual(policyreads.required_paths(rows, 1), sorted(set(rows["0"]) | set(five) | set(seven)))
         self.assertEqual(policyreads.required_paths(rows, 0), sorted(rows["0"]))
         said = " ".join(page("29v").split())
         self.assertIn("Aşama 1'in satırı (bağımsız inceleme ekibi kararı, 2026-11-20, seed-076) harness'in beş yoludur", said)
-        for path in five:
+        self.assertIn("**Gözcü'nün yolları** (bağımsız inceleme ekibi kararı (2026-11-21), seed-084). AA döneminden "
+                      "Aşama 1'in satırında Gözcü'nün yedi yolu da vardır", said)
+        self.assertIn("teslimden itibaren onlar da okunması zorunlu yollardır", said)
+        for path in five + seven:
             self.assertIsNot(policyreads.at(PLAN["full"], path.split(".")), policyreads._ABSENT, path)
 
+    def test_the_fixtures_hold_no_float(self):  # fixture_float_kept
+        """seed-082 (2026-11-21, epoch AA): `policy.json` holds no float anywhere (`01c` "Politikanın sayıları"); a
+        fraction is a string of an integer part, a point and exactly six decimals, in both fixtures."""
+        fraction = re.compile(r"(0|[1-9][0-9]*)\.[0-9]{6}")
+
+        def walk(value, where):
+            self.assertNotIsInstance(value, float, where)
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    walk(item, f"{where}.{key}")
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    walk(item, f"{where}[{i}]")
+        for name in (policyreads.FULL, policyreads.HOISTED):
+            raw = (FIXTURES / name).read_text(encoding="utf-8")
+            walk(json.loads(raw), name)
+            self.assertNotRegex(raw, r":\s*-?[0-9]+[.eE]")  # no JSON number with a point or an exponent
+        for path in ("constitutional.confidence_level", "constitutional.regression_freeze.revert_rate",
+                     "constitutional.stage_params.fix_acceptance_min", "performance.rules.drift_bound"):
+            with self.subTest(path=path):
+                self.assertRegex(policyreads.at(PLAN["full"], path.split(".")), fraction)
+
     def test_the_hoisted_file_moves_each_required_path_to_the_top_with_another_value(self):
-        # fixture_decoy_equals_the_section_value
+        # fixture_decoy_equals_the_section_value gozcu_decoy_equals_section
         full, hoisted = PLAN["full"], PLAN["hoisted"]
         stage1 = policyreads.plan(VECTORS, 1)  # seed-076: Stage 1's five paths are hoisted too, so a fallback shows
         self.assertTrue(set(PLAN["required"]) < set(stage1["required"]))

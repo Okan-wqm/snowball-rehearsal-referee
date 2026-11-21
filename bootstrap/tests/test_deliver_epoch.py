@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import builtins
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
@@ -336,9 +337,15 @@ class DeliveryTest(unittest.TestCase):
 class DriftHashesTest(unittest.TestCase):
     """E678 follow-up: step 3 re-stages `vectors/` and the seats page, so step 5 recomputes the summary's
     `drift.hashes.vectors_sha256` and `seats_sha256` from the staged copy with the referee's own `dir_hash`, only when
-    the summary has `drift`, naming the old and new values; step 7's run then passes the referee's own check."""
+    the summary has `drift`, naming the old and new values; step 7's run then passes the referee's own check. Epoch AA:
+    `constitutional_sha256` follows the referee's current `policy.json` by `01c`'s recipe, and a section with a float
+    (which has no such hash) refuses the delivery."""
 
     OLD = {"constitutional_sha256": "c" * 64, "vectors_sha256": "1" * 64, "seats_sha256": "2" * 64}
+    # `01c`'s recipe, known answer: the RFC 8785 bytes of this section, written out here, and their sha256
+    POLICY = {"constitutional": {"monthly_cap_usd": 10000, "confidence_level": "0.900000"}}
+    CANONICAL = b'{"confidence_level":"0.900000","monthly_cap_usd":10000}'
+    POLICY_SHA = "3c904d1d63d97d225de95b0973f795103257883ef4aba06090ed68967fca8656"
 
     @staticmethod
     def referee_check(world):
@@ -352,11 +359,12 @@ class DriftHashesTest(unittest.TestCase):
         summary = config.Summary("a" * 40, "b" * 64, drift_hashes=config.drift_hashes(doc, "setup/summary.json"))
         return cli.operator_hashes(root, summary)
 
-    def world(self, drift):
+    def world(self, drift, policy=None):
         summary = {"seed_commit": "a" * 40, "seed_tree_sha256": "b" * 64,
                    "seed_epochs": [{"bootstrap_sha256": "c" * 64, "commit": "d" * 40, "seed_sha256": None,
                                     "spec_tohum_sha256": "e" * 64}], **({"drift": drift} if drift is not None else {})}
-        world = World(referee_extra={"setup/summary.json": dumps(summary)})
+        world = World(referee_extra={"setup/summary.json": dumps(summary),
+                                     "policy.json": dumps(policy or self.POLICY)})
         real = world.gh.dispatch
 
         def dispatch(timeout_s):
@@ -380,14 +388,17 @@ class DriftHashesTest(unittest.TestCase):
             tar = subprocess.run(["git", "-C", str(world.referee), "-c", "core.autocrlf=false", "archive", "main",
                                   folder], capture_output=True, check=True).stdout
             self.assertEqual(drift["hashes"][key], tree_hash(tar, folder, forbid_operator_names=False), key)
-        self.assertEqual(drift["hashes"]["constitutional_sha256"], "c" * 64)  # nothing else of drift changes
-        self.assertEqual((drift["writer_app_id"], drift["operator_checked_at"]), (7, None))
+        self.assertEqual(hashlib.sha256(self.CANONICAL).hexdigest(), self.POLICY_SHA)
+        self.assertEqual(drift["hashes"]["constitutional_sha256"], self.POLICY_SHA)  # 01c's recipe on main's policy
+        self.assertEqual((drift["writer_app_id"], drift["operator_checked_at"]), (7, None))  # nothing else of drift
         self.assertEqual(world.checked["compared"], ["vectors_sha256", "seats_sha256"])  # step 7's run compared them
         message = g(world.referee, "log", "-1", "--format=%s", "main~1")
-        self.assertIn(f"drift.hashes recomputed (seats_sha256 {'2' * 12} -> {drift['hashes']['seats_sha256'][:12]}, "
+        self.assertIn(f"drift.hashes recomputed (constitutional_sha256 {'c' * 12} -> {self.POLICY_SHA[:12]}, "
+                      f"seats_sha256 {'2' * 12} -> {drift['hashes']['seats_sha256'][:12]}, "
                       f"vectors_sha256 {'1' * 12} -> {drift['hashes']['vectors_sha256'][:12]})", message)
         log = (world.work / "pilot-log.md").read_text(encoding="utf-8")
-        self.assertIn(f"drift.hashes: seats_sha256 {'2' * 12} -> {drift['hashes']['seats_sha256'][:12]}", log)
+        self.assertIn(f"drift.hashes: constitutional_sha256 {'c' * 12} -> {self.POLICY_SHA[:12]}, seats_sha256 {'2' * 12} "
+                      f"-> {drift['hashes']['seats_sha256'][:12]}", log)
 
     def test_a_summary_without_drift_is_left_without_it(self):
         world = self.world(None)
@@ -399,12 +410,13 @@ class DriftHashesTest(unittest.TestCase):
     def test_unchanged_trees_move_nothing_and_a_broken_drift_refuses(self):  # epoch_drift_hashes_made_up
         world = World()
         root = Path(tempfile.mkdtemp(dir=world.tmp))
-        for rel, data in (("vectors/a.json", b"{}\n"), ("seats/29.md", b"# s\n")):
+        for rel, data in (("vectors/a.json", b"{}\n"), ("seats/29.md", b"# s\n"),
+                          ("policy.json", dumps(self.POLICY))):
             (root / rel).parent.mkdir(parents=True, exist_ok=True)
             (root / rel).write_bytes(data)
         raw = deliver.dumps({"drift": {"hashes": dict(self.OLD)}})
         text, moved = deliver.with_drift_hashes(raw, root)
-        self.assertEqual(sorted(moved), ["seats_sha256", "vectors_sha256"])
+        self.assertEqual(sorted(moved), ["constitutional_sha256", "seats_sha256", "vectors_sha256"])
         self.assertEqual(deliver.with_drift_hashes(text, root), (text, {}))
         for drift in ([], {}, {"hashes": {}}, {"hashes": {"vectors_sha256": "a" * 64}},
                       {"hashes": {"vectors_sha256": "A" * 64, "seats_sha256": "a" * 64}}):
@@ -413,6 +425,46 @@ class DriftHashesTest(unittest.TestCase):
         with self.assertRaisesRegex(deliver.Refused, "no vectors/"):
             deliver.with_drift_hashes(raw, root.parent / "nowhere")
         self.assertEqual(deliver.with_drift_hashes(deliver.dumps({"x": 1}), root), (deliver.dumps({"x": 1}), {}))
+
+    def test_the_constitutional_hash_follows_the_policy_and_a_float_refuses(self):
+        # epoch_constitutional_hash_stale epoch_constitutional_hash_float_accepted
+        # epoch_policy_checked_after_the_kill_switch epoch_dry_run_skips_the_policy
+        world = World()
+        root = Path(tempfile.mkdtemp(dir=world.tmp))
+        for rel, data in (("vectors/a.json", b"{}\n"), ("seats/29.md", b"# s\n"), ("policy.json", dumps(self.POLICY))):
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (root / rel).write_bytes(data)
+        raw = deliver.dumps({"drift": {"hashes": dict(self.OLD, constitutional_sha256=self.POLICY_SHA)}})
+        text, moved = deliver.with_drift_hashes(raw, root)
+        self.assertNotIn("constitutional_sha256", moved)  # the operator's value already follows the policy
+        edited = {"constitutional": {"monthly_cap_usd": 10000, "confidence_level": "0.950000"}}
+        (root / "policy.json").write_bytes(dumps(edited))  # an operator's edit on the referee's main
+        text, moved = deliver.with_drift_hashes(raw, root)
+        new = hashlib.sha256(b'{"confidence_level":"0.950000","monthly_cap_usd":10000}').hexdigest()
+        self.assertEqual(moved["constitutional_sha256"], {"from": self.POLICY_SHA, "to": new})
+        self.assertEqual(json.loads(text)["drift"]["hashes"]["constitutional_sha256"], new)
+        for policy, why in (({"constitutional": {"monthly_cap_usd": 10000, "confidence_level": 0.9}},
+                             "six-decimal string"),  # 01c: a float has no canonical form, so no hash
+                            ({"constitutional": {"stage_params": {"fix_acceptance_min": 0.8}}}, "six-decimal string"),
+                            ({"operating": {}}, "no constitutional object"), ([], "no constitutional object")):
+            (root / "policy.json").write_bytes(dumps(policy) if isinstance(policy, dict) else b"[]\n")
+            with self.subTest(policy=policy), self.assertRaisesRegex(deliver.Refused, f"step 5: .*{why}"):
+                deliver.with_drift_hashes(raw, root)
+        (root / "policy.json").write_bytes(b'{"constitutional": {"a": 1, "a": 2}}\n')
+        with self.assertRaisesRegex(deliver.Refused, "step 5: .*repeats a key"):
+            deliver.with_drift_hashes(raw, root)
+        (root / "policy.json").unlink()
+        with self.assertRaisesRegex(deliver.Refused, "step 5: the referee's policy.json cannot be read"):
+            deliver.with_drift_hashes(raw, root)
+        world = self.world({"writer_app_id": 7, "hashes": dict(self.OLD), "operator_checked_at": None},
+                           policy={"constitutional": {"confidence_level": 0.9}})
+        with self.assertRaisesRegex(deliver.Refused, "six-decimal string"):
+            world.run(dry_run=True)  # the plan already refuses
+        with self.assertRaisesRegex(deliver.Refused, "six-decimal string"):
+            world.run()  # refused before the kill switch goes on and before the brain gets D
+        self.assertEqual(json.loads(show(world.referee, "main", "setup/summary.json"))["drift"]["hashes"], self.OLD)
+        self.assertFalse(json.loads(show(world.referee, "main", "control.json"))["kill_switch"])
+        self.assertEqual(world.head(world.brain), world.c)
 
 
 class DeliveryGuardTest(unittest.TestCase):
