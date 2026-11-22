@@ -649,7 +649,7 @@ class WipBranchesTest(unittest.TestCase):
                           ([], "- WIP dalları (operatör; `15` 9): yok"), (None, "- WIP dalları (operatör): okunamadı")):
             with self.subTest(wip=wip):
                 seen = {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40, "reports_open": [],
-                        "reports_unanswered": [], "wip": wip}
+                        "reports_unconfirmed": [], "wip": wip}
                 _pilot, metrics, report = CycleRecordTest().cycle(observed=seen)
                 self.assertIn(line, report)
                 self.assertEqual(metrics["wip"], wip)
@@ -1421,178 +1421,87 @@ class CycleRecordTest(unittest.TestCase):
     def test_the_open_reports_and_their_age_reach_the_report(self):
         launch = load_launch()
         seen = {}
-        reports = [{"file": "seed-040.json", "id": "seed-040", "state": "open"},
-                   {"file": "spec-004.json", "id": "spec-004", "state": "confirmed"}]
-        self.assertEqual(launch.report_ages(reports, seen, "2026-10-31T20:00:00Z"), [("seed-040", 0)])
-        reports.append({"file": "seed-041.json", "id": "seed-041", "state": "open"})
-        self.assertEqual(launch.report_ages(reports, seen, "2026-11-01T01:30:00Z"), [("seed-040", 5), ("seed-041", 0)])
+        reports = [launch.reportlife.read_row("seed-040.json", b'{"id": "seed-040", "state": "open"}'),
+                   launch.reportlife.read_row("spec-004.json", b'{"id": "spec-004", "state": "confirmed"}')]
+        self.assertEqual(launch.report_ages(reports, seen, "2026-10-31T20:00:00Z"), {"seed-040": 0, "spec-004": 0})
+        reports.append(launch.reportlife.read_row("seed-041.json", b'{"id": "seed-041", "state": "open"}'))
+        ages = launch.report_ages(reports, seen, "2026-11-01T01:30:00Z")
+        self.assertEqual(launch.aged(reports[::2], ages), [("seed-040", 5), ("seed-041", 0)])
         self.assertEqual(seen["seed-040"], "2026-10-31T20:00:00Z")  # the first sighting is kept
         pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
         with mock.patch.object(launch.Pilot, "open_reports", return_value=reports[:1]), \
-                mock.patch.object(launch.Pilot, "seed_changelogs", return_value=["`seed-040` → `29b:30`"]), \
-                mock.patch.object(launch.Pilot, "owed_reports", return_value=[]), \
                 mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
                 mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40), \
                 mock.patch.object(launch.Pilot, "wip", return_value=["wip_unmerged_behind:wip/x"]) as wip:
             seen_now = pilot.observe("b" * 40, "d" * 40)
         self.assertEqual(seen_now, {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40,
-                                    "reports_open": [("seed-040", 0)], "reports_unanswered": [],
+                                    "reports_open": [("seed-040", 0)], "reports_unconfirmed": [],
                                     "wip": ["wip_unmerged_behind:wip/x"]})
         wip.assert_called_once_with("d" * 40)  # the last accepted head the cycle read (E592)
         self.assertIn("seed-040", json.loads((pilot.work / launch.REPORTS_SEEN).read_text(encoding="utf-8")))
         _, _, text = self.cycle()
-        self.assertIn("- Açık raporlar (0, beyin `bbbbbbb`", text)
+        self.assertIn("- Açık raporlar, operatörün borcu (`reports_open`; 0, beyin `bbbbbbb`", text)
         self.assertIn("- Maliyet satırı (`kind: cost`): stub", text)
 
-    def test_unanswered_reports_listed_apart(self):  # unanswered_reports_unlisted, unanswered_by_prefix
-        """E527: an open report whose id no `spec/tohum/CHANGELOG*.md` of the brain's seed names was never answered
-        nor declined (E342: seed-040 waited unanswered on the critical path). It is listed apart in the pilot-log and
-        counted in the metrics; a changelog that cannot be read whole is unknown, never "unanswered"; nothing reaches
-        the capsule."""
+    def test_the_launcher_splits_the_reports_by_the_referees_rule(self):
+        # launcher_counts_its_own_open launcher_unconfirmed_unlogged launcher_blob_bytes_unchecked
+        """`26l`, E694: the launcher reads each report with the referee's `reportlife.read_row` and splits with its
+        `reportlife.split` against the seed's answers file: the operator's debt and the Founder's unconfirmed ones, each
+        on its own pilot-log line and metrics key; a blob whose bytes are not the blob git names is unreadable (open);
+        unknown is said, never "none"; nothing reaches the capsule."""
         launch = load_launch()
-        ages = [("seed-040-d1-inputs", 30), ("seed-041", 5), ("spec-011-profile", 2), ("seed-04", 1)]
-        logs = ["Yanıtlanan rapor: `spec-011-profile` → `26e:33-37`", "declined: `seed-041`: neden; seed-0401-x"]
-        unchanged = lambda rid: True  # noqa: E731  (UnchangedSinceNamingTest is the subject of the bytes)
-        self.assertEqual(launch.unanswered_reports(ages, logs, unchanged), [("seed-040-d1-inputs", 30), ("seed-04", 1)])
-        self.assertEqual(launch.unanswered_reports(ages, logs + ["seed-040-d1-inputs → 29b:30"], unchanged),
-                         [("seed-04", 1)])
-        pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
-        tree = [{"name": "CHANGELOG.md", "object": {"text": logs[0], "isTruncated": False}},
-                {"name": "CHANGELOG-4.md", "object": {"text": logs[1], "isTruncated": False}},
-                {"name": "00-giris.md", "object": {"text": "seed-04", "isTruncated": False}}]
-        reads = []
+        answered = "seed-070-red-b-on-the-copy-base-lint-cause-not-on-the-line"  # answered in the shipped file
 
-        def blobs(expr):
-            reads.append(expr)
-            return tree
-        with mock.patch.object(pilot, "tree_blobs", side_effect=blobs):
-            self.assertEqual(pilot.seed_changelogs("b" * 40), logs)  # only the changelogs, every one of them
-        self.assertEqual(reads, ["b" * 40 + ":spec/tohum"])  # the seed the brain holds at that head
-        truncated = [dict(tree[0], object={"text": "x", "isTruncated": True})]
-        for broken in (truncated, [{"name": "CHANGELOG.md", "object": {"text": None}}], [], None):
-            with mock.patch.object(pilot, "tree_blobs", return_value=broken):
-                self.assertIsNone(pilot.seed_changelogs("b" * 40), broken)
-        reports = [{"file": f"{rid}.json", "id": rid, "state": "open"} for rid, _age in ages]
-        with mock.patch.object(launch.Pilot, "open_reports", return_value=reports), \
-                mock.patch.object(launch.Pilot, "seed_changelogs", return_value=logs), \
-                mock.patch.object(launch.Pilot, "owed_reports", lambda self, head, reps, ages, texts:
-                                  launch.unanswered_reports(ages, texts, unchanged)), \
+        def blob(text):
+            data = text.encode("utf-8")
+            return {"text": text, "isTruncated": False, "oid": hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()}
+        tree = [{"name": "seed-900-new.json", "object": blob('{"id": "seed-900-new", "state": "open"}')},
+                {"name": f"{answered}.json", "object": blob(json.dumps({"id": answered, "state": "confirmed"}))},
+                {"name": "seed-901-forged.json", "object": dict(blob('{"id": "seed-901-forged", "state": "withdrawn"}'),
+                                                                oid="0" * 40)},
+                {"name": "notes.md", "object": blob("# not a report")}]
+        pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
+        with mock.patch.object(pilot, "tree_blobs", return_value=tree):
+            rows = pilot.open_reports("b" * 40)
+        self.assertEqual([r["stem"] for r in rows], ["seed-900-new", answered, "seed-901-forged"])
+        self.assertIsNone(rows[2]["sha256"])  # the text is not the blob's bytes: unreadable
+        with mock.patch.object(launch.Pilot, "open_reports", return_value=rows), \
                 mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
                 mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40), \
                 mock.patch.object(launch.Pilot, "wip", return_value=[]):  # no live GitHub call from a test
-            unanswered = pilot.observe("b" * 40)["reports_unanswered"]
-        self.assertEqual(sorted(unanswered), [("seed-04", 0), ("seed-040-d1-inputs", 0)])
-        with mock.patch.object(launch.Pilot, "open_reports", return_value=reports), \
-                mock.patch.object(launch.Pilot, "seed_changelogs", return_value=None), \
-                mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
-                mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40), \
-                mock.patch.object(launch.Pilot, "wip", return_value=[]):
-            self.assertIsNone(pilot.observe("b" * 40)["reports_unanswered"])
+            seen = pilot.observe("b" * 40)
+        self.assertEqual(seen["reports_open"], [("seed-900-new", 0), ("seed-901-forged", 0)])
+        self.assertEqual(seen["reports_unconfirmed"], [(answered, 0)])  # confirmed without the typed evidence
+        for broken in ({"open_reports": None}, {"answers": True}):
+            with mock.patch.object(launch.Pilot, "open_reports", return_value=None if "open_reports" in broken else rows), \
+                    mock.patch.object(launch.reportlife, "ANSWERS_FILE", pilot.work / "none.json"
+                                      if "answers" in broken else launch.reportlife.ANSWERS_FILE), \
+                    mock.patch.object(launch.Pilot, "spec_tohum_tree", return_value="t" * 40), \
+                    mock.patch.object(launch.Pilot, "target_head", return_value="c" * 40), \
+                    mock.patch.object(launch.Pilot, "wip", return_value=[]):
+                unknown = pilot.observe("b" * 40)
+            self.assertEqual((unknown["reports_open"], unknown["reports_unconfirmed"]), (None, None), broken)
         observed = {"spec_tohum_tree": "t" * 40, "target_sha": "c" * 40,
-                    "reports_open": [("seed-040-d1-inputs", 30), ("seed-041", 5)],
-                    "reports_unanswered": [("seed-040-d1-inputs", 30)]}
+                    "reports_open": [("seed-900-new", 30)], "reports_unconfirmed": [(answered, 5), ("seed-902", 1)]}
         pilot, m, text = self.cycle(observed=observed)
-        self.assertEqual((m["reports_open"], m["reports_unanswered"]), (2, 1))
-        self.assertIn("- CEVAPSIZ (operatör) (1; beyindeki tohumun hiçbir `spec/tohum/CHANGELOG*.md`'si adlandırmıyor, "
-                      "yanıt ya da `declined:` bekliyor): `seed-040-d1-inputs` 30 sa", text)
-        _, m, text = self.cycle(observed=dict(observed, reports_unanswered=None))
-        self.assertIsNone(m["reports_unanswered"])
-        self.assertIn("- CEVAPSIZ (operatör): okunamadı", text)
+        self.assertEqual((m["reports_open"], m["reports_unconfirmed"]), (1, 2))
+        self.assertIn("- Açık raporlar, operatörün borcu (`reports_open`; 1, beyin `bbbbbbb`; yaş: başlatıcının ilk "
+                      "görmesinden bu yana saat): `seed-900-new` 30 sa", text)
+        self.assertIn(f"- Teyit bekleyen raporlar, Kurucu'nun borcu (`reports_unconfirmed`; 2, beyin `bbbbbbb`; yaş: "
+                      f"başlatıcının ilk görmesinden bu yana saat): `{answered}` 5 sa, `seed-902` 1 sa", text)
+        _, m, text = self.cycle(observed=dict(observed, reports_open=None, reports_unconfirmed=None))
+        self.assertEqual((m["reports_open"], m["reports_unconfirmed"]), (None, None))
+        self.assertIn("- Teyit bekleyen raporlar, Kurucu'nun borcu (`reports_unconfirmed`): okunamadı", text)
         _, m, text = self.cycle()
-        self.assertEqual(m["reports_unanswered"], 0)
-        self.assertIn("- CEVAPSIZ (operatör) (0; ", text)
-        self.assertNotIn("reports_unanswered", " ".join(pilot.capsule_argv("s", "m", 1, 1)))
-
-    def test_a_named_report_changed_since_the_naming_is_owed_again(self):  # unanswered_without_history
-        """E552 through `owed_reports`: the changelogs name seed-040 and its file changed after the epoch that names
-        it."""
-        launch = load_launch()
-        repo = Path(tempfile.mkdtemp()) / "brain"
-        make_repo(repo, {"reports/seed-040.json": '{"id": "seed-040", "state": "open", "v": 1}\n',
-                         "spec/tohum/CHANGELOG.md": "# log\n"})
-        commit(repo, {"spec/tohum/CHANGELOG.md": "# log\n- seed-040 → `29b:30`\n"}, "epoch")
-        pilot = launch.Pilot(Path(tempfile.mkdtemp()), "o/brain", "o/referee", "target")
-        pilot.brain_remote = str(repo)
-        reports = [{"file": "seed-040.json", "id": "seed-040", "state": "open"}]
-        logs = ["- seed-040 → `29b:30`"]
-        head = sh(repo, "git", "rev-parse", "HEAD")
-        self.assertEqual(pilot.owed_reports(head, reports, [("seed-040", 3)], logs), [])
-        head = commit(repo, {"reports/seed-040.json": '{"id": "seed-040", "state": "open", "v": 2}\n'}, "update")
-        self.assertEqual(pilot.owed_reports(head, reports, [("seed-040", 3)], logs), [("seed-040", 3)])
-        pilot.brain_remote = str(repo / "nowhere")  # the history cannot be read: unknown, never "owed"
-        self.assertIsNone(pilot.owed_reports(head, reports, [("seed-040", 3)], logs))
-        self.assertEqual(pilot.owed_reports(head, reports, [("seed-041", 3)], logs), [("seed-041", 3)])  # no clone
+        self.assertEqual(m["reports_unconfirmed"], 0)
+        self.assertNotIn("reports_unconfirmed", " ".join(pilot.capsule_argv("s", "m", 1, 1)))
 
     def test_the_reads_are_get_only(self):
         source = (FOUNDER / "launch.py").read_text(encoding="utf-8")
-        for name in ("spec_tohum_tree", "open_reports", "tree_blobs", "seed_changelogs"):
+        for name in ("spec_tohum_tree", "open_reports", "tree_blobs"):
             body = source.split(f"def {name}(", 1)[1].split("\n    def ", 1)[0]
             self.assertNotIn("--method", body)
             self.assertNotIn("-X", body)
-
-
-class UnchangedSinceNamingTest(unittest.TestCase):
-    """E552 (E527's rule): an open report is operator-owed when no changelog names it, or its bytes differ from its
-    bytes at the LATEST epoch commit that names it. The reference is git history (a blob's id), never a commit time
-    (E316)."""
-
-    LOG = "spec/tohum/CHANGELOG.md"
-
-    def setUp(self):
-        self.launch = load_launch()
-        self.repo = Path(tempfile.mkdtemp()) / "brain"
-
-    def report(self, name, version):
-        return {f"reports/{name}.json": json.dumps({"id": name, "state": "open", "v": version}) + "\n"}
-
-    def owed(self, head, ids):
-        files = {rid: f"{rid}.json" for rid in ids}
-        text = "\n".join(sh(self.repo, "git", "show", f"{head}:{p}") for p in
-                          sh(self.repo, "git", "ls-tree", "-r", "--name-only", head, "spec/tohum").splitlines())
-        return [rid for rid, _ in self.launch.unanswered_reports(
-            [(rid, 1) for rid in ids], [text],
-            lambda rid: self.launch.unchanged_since_naming(self.repo, rid, files[rid], head))]
-
-    def test_two_by_two_named_or_not_and_unchanged_or_changed_since_the_naming(self):  # named_once_forever
-        ids = ["seed-a", "seed-b", "seed-c", "seed-d"]
-        make_repo(self.repo, {**{k: v for rid in ids for k, v in self.report(rid, 1).items()}, self.LOG: "# log\n"})
-        commit(self.repo, {self.LOG: "# log\n- seed-a → `1:1`\n- seed-b → `1:2`\n"}, "epoch")
-        head = commit(self.repo, {**self.report("seed-b", 2), **self.report("seed-d", 2)}, "the Founder's updates")
-        self.assertEqual(self.owed(head, ids), ["seed-b", "seed-c", "seed-d"])  # only seed-a is answered as it stands
-
-    def test_a_report_named_again_is_judged_against_the_latest_naming(self):  # first_naming_used_as_reference
-        make_repo(self.repo, {**self.report("seed-e", 1), self.LOG: "# log\n"})
-        commit(self.repo, {self.LOG: "# log\n- seed-e → `1:1`\n"}, "epoch 1")
-        commit(self.repo, self.report("seed-e", 2), "update")
-        head = commit(self.repo, {self.LOG: "# log\n- seed-e → `1:1`\n- seed-e (update) → `1:2`\n"}, "epoch 2")
-        self.assertEqual(self.owed(head, ["seed-e"]), [])  # answered again after the change
-        head = commit(self.repo, self.report("seed-e", 3), "update again")
-        self.assertEqual(self.owed(head, ["seed-e"]), ["seed-e"])
-
-    def test_a_row_moved_between_changelogs_is_not_a_naming(self):  # presence_not_addition
-        """The compaction of a full changelog moves rows verbatim: it answers nothing the Founder wrote since."""
-        make_repo(self.repo, {**self.report("seed-f", 1), self.LOG: "# log\n"})
-        commit(self.repo, {self.LOG: "# log\n- seed-f → `1:1`\nrow two\n"}, "epoch 1")
-        commit(self.repo, self.report("seed-f", 2), "update")
-        moved = "spec/tohum/CHANGELOG-1.md"
-        head = commit(self.repo, {self.LOG: "# log\nrow two\n", moved: "- seed-f → `1:1`\n"}, "compaction")
-        self.assertEqual(self.owed(head, ["seed-f"]), ["seed-f"])
-        head = commit(self.repo, {self.LOG: "# log\nrow two\n- seed-f (update) → `1:2`\n"}, "epoch 2")
-        self.assertEqual(self.owed(head, ["seed-f"]), [])
-
-    def test_ids_are_whole_and_a_report_that_did_not_exist_yet_was_not_answered(self):
-        make_repo(self.repo, {**self.report("seed-1", 1), **self.report("seed-10", 1), self.LOG: "# log\n"})
-        commit(self.repo, {self.LOG: "# log\n- seed-10 → `1:1`\n- seed-g → `1:2`\n"}, "epoch")
-        head = commit(self.repo, self.report("seed-g", 1), "the report comes after its answer")
-        self.assertEqual(self.owed(head, ["seed-1", "seed-10", "seed-g"]), ["seed-1", "seed-g"])
-        self.assertEqual(self.launch.naming_epochs(self.repo, "seed-1", head), [])  # seed-10's row is not seed-1's
-        self.assertEqual(self.launch.naming_epochs(self.repo, "seed-10", head),
-                         [sh(self.repo, "git", "rev-parse", "HEAD~1")])
-
-    def test_ids_with_regex_characters_are_read_literally(self):
-        make_repo(self.repo, {**self.report("seed.x", 1), self.LOG: "# log\n"})
-        head = commit(self.repo, {self.LOG: "# log\n- seedax → `1:1`\n"}, "epoch")
-        self.assertEqual(self.launch.naming_epochs(self.repo, "seed.x", head), [])
 
 
 class CostRowTest(unittest.TestCase):

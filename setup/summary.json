@@ -211,6 +211,12 @@
       "commit": "6b5966a98027a6002d8685a6ad42d6a5042ae298",
       "seed_sha256": null,
       "spec_tohum_sha256": "c3fd707876ec08047ff3ba55a0b27e45cbaa454b51787687b0f06eb8c1788387"
+    },
+    {
+      "bootstrap_sha256": "6275feae7395b43deff2e8db7f7710858daca2b1bef155cc7ba50bdba8eabdff",
+      "commit": "d5114fe85095b9626b3903c2792ec81066da9872",
+      "seed_sha256": null,
+      "spec_tohum_sha256": "b99b8bed302dea4ae1f5dfbe084a9c073b7ae66a31a805c309e4347d3423ca5e"
     }
   ],
   "honesty_exception": {

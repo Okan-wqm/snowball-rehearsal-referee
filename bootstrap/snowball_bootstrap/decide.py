@@ -14,14 +14,14 @@ import datetime
 import hashlib
 from typing import Any
 
-from . import config, exitcanary, exitchecks, ledgercheck, policyreads, secretscan, selfmap, stages
+from . import config, exitcanary, exitchecks, ledgercheck, policyreads, reportlife, secretscan, selfmap, stages
 from .reproduce import reproducer_key
 from .rival import REPRODUCER_FIELDS
 from .state import MAX_OPEN_CLAIMS, MAX_OPEN_REFUTATIONS
 
 RESULT_SCHEMA = "snowball-bootstrap-result/1"
 VALID_RIVAL = ("refuted", "not_refuted")
-REPORT_FIELDS = ("id", "kind", "ref", "state")  # of each `reports/*.json` the result names (`26c`, E93)
+REPORT_FIELDS = reportlife.REPORT_FIELDS  # of each `reports/*.json` the result names (`26c`, E93)
 
 
 def utc_now() -> str:
@@ -637,13 +637,18 @@ def decide(meta: dict[str, Any], run: dict[str, Any] | None, rival: dict[str, An
     rejection = None
     if verdict == "rejected":
         rejection = {"sha": head, "kind": kind, "reasons": reasons}
-    # The brain's reports as pull read them (`26c`, E93): each named, its free text dropped when it carries a secret,
-    # and the open ones a warning to the operator, who answers them with a seed epoch. They are never a reason.
+    # The brain's reports as pull read them (`26c`, E93): each named, its free text dropped when it carries a secret.
+    # The open ones warn, never a reason (`26l`, E694): the reading is closed (an unknown or missing state, or a
+    # closing state without what it needs, is open); those no operator answer names are the operator's to answer with a
+    # seed epoch, those an answer names are the Founder's to confirm, decline or supersede.
     reports = [dict({k: _redacted(r.get(k)) for k in REPORT_FIELDS}, sha256=r.get("sha256"))
                for r in meta.get("reports") or []]
-    still_open = sum(1 for r in reports if r["state"] == "open")
-    if still_open:
-        warnings.append(f"reports_open:{still_open}")
+    owed, unconfirmed = reportlife.counts(meta.get("reports") or [], reportlife.load_answers(),
+                                          meta.get("reports_unread") or 0)
+    if owed:
+        warnings.append(f"reports_open:{owed}")
+    if unconfirmed:
+        warnings.append(f"reports_unconfirmed:{unconfirmed}")
     return {
         "schema": RESULT_SCHEMA,
         "head": head,

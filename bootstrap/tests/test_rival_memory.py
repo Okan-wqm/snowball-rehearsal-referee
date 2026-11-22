@@ -406,13 +406,14 @@ class E153ReportsHidden(unittest.TestCase):
 
 class E93ReportsReader(unittest.TestCase):
     """`26c` reports/*.json has a reader (E93, E342): `pull` reads the brain's root reports, the signed result names
-    each one as {id, kind, ref, state, sha256} and warns the operator of the open ones; the rival's request still leaves
-    them out (E153). The `disputed` rule of a report that names a vector stays with E53."""
+    each one as {id, kind, ref, state, sha256} and warns the operator of the open ones (`26l`: a confirmation carries
+    its typed evidence, E694); the rival's request still leaves them out (E153). The `disputed` rule of a report that
+    names a vector stays with E53."""
 
     OPEN = {"id": "seed-900-state-read", "kind": "seed_issue", "ref": "spec/tohum/29b-onyukleme-hakemi.md:30",
             "state": "open", "evidence_test": "REPORT-EVIDENCE-FOR-THE-RIVAL"}
     DONE = {"id": "spec-901-calls", "kind": "spec_issue", "ref": "spec/asama-0/14-sirali-mikro-ozellikler.md:47",
-            "state": "confirmed"}
+            "state": "confirmed", "epoch": "e" * 40, "answered_by": ["26l:12-22"], "check": "true", "check_kind": "read"}
 
     def test_two_reports_reach_the_signed_result_and_never_the_rival(self):
         flow = test_flow.Flow("test_full_stage0_path")
@@ -430,10 +431,13 @@ class E93ReportsReader(unittest.TestCase):
         digest = hashlib.sha256(files["reports/seed-900-state-read.json"].encode("utf-8")).hexdigest()
         self.assertEqual(meta["reports"][0], {"id": "seed-900-state-read", "kind": "seed_issue",
                                               "ref": "spec/tohum/29b-onyukleme-hakemi.md:30", "state": "open",
-                                              "sha256": digest})
+                                              "stem": "seed-900-state-read", "evidence": False, "superseded_by": None,
+                                              "derived_from": None, "sha256": digest})
+        self.assertIs(meta["reports"][1]["evidence"], True)
         self.assertEqual([r["id"] for r in meta["reports"]], ["seed-900-state-read", "spec-901-calls"])
         result = flow.finish(meta)  # whatever the verdict (this bare brain froze no spec): the reports are named
-        self.assertEqual(result["reports"], meta["reports"])
+        self.assertEqual(result["reports"], [{k: r[k] for k in ("id", "kind", "ref", "state", "sha256")}
+                                             for r in meta["reports"]])  # the typed readings stay out of it
         self.assertIn("reports_open:1", result["warnings"])
         pulled = Path(flow.tmp.name) / f"pulled{flow.n}"
         bin_dir = Path(flow.tmp.name) / "bin"
@@ -470,7 +474,7 @@ class E93ReportsReader(unittest.TestCase):
         result = decide(meta2("none", state2(), reports=found), None, None, None, {}, 2, 3, now=NOW)
         self.assertNotIn(token, json.dumps(result))
         self.assertEqual(result["reports"][1]["state"], "open")
-        self.assertIn("reports_open:1", result["warnings"])
+        self.assertIn("reports_open:2", result["warnings"])  # the unreadable file has no state: open (`26l`, E694)
 
 
 # ---------------------------------------------------------------- E11 what counts against the Founder

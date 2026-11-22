@@ -18,11 +18,11 @@ from pathlib import Path
 from typing import Any
 
 from . import (canon, config, drillfixtures, exitcanary, exitchecks, ghapi, gitio, ledgercheck, licenses, parts,
-               policyreads, selfmap, stagelock, stages, state as st, wiring)
+               policyreads, reportlife, selfmap, stagelock, stages, state as st, wiring)
 from .classify import (LEDGER_FILE, REPORTS_DIR, SEED_DIRS, classify, is_founder_record, is_seed_path,
                        spec_stage_dirs)
 from .container import DockerRunner
-from .decide import OUTAGE_GIVE_UP_DAYS, OUTAGE_RETRY_LIMIT, REPORT_FIELDS, decide, utc_now
+from .decide import OUTAGE_GIVE_UP_DAYS, OUTAGE_RETRY_LIMIT, decide, utc_now
 from .importer import ImportErrorStop, run_import, verify_signature
 from .manifest import ManifestError, check_stage, declares, parse_lockfile, parse_manifest
 from .moduleless import run_module_less, units
@@ -428,33 +428,34 @@ def exam_faults_in_force(repo: Path, summary_cfg: config.Summary, faults: list[c
 
 
 MAX_REPORTS = 200
-MAX_REPORT_FIELD = 500
 
 
 def read_reports(tar_bytes: bytes) -> list[dict[str, Any]]:
     """The brain's reports (`26c` reports/*.json, E93): every regular file directly under the root `reports/` whose name
-    ends in `.json`, by path, as ``{id, kind, ref, state, sha256}``; the hash is of the file's bytes. A field that is
-    missing, not a string or longer than ``MAX_REPORT_FIELD``, or any field of a file that is not one JSON object, is
-    null: the reader names what a report holds and never turns a report into a reason (it is the Founder's memory, not
-    its code). An archive with something other than regular files has no reports to read here: `pull` names that."""
+    ends in `.json`, by path, each read by `reportlife.read_row` (the launcher's reader too, `26l`, E694): ``{stem, id,
+    kind, ref, state, sha256}`` and the typed readings the counts need, which never reach the signed result. The reader
+    names what a report holds and never turns a report into a reason (it is the Founder's memory, not its code). An
+    archive with something other than regular files has no reports to read here: `pull` names that."""
     found: list[tuple[str, dict[str, Any]]] = []
     try:
         for path, content, _exec in iter_files(tar_bytes):
             if len(path.parts) != 2 or path.parts[0] != REPORTS_DIR.rstrip("/") or not path.name.endswith(".json"):
                 continue
-            try:
-                data = json.loads(content.decode("utf-8"))
-            except (UnicodeDecodeError, ValueError, RecursionError):
-                data = None
-            row: dict[str, Any] = {}
-            for key in REPORT_FIELDS:
-                value = data.get(key) if isinstance(data, dict) else None
-                row[key] = value if isinstance(value, str) and len(value) <= MAX_REPORT_FIELD else None
-            row["sha256"] = hashlib.sha256(content).hexdigest()
-            found.append((path.as_posix(), row))
+            found.append((path.as_posix(), reportlife.read_row(path.name, content)))
     except TreeError:
         return []
-    return [row for _path, row in sorted(found, key=lambda item: item[0])][:MAX_REPORTS]
+    return [row for _path, row in sorted(found, key=lambda item: item[0])]
+
+
+def reports_meta(tar_bytes: bytes) -> dict[str, Any]:
+    """The reports `meta.json` carries: the first ``MAX_REPORTS`` by path, and, only past that cap, how many lie
+    beyond it (``reports_unread``), which the counts take as open, never as closed (`26l`). Below the cap the meta is
+    what it always was (`test_stage0_unchanged`)."""
+    rows = read_reports(tar_bytes)
+    meta: dict[str, Any] = {"reports": rows[:MAX_REPORTS]}
+    if len(rows) > MAX_REPORTS:
+        meta["reports_unread"] = len(rows) - MAX_REPORTS
+    return meta
 
 
 def seed_trees(tar_bytes: bytes) -> tuple[str | None, str | None]:
@@ -483,7 +484,7 @@ def _seed_update(repo: Path, base: str, head: str, meta: dict[str, Any], out: Pa
     """The operator's seed delivery itself (`25` 10b): nothing in it is the Founder's, so nothing is judged (E88)."""
     changed = gitio.changed_paths(repo, base, head) if gitio.has_commit(repo, base) else []
     meta.update(kind="seed_update", changed=[shown(p) for p in changed], waived=waived,
-                reports=read_reports(gitio.archive(repo, head)))  # the brain's reports are named on every result
+                **reports_meta(gitio.archive(repo, head)))  # the brain's reports are named on every result
     write_json(out / "meta.json", meta)
     output(skip=False, kind="seed_update", head=head, run_tests=False, run_rival=False, repro=False)
     return 0
@@ -566,7 +567,7 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     tar_bytes = gitio.archive(repo, head)
     readable = not {"non_utf8_path", "unsafe_path"} & set(pre)
     trees = seed_trees(tar_bytes) if readable else (None, None)
-    meta["reports"] = read_reports(tar_bytes) if readable else []  # `26c`, E93: named in the signed result
+    meta.update(reports_meta(tar_bytes) if readable else {"reports": []})  # `26c`, E93: named in the signed result
     # While the head's seed is the last epoch's commit's, the seed paths in the diff from the last accepted commit are
     # the operator's delivery, not the Founder's change (`25` 10b, E88); any other seed is checked below. Git compares
     # them: a mode change counts (the tree hashes leave the executable bit out) and an unreadable tree is no excuse

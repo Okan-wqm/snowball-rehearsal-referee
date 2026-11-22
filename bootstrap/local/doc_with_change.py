@@ -15,7 +15,7 @@ from __future__ import annotations
 import sys
 
 GUARDED = ("seed/bootstrap/snowball_bootstrap/", "seed/bootstrap/workflow/", "seed/bootstrap/vectors/",
-           "seed/bootstrap/stages/", "seed/founder/", "seed/drill/")
+           "seed/bootstrap/stages/", "seed/bootstrap/reports/", "seed/founder/", "seed/drill/")
 DOCS = ("docs/", "spec/", "README.md", "seed/founder/README.md")
 
 

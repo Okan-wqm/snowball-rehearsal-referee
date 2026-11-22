@@ -133,7 +133,7 @@ class AnsweredTest(unittest.TestCase):
         launch = load_launch()
         rid = "seed-055-prompt-limit-not-stated"
         log = (ROOT / "spec" / "tohum" / "CHANGELOG-8.md").read_text(encoding="utf-8")  # moved by the cap (E634)
-        self.assertTrue(any(launch.names_report(line, rid) for line in log.splitlines()))
+        self.assertTrue(any(f"`{rid}`" in line for line in log.splitlines()))  # whole, on one line
         entry = flat(log)
         self.assertIn(f"`{rid}` → `29b:47-50`", entry)
         lines = flat(" ".join(page("29b").splitlines()[46:50]))

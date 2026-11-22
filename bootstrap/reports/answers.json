@@ -1,0 +1,397 @@
+{
+  "schema": "snowball-report-answers/1",
+  "answers": [
+    {
+      "id": "seed-070-red-b-on-the-copy-base-lint-cause-not-on-the-line",
+      "changelog": "CHANGELOG-9",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-072-p2-hunter-tool-using-runtime-agent",
+      "changelog": "CHANGELOG-9",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-073-organ-definition-layout-and-carriage-unstated",
+      "changelog": "CHANGELOG-9",
+      "kind": "partial"
+    },
+    {
+      "id": "seed-074-snapshot-case-list-and-comment-lines-unstated",
+      "changelog": "CHANGELOG-9",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-075-dev-case-store-group-and-validity-edges-unstated",
+      "changelog": "CHANGELOG-9",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-076-harness-score-inputs-identity-and-policy-keys-unstated",
+      "changelog": "CHANGELOG-9",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-077-harness-offline-client-network-and-state-growth-unstated",
+      "changelog": "CHANGELOG-9",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-078-revert-row-does-not-name-its-commit-and-stage-0-has-no-watcher",
+      "changelog": "CHANGELOG-9",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-079-three-sign-calls-per-yaz-job-or-per-root",
+      "changelog": "CHANGELOG-9",
+      "kind": "answered"
+    },
+    {
+      "id": "spec-071-asama-1-thresholds-without-policy-keys",
+      "changelog": "CHANGELOG-9",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-081-the-time-limit-of-a-manifest-command-is-on-no-page",
+      "changelog": "CHANGELOG-9",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-082-drift-baseline-fields-without-a-read-or-a-computable-recipe",
+      "changelog": "CHANGELOG-10",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-084-gozcu-triggers-thresholds-and-row-shapes-unstated",
+      "changelog": "CHANGELOG-10",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-085-gozcu-wiring-what-a-freeze-closes-and-what-a-cycle-measures",
+      "changelog": "CHANGELOG-10",
+      "kind": "partial"
+    },
+    {
+      "id": "seed-085-gozcu-wiring-what-a-freeze-closes-and-what-a-cycle-measures",
+      "changelog": "CHANGELOG-11",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-087-allowlist-package-layout-accept-trigger-and-run-ids-unstated",
+      "changelog": "CHANGELOG-11",
+      "kind": "partial"
+    },
+    {
+      "id": "seed-088-finding-states-fixed-verified-withdrawn-have-no-named-writer",
+      "changelog": "CHANGELOG-12",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-073-organ-definition-layout-and-carriage-unstated",
+      "changelog": "CHANGELOG-13",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-087-allowlist-package-layout-accept-trigger-and-run-ids-unstated",
+      "changelog": "CHANGELOG-13",
+      "kind": "answered"
+    }
+  ],
+  "carried": {
+    "brain": "6b5966a98027a6002d8685a6ad42d6a5042ae298",
+    "confirmed": [
+      {
+        "id": "referee-016-reproducer-polarity",
+        "sha256": "19da65014b60e5c6cc81fce7367c9f566b02870551319c958c363afc0976897a"
+      },
+      {
+        "id": "referee-049-rival-budget-consumes-commit",
+        "sha256": "4eb9a1a8a54731229eafbb77db1ba70173e7dba52714b9ac0f9f771dfd6fdc68"
+      },
+      {
+        "id": "seed-001-seed-dir-missing",
+        "sha256": "c647012eb8a28b39f51e37cd65cc08e4b1de7453b22d31147be0b24f98209865"
+      },
+      {
+        "id": "seed-002-29b-stale-after-narrowing",
+        "sha256": "c79fbc4b349926849e82e74d2ff5293a535ef2dc4b164664c0462f0ad7adc08b"
+      },
+      {
+        "id": "seed-003-toy-repo-no-reader",
+        "sha256": "4f23bc417daa9145de6414fd22a71b3e9af6952087ac3f3e98790bab4341d83e"
+      },
+      {
+        "id": "seed-005-push-class-ledger",
+        "sha256": "ef370143321d3252c324e38ba76f9ac9ff5b41daee47b7d6ab47c940c15d71c5"
+      },
+      {
+        "id": "seed-006-ledger-kind-set",
+        "sha256": "5ddec92e1a0197b3656403e01be979b62bad021f6b242041f736cba468db753a"
+      },
+      {
+        "id": "seed-007-chain-cli-exit-and-broken-row",
+        "sha256": "9b9dbe204c07e3c11b7c5168b9d75efec7a12d46b814be1ee35033302413a854"
+      },
+      {
+        "id": "seed-008-secrets-vector-interface",
+        "sha256": "ca7627002ba7ad9484edc15b45e64fcff5b9f3a58213a211d7362f1a5d1edc21"
+      },
+      {
+        "id": "seed-009-secret-in-prompt-no-location",
+        "sha256": "e37c79ab6a8e18efebdfc4c306e74ce3e954dde44607337a0936fba344f79c66"
+      },
+      {
+        "id": "seed-010-verdict-withheld-no-claim",
+        "sha256": "1475d1fb528d09a08069ddd09ef5f87b9d3dc359c6385793d1f97f2a1b6ee6c7"
+      },
+      {
+        "id": "seed-017-diffguard-config-list",
+        "sha256": "b4caa03f0da720324789f642f72a7a7af907dd9148d196c502ae62a5fceff943"
+      },
+      {
+        "id": "seed-018-k0map-interface",
+        "sha256": "8e2aecd1178a3cfc1bae8a1c65b42883d58ee5005a0d639110334837d3e6e17e"
+      },
+      {
+        "id": "seed-020-refs-interface",
+        "sha256": "2618707411eda8fd2e76fcc7ff851978d4ec4e36ef88c840f5f7aeb1403a7081"
+      },
+      {
+        "id": "seed-022-k0map-mismatched-file-rules",
+        "sha256": "0b836db08b49c28d1970496481dc176defa227761f395dc8fc9acfef74d097ae"
+      },
+      {
+        "id": "seed-023-run-record-producer",
+        "sha256": "4fdb1deb687a5a43aeaac27554005eed36b6e1f747cbc332df90a666d78b6751"
+      },
+      {
+        "id": "seed-024-revert-parent-is-onto-head",
+        "sha256": "073229b36b56ffff96502f4ba06dfe3ba55c7dbf71709905c94f231c213b68e7"
+      },
+      {
+        "id": "seed-025-append-choices",
+        "sha256": "709480e2c4e2d0d488804a8b356c393804a7b5c44c21a6c3c633ba23197ed25c"
+      },
+      {
+        "id": "seed-027-root-choices",
+        "sha256": "f70143eb732b7117d2329d555862fcdb6c1f96039883eb09cec1518e9398d57c"
+      },
+      {
+        "id": "seed-029-flaky-choices",
+        "sha256": "22837b1639b2376d467d7a43804ee289590189f915cf9543f50e6d81b02164b2"
+      },
+      {
+        "id": "seed-030-cause-choices",
+        "sha256": "072ef6cb2fcd533d277f6ce9e6783f654514d23b70b3bd529b2bf6491933bcac"
+      },
+      {
+        "id": "seed-031-revert-drill-interface",
+        "sha256": "2d06b033dd30b102aaca1661467aa2c814125a954d6a56328635585ff91eac87"
+      },
+      {
+        "id": "seed-033-llm-call-interface",
+        "sha256": "b363ff79071c19dddfc0325452d8ca62b233b6f24326dabff00f372df9915320"
+      },
+      {
+        "id": "seed-034-status-block-interface",
+        "sha256": "d1a7019b5f36679739a768ed10ac62bb3071025d0d272542c5ffed83892b1eb0"
+      },
+      {
+        "id": "seed-035-loop-control-and-yaml-subset",
+        "sha256": "b3133e5bae50c5536c35748b89cfc1dc4ed2e51c2d37e3e541f30f022154bfb0"
+      },
+      {
+        "id": "seed-037-genesis-interface",
+        "sha256": "50dde84efcafa16610a0e88cd42e28f3b6baf46439edfd342a569cc3c3e32440"
+      },
+      {
+        "id": "seed-039-prompt-vector-assumes-mf2-floor",
+        "sha256": "815a954825a8ebb9f875e525d34ebe68df2e5f431a32ab59418939e8c5667ad3"
+      },
+      {
+        "id": "seed-040-d1-bootstrap-state-read",
+        "sha256": "90fdc34f87a3f3193ca956a5cf9c0477ccc0c978fe17dead61227376ebdcbdee"
+      },
+      {
+        "id": "seed-041-loop-run-inputs-unnamed",
+        "sha256": "e5a0d0d081b97e8cb5d3ba5487f4072936fe0da6baa970cb426e49216b1fe988"
+      },
+      {
+        "id": "seed-042-d4-canary-inputs-unnamed",
+        "sha256": "570bc0ab14481b530d4c1d878ef9145cc7ec4cdc2f4d6201f4728e50c7cb113c"
+      },
+      {
+        "id": "seed-043-sentinel-end-row-unnamed",
+        "sha256": "8b484acff4671ce92aed0ff168b1b30798d026c8c4d1ff030ac3bff7ef8abd6a"
+      },
+      {
+        "id": "seed-044-revert-facts-producers",
+        "sha256": "dfdf2446c201f8b83bb5356e4a0745446a2a5834e1e607bb3bfe3cf2dbc0de75"
+      },
+      {
+        "id": "seed-045-drill-live-inputs-unnamed",
+        "sha256": "6ac018383d43a033eb64269c06c1a4f5e9a8b890d4803aaded0acbe9b4aa3b65"
+      },
+      {
+        "id": "seed-046-pass-row-unnamed",
+        "sha256": "a718a1de1d67d95d80dc39874c082ea1ca275cff030153a402ab4971dca42558"
+      },
+      {
+        "id": "seed-047-regenesis-and-genesis-inputs",
+        "sha256": "2da619ae606294c81dcb25cd57a7352942fd67db14f1915e0a0c078634bc97cc"
+      },
+      {
+        "id": "seed-048-copy-gate-record-and-a-result-bytes",
+        "sha256": "6f053fce7c9f0881d283d361a96f7aa98f117d6186a34c04a3b0c664fa1c0346"
+      },
+      {
+        "id": "seed-049-genellik-text-rule-and-names-unreadable",
+        "sha256": "e3436267bed0cbac7f23c5fb5a6551cf280d68ee9ca8475a307e05c0fe221089"
+      },
+      {
+        "id": "seed-050-copy-target-row-unreadable-for-unit-proposal",
+        "sha256": "4c2863b996498015903809eb99230a2193c7d4c8c88815384222cede1df5ce4e"
+      },
+      {
+        "id": "seed-051-install-marks-run-platform-foreign-scripts",
+        "sha256": "9416669ec5d076f93e78bb73a257633d2dbd5c38bf6dfb8a93d7325c8fd0b8f0"
+      },
+      {
+        "id": "seed-052-known-b-stop-has-no-path-before-b",
+        "sha256": "018e8db0f50e8d5e01347218a92cd9d3fed068d5caaf9a20abfcff1e056992d4"
+      },
+      {
+        "id": "seed-053-policy-shape-unseen-before-b",
+        "sha256": "957818ae7b7e40c67ebbb426bff515662eee57e8fdfe4ca027f12d649bc6aae1"
+      },
+      {
+        "id": "seed-054-lint-stdout-not-only-the-document",
+        "sha256": "6671a5808267e2f95a672d606fdc668e66083a3843a2dd05eb1175705d59f1a0"
+      },
+      {
+        "id": "seed-055-prompt-limit-not-stated",
+        "sha256": "1feebb8a1afb6465a78f8ef49e3f1f6a96fe33b230017f8e3851f8a4e46d5cf2"
+      },
+      {
+        "id": "seed-056-kos-red-without-its-cause",
+        "sha256": "b88bc50bf012d252dab4b34ca49f1cc662ca2ee71171a182e0837b6ff2cc1fb2"
+      },
+      {
+        "id": "seed-057-app-read-credential-not-stated",
+        "sha256": "d7c529d7aa12605adc73c4caad82dc8a307cf705d1bbdf5b1ef67debff6bd149"
+      },
+      {
+        "id": "seed-058-no-real-container-before-b",
+        "sha256": "66b0cc7a578ad5248481bf75b5caaa07174692f920072d24d04d888c51bfbbfa"
+      },
+      {
+        "id": "seed-059-genesis-vector-toy-base-not-setups-form",
+        "sha256": "495af114a2d4daa0dd5fa70161b9109141612c7b0b044dea211a8f92289ddd00"
+      },
+      {
+        "id": "seed-060-app-secret-form-not-stated",
+        "sha256": "68d97e932d44254b0338a5a7e0a914c9eccf26cb454b2fc0830b1f2341a4a23b"
+      },
+      {
+        "id": "seed-061-integration-cut-needs-create-exemption",
+        "sha256": "fd4ec31153ef9bf8299bd1fbe2ec3792f247f3a5be691a0d3f12908ed8328ba0"
+      },
+      {
+        "id": "seed-062-genesis-vector-seed-sha256-not-setups-form",
+        "sha256": "4010d714e82ebfb3d6542f7b58f244836298f0739243e8c8fe873a1349798e2e"
+      },
+      {
+        "id": "seed-063-outside-brain-ruleset-covers-nested-brain-branches",
+        "sha256": "d9ec927e2c00174afe61991fb9c47a125d25293a8b5710caec43d66c6dfbce73"
+      },
+      {
+        "id": "seed-064-capsule-stdlib-has-no-bytecode",
+        "sha256": "67525f79998cb396cbb5f1784f841484f4f09b514d3fd5cc773c9cd23a70c710"
+      },
+      {
+        "id": "seed-065-revert-trigger-without-red-test-unstated",
+        "sha256": "71f2a4f5e2f9e2ce6f7d94440efd731b1017f7dd05b1ed68037dca6a3927f2ca"
+      },
+      {
+        "id": "seed-066-cek-running-tree-unexercised",
+        "sha256": "ee7e7378189e596e79a3838076b8d51c67f9dea3d125053c49e45ad6090545cb"
+      },
+      {
+        "id": "seed-067-loop-outage-and-red-condition-not-separated",
+        "sha256": "711c710eccb97fe7108fd32e764266fc8dbb1508ad9b1e09a805ef3dc26de9d5"
+      },
+      {
+        "id": "seed-068-one-failed-sign-call-and-the-target-written-before-it",
+        "sha256": "cf6d4f53f04d3d06aed11c2897182a91fb0009d26035549fc5f77c76cf76fe21"
+      },
+      {
+        "id": "seed-069-bundled-packages-in-a-lock-and-in-a-tarball",
+        "sha256": "74fcdedb7e2fed1866d684ecdf77039a48bcdda81a9097c9c2c8c638a6fd0220"
+      },
+      {
+        "id": "seed-080-drift-check-has-no-recorded-baseline-in-the-summary",
+        "sha256": "f82db3c33d53f919d40fe134b8e2bc212bfcbf51b33f4e807aad79675eebe152"
+      },
+      {
+        "id": "seed-083-primary-evidence-ref-and-harness-policy-value-forms-unstated",
+        "sha256": "3c013bc8d7095dd1b7e5be27f409448e9d912aea9550cc4b169c673e69e1121a"
+      },
+      {
+        "id": "seed-086-findings-write-root-coverage-row-shapes-and-triggers-unstated",
+        "sha256": "c9ddb2130a941cf59c60a80945a2f1027275dbeb3e7f6711e7fd9afcb03c82c6"
+      },
+      {
+        "id": "spec-004-calls-17-18",
+        "sha256": "974c32c68f02f4bfbf4605324411d1a6868c9e6e1c3029e821a9f7bfba6fb239"
+      },
+      {
+        "id": "spec-011-profile-shadows-stdlib",
+        "sha256": "eaba63920f8da5f501d1256db71f97130af8432f49119a30c162f09c09b16195"
+      },
+      {
+        "id": "spec-012-install-scripts-required-form",
+        "sha256": "2e2d9ea49221d4fb366f3273299110e7635eae014afbf8afdb8668d5fb1574aa"
+      },
+      {
+        "id": "spec-013-lint-green-vs-violation",
+        "sha256": "c4b5eccf2fc55f832770e978767a73946370dc85126abad53dee686fed67a11f"
+      },
+      {
+        "id": "spec-014-toolchain-form-and-calls-6-4",
+        "sha256": "62abfa311a208d00b6e0a74f09643f1831ea90f48a729f686fdbd6aabe9882ae"
+      },
+      {
+        "id": "spec-015-npmlock-workspace-link",
+        "sha256": "9b6b20025d7e9a91ca28d186828a02d36af5ecacd7f1a7753011880f64e3dd9f"
+      },
+      {
+        "id": "spec-019-calls-7-8-3-8",
+        "sha256": "86cc83eda6511f72b6c9e862577f75c0e8be772fb3ff6fbe5508d60b384a682f"
+      },
+      {
+        "id": "spec-021-target-write-callers",
+        "sha256": "d5a1c472bb0f0315ba14a21734ac8f71b1de3000f1025f7fa81781421e92585c"
+      },
+      {
+        "id": "spec-026-append-writes-through-target-write",
+        "sha256": "b12fa0d9954164a346622ec54c6b6cd439f90a40645d405d0b46d3290fcc6ad5"
+      },
+      {
+        "id": "spec-028-anchor-calls-append",
+        "sha256": "1828dfae76c436abda4b4fc8a5736a9d583e3f4680f33d86a52ecc431aca7b5f"
+      },
+      {
+        "id": "spec-032-drill-calls-9-14",
+        "sha256": "621c04e5ea3aa740b803f6c82dda746cf2a0caa51cc6377b66f9ea7595f1e80c"
+      },
+      {
+        "id": "spec-036-cycle-composition-unowned",
+        "sha256": "2b53fd5b45b121eb140de9b7e196efdf172aef5ab5308191a870f81c63ea7f51"
+      },
+      {
+        "id": "spec-038-expect-reason-comparison",
+        "sha256": "81170e5fe7d2b0e9ba136e206e244446f352ae70826715fd6786c629e7805087"
+      }
+    ]
+  }
+}

@@ -1595,11 +1595,11 @@ class UnitProposalReportsTest(unittest.TestCase):
         launch = self.launch()
         rid = "seed-052-known-b-stop-has-no-path-before-b"
         lines = (ROOT / "spec" / "tohum" / "CHANGELOG-7.md").read_text(encoding="utf-8").splitlines()  # cap (E608)
-        self.assertTrue(any(launch.names_report(line, rid) for line in lines))
+        self.assertTrue(any(f"`{rid}`" in line for line in lines))  # whole, on one line
         self.answered_by(rid, {("29b", 73, 73): ("(seed-052, E576)", "kanıtı doğruladıktan sonra")})
         for rid in ("seed-050-copy-target-row-unreadable-for-unit-proposal",
                     "seed-051-install-marks-run-platform-foreign-scripts"):
-            self.assertTrue(any(launch.names_report(line, rid) for line in lines), rid)
+            self.assertTrue(any(f"`{rid}`" in line for line in lines), rid)
 
     def test_the_session_is_told_where_operating_is_and_the_launcher_writes_it_there(self):
         # prompt_operating_note_unnamed operating_keys_page_drift
