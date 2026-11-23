@@ -233,8 +233,9 @@ class SeedAnswersFileTest(unittest.TestCase):
         # seed_073_y_whole seed_088_wrong_epoch carried_brain_moved answer_dropped_for_a_row
         answers = json.loads(reportlife.ANSWERS_FILE.read_text(encoding="utf-8"))
         loaded = reportlife.load_answers()
-        ids = sorted(loaded.kinds)
-        self.assertEqual(len(ids), 16)
+        ids = sorted({r["id"] for r in answers["answers"] if int(r["changelog"].split("-")[1]) <= 13})  # later epochs
+        self.assertEqual(len(ids), 16)  # add their own rows (AF: `test_panel_epoch_af`)
+        self.assertTrue(set(ids) <= set(loaded.kinds))  # the loader reads every one of them
         self.assertEqual(sorted("-".join(i.split("-")[:2]) for i in ids), sorted(OPEN_IDS))
         for row in answers["answers"]:
             with self.subTest(row=row):

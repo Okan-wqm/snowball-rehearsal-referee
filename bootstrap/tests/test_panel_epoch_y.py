@@ -381,9 +381,9 @@ class ReviewFixesTest(unittest.TestCase):
         for prefix in ("24", "26a", "30f", "03", "08", "09"):
             self.assertNotIn("P2 partisiyle", flat(page(prefix)), prefix)
 
-    def test_13_leaves_the_toys_first_comparison_point_open(self):
-        self.assertIn("oyuncağın ilk merge'ünden önce `base_sha` `null`'dır ve karşılaştırma noktası henüz "
-                      "adlandırılmamıştır (açık, `29o`)", flat(page("13")))
+    def test_13_no_longer_leaves_the_toys_first_comparison_point_open(self):
+        # Y left it open (`29o`); seed epoch AF names it (seed-093, `test_panel_epoch_af`)
+        self.assertNotIn("karşılaştırma noktası henüz adlandırılmamıştır", flat(page("13")))
 
     def test_the_budget_loosening_and_the_delivery_values_are_recorded(self):
         row = register_row("E664")

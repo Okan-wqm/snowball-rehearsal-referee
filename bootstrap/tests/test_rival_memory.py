@@ -433,12 +433,14 @@ class E93ReportsReader(unittest.TestCase):
                                               "ref": "spec/tohum/29b-onyukleme-hakemi.md:30", "state": "open",
                                               "stem": "seed-900-state-read", "evidence": False, "superseded_by": None,
                                               "derived_from": None, "sha256": digest})
-        self.assertIs(meta["reports"][1]["evidence"], True)
+        # its epoch is no `seed_epochs[]` commit of this summary (it names none): since seed epoch AF (seed-096) the
+        # form alone does not close it (`test_panel_epoch_af`)
+        self.assertIs(meta["reports"][1]["evidence"], False)
         self.assertEqual([r["id"] for r in meta["reports"]], ["seed-900-state-read", "spec-901-calls"])
         result = flow.finish(meta)  # whatever the verdict (this bare brain froze no spec): the reports are named
         self.assertEqual(result["reports"], [{k: r[k] for k in ("id", "kind", "ref", "state", "sha256")}
                                              for r in meta["reports"]])  # the typed readings stay out of it
-        self.assertIn("reports_open:1", result["warnings"])
+        self.assertIn("reports_open:2", result["warnings"])  # the confirmation of no summary epoch counts open (AF)
         pulled = Path(flow.tmp.name) / f"pulled{flow.n}"
         bin_dir = Path(flow.tmp.name) / "bin"
         bin_dir.mkdir()

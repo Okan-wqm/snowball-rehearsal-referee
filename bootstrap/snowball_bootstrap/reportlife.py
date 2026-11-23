@@ -49,25 +49,39 @@ def _text(value: Any) -> str | None:
     return value if isinstance(value, str) and value.strip() and len(value) <= MAX_FIELD else None
 
 
-def evidence(data: Any) -> bool:
+def epoch_commits(summary: Any) -> frozenset[str]:
+    """The `seed_epochs[].commit` values of a `setup/summary.json` document (`26c`): the brain's delivery commits
+    (`25` 10b, `26l`). A row that is not an object with a full commit adds nothing; a summary without the list has
+    none, so no confirmation's ``epoch`` is one of them."""
+    rows = summary.get("seed_epochs") if isinstance(summary, dict) else None
+    return frozenset(row["commit"] for row in rows if isinstance(row, dict) and isinstance(row.get("commit"), str)
+                     and COMMIT_RE.match(row["commit"])) if isinstance(rows, list) else frozenset()
+
+
+def evidence(data: Any, epochs: frozenset[str] | None = None) -> bool:
     """A closing write's typed evidence (`26l` "Teyidin kanıtı"): ``epoch`` the full commit of a `seed_epochs[]` row,
-    ``answered_by`` a non-empty list of page references, ``check`` a command, ``check_kind`` `test` or `read`. Only the
-    form is read; the command is the Founder's, re-runnable by anyone, never run here."""
+    ``answered_by`` a non-empty list of page references, ``check`` a command, ``check_kind`` `test` or `read`. The form
+    is read; the command is the Founder's, re-runnable by anyone, never run here. With ``epochs`` (`epoch_commits`)
+    the ``epoch`` must also be one of the summary's delivery commits (seed-096, epoch AF): forty digits of a commit
+    that delivered no seed prove nothing, and the report counts open (a warning, never a reason)."""
     if not isinstance(data, dict):
         return False
     refs = data.get("answered_by")
     return (isinstance(data.get("epoch"), str) and bool(COMMIT_RE.match(data["epoch"]))
+            and (epochs is None or data["epoch"] in epochs)
             and isinstance(refs, list) and 0 < len(refs) <= MAX_REFS
             and all(isinstance(r, str) and len(r) <= MAX_FIELD and PAGE_REF_RE.match(r) for r in refs)
             and _text(data.get("check")) is not None
             and data.get("check_kind") in CHECK_KINDS)
 
 
-def read_row(name: str, content: bytes | None) -> dict[str, Any]:
+def read_row(name: str, content: bytes | None, epochs: frozenset[str] | None = None) -> dict[str, Any]:
     """One `reports/<name>` as both readers count it: ``{stem, id, kind, ref, state, sha256, evidence, superseded_by,
     derived_from}``. ``stem`` is the file name without `.json`, the report's key. A field that is missing, not a string
     or longer than ``MAX_FIELD``, or any field of a file that is not one JSON object, is null; ``content`` None (bytes
-    that could not be read) leaves every field null, so the report counts open."""
+    that could not be read) leaves every field null, so the report counts open. ``epochs`` is what the evidence's
+    ``epoch`` must be one of (`evidence`); both readers pass the setup summary's, the referee from its checkout and the
+    launcher from the referee repository's main."""
     data: Any = None
     if content is not None:
         try:
@@ -80,7 +94,7 @@ def read_row(name: str, content: bytes | None) -> dict[str, Any]:
         value = doc.get(key)
         row[key] = value if isinstance(value, str) and len(value) <= MAX_FIELD else None
     row["sha256"] = hashlib.sha256(content).hexdigest() if content is not None else None
-    row["evidence"] = evidence(doc)
+    row["evidence"] = evidence(doc, epochs)
     row["superseded_by"] = _text(doc.get("superseded_by"))
     row["derived_from"] = _text(doc.get("derived_from"))
     return row

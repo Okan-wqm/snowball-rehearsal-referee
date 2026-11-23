@@ -430,28 +430,29 @@ def exam_faults_in_force(repo: Path, summary_cfg: config.Summary, faults: list[c
 MAX_REPORTS = 200
 
 
-def read_reports(tar_bytes: bytes) -> list[dict[str, Any]]:
+def read_reports(tar_bytes: bytes, epochs: frozenset[str] | None = None) -> list[dict[str, Any]]:
     """The brain's reports (`26c` reports/*.json, E93): every regular file directly under the root `reports/` whose name
     ends in `.json`, by path, each read by `reportlife.read_row` (the launcher's reader too, `26l`, E694): ``{stem, id,
     kind, ref, state, sha256}`` and the typed readings the counts need, which never reach the signed result. The reader
     names what a report holds and never turns a report into a reason (it is the Founder's memory, not its code). An
-    archive with something other than regular files has no reports to read here: `pull` names that."""
+    archive with something other than regular files has no reports to read here: `pull` names that. ``epochs`` are the
+    setup summary's delivery commits a confirmation's ``epoch`` must be one of (`reportlife.evidence`, seed-096)."""
     found: list[tuple[str, dict[str, Any]]] = []
     try:
         for path, content, _exec in iter_files(tar_bytes):
             if len(path.parts) != 2 or path.parts[0] != REPORTS_DIR.rstrip("/") or not path.name.endswith(".json"):
                 continue
-            found.append((path.as_posix(), reportlife.read_row(path.name, content)))
+            found.append((path.as_posix(), reportlife.read_row(path.name, content, epochs)))
     except TreeError:
         return []
     return [row for _path, row in sorted(found, key=lambda item: item[0])]
 
 
-def reports_meta(tar_bytes: bytes) -> dict[str, Any]:
+def reports_meta(tar_bytes: bytes, epochs: frozenset[str] | None = None) -> dict[str, Any]:
     """The reports `meta.json` carries: the first ``MAX_REPORTS`` by path, and, only past that cap, how many lie
     beyond it (``reports_unread``), which the counts take as open, never as closed (`26l`). Below the cap the meta is
     what it always was (`test_stage0_unchanged`)."""
-    rows = read_reports(tar_bytes)
+    rows = read_reports(tar_bytes, epochs)
     meta: dict[str, Any] = {"reports": rows[:MAX_REPORTS]}
     if len(rows) > MAX_REPORTS:
         meta["reports_unread"] = len(rows) - MAX_REPORTS
@@ -480,11 +481,18 @@ def _check_epoch(repo: Path, epoch: config.SeedEpoch) -> None:
                                  "(print the row with `seed-epoch`)")
 
 
-def _seed_update(repo: Path, base: str, head: str, meta: dict[str, Any], out: Path, waived: list[str]) -> int:
+def epoch_commits(summary_cfg: config.Summary) -> frozenset[str]:
+    """The setup summary's `seed_epochs[].commit` values (`26c`): the brain commits that delivered a seed (`25` 10b,
+    `26l`), each a confirmation's ``epoch`` may name (seed-096)."""
+    return frozenset(e.commit for e in summary_cfg.epochs)
+
+
+def _seed_update(repo: Path, base: str, head: str, meta: dict[str, Any], out: Path, waived: list[str],
+                 epochs: frozenset[str]) -> int:
     """The operator's seed delivery itself (`25` 10b): nothing in it is the Founder's, so nothing is judged (E88)."""
     changed = gitio.changed_paths(repo, base, head) if gitio.has_commit(repo, base) else []
     meta.update(kind="seed_update", changed=[shown(p) for p in changed], waived=waived,
-                **reports_meta(gitio.archive(repo, head)))  # the brain's reports are named on every result
+                **reports_meta(gitio.archive(repo, head), epochs))  # the brain's reports are named on every result
     write_json(out / "meta.json", meta)
     output(skip=False, kind="seed_update", head=head, run_tests=False, run_rival=False, repro=False)
     return 0
@@ -550,7 +558,7 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     epoch = summary_cfg.epoch
     pinned, meta["exit_released"] = exit_pin(prev, reverted, table.stage)
     if epoch is not None and head == epoch.commit:
-        return _seed_update(repo, base, head, meta, out, waived)
+        return _seed_update(repo, base, head, meta, out, waived, epoch_commits(summary_cfg))
     pre: list[str] = []
     base_ok = gitio.has_commit(repo, base)
     if not base_ok:
@@ -567,7 +575,8 @@ def _pull_classify(boot: config.Bootstrap, policy: config.Policy, summary_cfg: c
     tar_bytes = gitio.archive(repo, head)
     readable = not {"non_utf8_path", "unsafe_path"} & set(pre)
     trees = seed_trees(tar_bytes) if readable else (None, None)
-    meta.update(reports_meta(tar_bytes) if readable else {"reports": []})  # `26c`, E93: named in the signed result
+    meta.update(reports_meta(tar_bytes, epoch_commits(summary_cfg)) if readable  # `26c`, E93: named in the signed
+                else {"reports": []})  # result; a confirmation's epoch is one of the summary's (`26l`, seed-096)
     # While the head's seed is the last epoch's commit's, the seed paths in the diff from the last accepted commit are
     # the operator's delivery, not the Founder's change (`25` 10b, E88); any other seed is checked below. Git compares
     # them: a mode change counts (the tree hashes leave the executable bit out) and an unreadable tree is no excuse
