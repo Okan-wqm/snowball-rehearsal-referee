@@ -150,6 +150,16 @@
       "id": "seed-099-the-rerun-of-a-run-time-candidate-leaves-its-form-and-bounds-unstated",
       "changelog": "CHANGELOG-16",
       "kind": "answered"
+    },
+    {
+      "id": "seed-100-the-form-of-a-package-s-finding-and-its-way-into-the-registry-are-unstated",
+      "changelog": "CHANGELOG-17",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-101-the-run-in-the-writer-s-findings-file-and-the-findings-form-of-the-two-file-command-are-unstated",
+      "changelog": "CHANGELOG-17",
+      "kind": "answered"
     }
   ],
   "carried": {

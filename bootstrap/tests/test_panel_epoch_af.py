@@ -243,10 +243,10 @@ class SnapshotCasesScorePageTest(unittest.TestCase):
         text = section("26m", "**Puanlama**", "Açıkça ertelenenler")
         for words in ("Parmak izini yalnız hakem kodu yapar",
                       "bir ajanın dosyasındaki parmak izini hiçbir zaman almaz",
-                      "dosya sırasındaki ilk gözlem puanlanır; sonrakiler raporda sayılan yeniden gözlemlerdir, ne isabet "
-                      "ne yanlış pozitif",
-                      "yoksa `rules_total`'ın (`26e:72-73`: aracın kataloğunda vaka üretilebilen kurallar) koşuda vakası "
-                      "olmayan bir kuralı varsa `UNMEASURABLE`; yoksa `PASS`.",
+                      "listenin sırasındaki ilk gözlem puanlanır; sonrakiler raporda sayılan yeniden gözlemlerdir, ne "
+                      "isabet ne yanlış pozitif",
+                      "yoksa `rules_total`'ın (`29za:9-22`: hedefin `census` vektörünün kural kümesi, `26q`) koşuda "
+                      "vakası olmayan bir kuralı varsa `UNMEASURABLE`; yoksa `PASS`.",
                       "Dev raporunun grup tabanı yoktur (`26h:67-68`).",
                       "verilmezse çıkış hükmü `PASS` olmaz",
                       "K4'ün sayımı Aşama 3'e ertelendi"):

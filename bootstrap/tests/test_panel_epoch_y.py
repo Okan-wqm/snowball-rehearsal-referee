@@ -115,8 +115,8 @@ class StageOneInterfaceTest(unittest.TestCase):
     def test_scoring(self):
         text = self.section("Puanlama")
         for words in ("test 6, bulgunun bir `evidence_refs` yolu snapshot manifestinde yoksa ya da o yolun baytlarının "
-                      "hash'i manifesttekine uymuyorsa", "`rules_total` aracın kataloğunda vaka üretilebilen "
-                      "kuralların sayısıdır", "yarım yukarı yuvarlar (`29a`)", "İmza `26a`'dadır",
+                      "hash'i manifesttekine uymuyorsa", "`rules_total` hedefin `census` vektörünün kural "
+                      "kümesidir (`29za:9-22`, `26q`)", "yarım yukarı yuvarlar (`29a`)", "İmza `26a`'dadır",
                       "okunması zorunlu yollardır"):
             self.assertIn(words, text, words)
         row = next(line for line in page("26a").splitlines() if line.startswith("| `harness.score` |"))
