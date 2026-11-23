@@ -1735,11 +1735,15 @@ class MutationShardTest(unittest.TestCase):
     mutants at a time (`--jobs`, the runner's four cores), so the bound holds per worker: with no hint at all (each
     mutant runs the whole suite), a worker's share at the worst mutant seen ends in three quarters of the timeout. Four
     at a time a mutant takes longer: run 44763833954 (1513 mutants, 20 shards, no hint) took 118 s on average (88 s
-    alone in run 44718091394) and at worst 332 s, so the worst is now six minutes."""
+    alone in run 44718091394) and at worst 332 s, so the worst is now six minutes. E737 (2026-11-23): the matrix was a
+    fixed list this test bounded (24 shards, 2112 mutants; 2101 there), and each epoch that added mutants past the bound
+    raised it by hand (20 to 21 in AE, 21 to 23 in AG, 23 to 24 in AH). The plan job now sizes it from the commit's own
+    mutants (`mutate.shard_count`); this test holds the plan to the timeout and ci.yml to the plan."""
 
     WORST_MINUTES = 6  # the worst mutant seen, the whole suite, four at a time (run 44763833954: 332 s)
     SHARE = 0.75  # of the job's timeout, as before (E410: 15 mutants at 3 minutes in 60)
     CORES = 4  # a standard Linux runner of a public repository
+    SHARDS_MIN = 24  # E737: the plan never gives fewer shards than the fixed matrix had
 
     @staticmethod
     def mutate():
@@ -1804,25 +1808,104 @@ class MutationShardTest(unittest.TestCase):
         self.assertEqual(seen, {name: True for name in read})
 
     def test_the_shards_hold_every_mutant_inside_the_timeout(self):
-        import importlib.util
-        spec = importlib.util.spec_from_file_location("mutate", BOOT / "local" / "mutate.py")
-        mutate = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mutate)
+        # mutation_shard_count_fixed mutation_shards_below_the_minimum mutation_matrix_limit_unchecked
+        # mutation_shard_cap_ignores_the_workers mutation_worst_mutant_forgotten mutation_timeout_out_of_step
+        """E737: the plan's shard count holds every mutant inside the timeout, for this commit's mutants and for any
+        count the list may grow to, until GitHub's 256-job matrix, where the plan is refused instead of run."""
+        mutate = self.mutate()
         job = self.ci_job("mutation")
-        shards = json.loads(re.search(r"(?m)^        shard: (\[[0-9, ]+\])$", job).group(1))
-        count = int(re.search(r'--shard "\$SHARD/([0-9]+)"', job).group(1))
-        self.assertEqual(shards, list(range(count)), "the matrix and --shard K/N name different shards")
-        jobs = int(re.search(r'--shard "\$SHARD/[0-9]+" --jobs ([0-9]+) ', job).group(1))
+        jobs = int(re.search(r'--shard "\$SHARD/\$SHARDS" --jobs ([0-9]+) ', job).group(1))
         minutes = int(re.search(r"(?m)^    timeout-minutes: ([0-9]+)$", job).group(1))
         self.assertTrue(1 <= jobs <= self.CORES, jobs)
-        per_shard = -(-len(mutate.MUTANTS) // count)
-        per_worker = -(-per_shard // jobs)
-        self.assertLessEqual(per_worker * self.WORST_MINUTES, minutes * self.SHARE,
-                             f"{len(mutate.MUTANTS)} mutants in {count} shards of {jobs} workers: add shards to ci.yml")
+        self.assertEqual((mutate.SHARD_JOBS, mutate.SHARD_TIMEOUT_MINUTES), (jobs, minutes), "the plan reads ci.yml")
+        self.assertGreaterEqual(mutate.WORST_MUTANT_MINUTES, self.WORST_MINUTES)  # the worst seen is never forgotten
+        self.assertLessEqual(mutate.TIMEOUT_SHARE, self.SHARE)
+
+        def fits(total: int, count: int) -> bool:  # at the plan's own worst and share, held above to the seen ones
+            per_shard = -(-total // count)
+            per_worker = -(-per_shard // jobs)
+            return per_worker * mutate.WORST_MUTANT_MINUTES <= minutes * mutate.TIMEOUT_SHARE
+        last = mutate.MATRIX_MAX * mutate.shard_cap()
+        self.assertEqual(mutate.MATRIX_MAX, 256)  # GitHub's limit of jobs in one matrix
+        for total in sorted({1, len(mutate.MUTANTS), *range(0, last + 1, 97), last}):
+            if total == 0:
+                continue
+            count = mutate.shard_count(total)
+            with self.subTest(total=total):
+                self.assertGreaterEqual(count, self.SHARDS_MIN)
+                self.assertTrue(fits(total, count), f"{total} mutants in {count} shards of {jobs} workers")
+                self.assertTrue(count == self.SHARDS_MIN or not fits(total, count - 1), "more shards than needed")
+        self.assertEqual(mutate.shard_count(1), self.SHARDS_MIN)
+        with self.assertRaises(ValueError):
+            mutate.shard_count(last + 1)  # past the matrix: `--shard-plan` exits 1 and the plan job turns red
+
+    def test_a_mutant_at_its_limit_still_fits_the_job(self):  # mutation_mutant_limit_past_the_job
+        """E738: one mutant's run stops at MUTANT_TIMEOUT_S and is recorded as timed out. The limit is above the worst
+        finished mutant (15 against 6 minutes), so a slow mutant that finishes is never cut; and a worker's full share
+        at the worst seen plus one mutant at the limit still ends inside the job's timeout (132 + 9 of 180)."""
+        mutate = self.mutate()
+        job = self.ci_job("mutation")
+        minutes = int(re.search(r"(?m)^    timeout-minutes: ([0-9]+)$", job).group(1))
+        limit = mutate.MUTANT_TIMEOUT_S / 60
+        self.assertGreater(limit, mutate.WORST_MUTANT_MINUTES)
+        per_worker = mutate.shard_cap() // mutate.SHARD_JOBS
+        worst = per_worker * mutate.WORST_MUTANT_MINUTES + (limit - mutate.WORST_MUTANT_MINUTES)
+        self.assertLessEqual(worst, minutes, f"{per_worker} mutants a worker, one at the {limit:.0f}-minute limit")
+
+    def test_ci_runs_the_plans_shards(self):
+        # mutation_shards_back_to_eight mutation_plan_not_from_the_mutants mutation_run_ignores_the_plan
+        # mutation_plan_piped_past_its_failure mutation_plan_unchecked
+        """E737: the plan job writes the count and the matrix from `mutate.py --shard-plan`; the matrix is the plan's and
+        every shard splits the mutants by the plan's count, so the matrix and `--shard K/N` cannot disagree. The review of
+        PR #39 (M1): the step runs under GitHub's default `bash -e` without pipefail, so the plan is written to a file,
+        never piped (a pipe's status is its last command's), and read back by `--check-plan` before the outputs."""
+        mutate = self.mutate()
+        plan = self.ci_job("mutation-plan")
+        self.assertIn("      count: ${{ steps.plan.outputs.count }}\n", plan)
+        self.assertIn("      shards: ${{ steps.plan.outputs.shards }}\n", plan)
+        steps = ('          python3 seed/bootstrap/local/mutate.py --shard-plan > "$RUNNER_TEMP/plan.txt"\n'
+                 '          python3 seed/bootstrap/local/mutate.py --check-plan "$RUNNER_TEMP/plan.txt"\n'
+                 '          tee -a "$GITHUB_OUTPUT" < "$RUNNER_TEMP/plan.txt"\n')
+        self.assertIn(steps, plan)
+        self.assertNotRegex(plan, r"--shard-plan[^\n]*\|")  # the plan's status is never a pipe's
+        self.assertNotIn("shell:", plan)  # the default `bash -e`, which this wiring is written for
+        job = self.ci_job("mutation")
+        self.assertIn("        shard: ${{ fromJSON(needs.mutation-plan.outputs.shards) }}\n", job)
+        self.assertIn("          SHARDS: ${{ needs.mutation-plan.outputs.count }}\n", job)
+        self.assertIn('python3 local/mutate.py --shard "$SHARD/$SHARDS" --jobs ', job)
+        self.assertNotRegex(job, r"(?m)^        shard: \[")  # no fixed matrix
+        count = mutate.shard_count(len(mutate.MUTANTS))
+        lines = dict(line.split("=", 1) for line in mutate.shard_plan(len(mutate.MUTANTS)).splitlines())
+        self.assertEqual(lines, {"count": str(count), "shards": json.dumps(list(range(count)))})
+        self.assertEqual(json.loads(lines["shards"]), list(range(int(lines["count"]))))
+        with mock.patch("sys.argv", ["mutate.py", "--shard-plan"]), mock.patch("sys.stdout", io.StringIO()) as out:
+            self.assertEqual(mutate.main(), 0)
+        self.assertEqual(out.getvalue(), mutate.shard_plan(len(mutate.MUTANTS)))
+
+    def test_the_plan_check_refuses_an_empty_or_cut_plan(self):  # mutation_plan_check_passes_an_empty_plan
+        """E737, the review of PR #39 (M1): `--check-plan` passes exactly the plan and names anything else, so a plan
+        that failed, came out empty or was cut turns the plan job red, not the matrix."""
+        mutate = self.mutate()
+        total = len(mutate.MUTANTS)
+        good = mutate.shard_plan(total)
+        count = mutate.shard_count(total)
+        self.assertEqual(mutate.check_plan(good, total), [])
+        for bad in ("", "\n", good.splitlines()[0] + "\n", "count=\nshards=\n", good + "extra=1\n",
+                    f"count={count}\nshards=[0, 1\n", f"count={count + 1}\nshards={json.dumps(list(range(count)))}\n",
+                    f"count={count}\nshards={json.dumps(list(range(count - 1)))}\n"):
+            with self.subTest(plan=bad):
+                self.assertNotEqual(mutate.check_plan(bad, total), [])
+        with tempfile.TemporaryDirectory() as tmp:
+            for text, want in ((good, 0), ("", 1)):
+                path = Path(tmp) / "plan.txt"
+                path.write_text(text, encoding="utf-8")
+                with mock.patch("sys.argv", ["mutate.py", "--check-plan", str(path)]), \
+                        mock.patch("sys.stdout", io.StringIO()), mock.patch("sys.stderr", io.StringIO()):
+                    self.assertEqual(mutate.main(), want, text)
 
     def test_the_shards_are_every_mutant_exactly_once(self):  # mutate_shard_partition_overlaps
         mutate = self.mutate()
-        count = int(re.search(r'--shard "\$SHARD/([0-9]+)"', self.ci_job("mutation")).group(1))
+        count = mutate.shard_count(len(mutate.MUTANTS))
         every = list(enumerate(mutate.MUTANTS))
         for n in (1, 7, count):
             ran = [i for k in range(n) for i, _m in mutate.shard(every, k, n)]
@@ -1833,6 +1916,7 @@ class MutationShardTest(unittest.TestCase):
                 mutate.shard(every, k, n)
 
     def test_the_completeness_check_names_every_gap(self):  # mutate_check_misses_a_mutant mutate_check_passes_a_survivor
+        # mutate_check_passes_a_timeout
         mutate = self.mutate()
         mutants = [("a_x", "f", "o", "n", "w"), ("b_x", "f", "o", "n", "w"), ("c_x", "f", "o", "n", "w")]
 
@@ -1843,6 +1927,9 @@ class MutationShardTest(unittest.TestCase):
         self.assertEqual(mutate.check_records([row("a_x"), row("b_x"), row("b_x"), row("c_x")], mutants),
                          ["b_x ran 2 times"])
         self.assertEqual(mutate.check_records([row("a_x"), row("b_x", False), row("c_x")], mutants), ["b_x survived"])
+        timed_out = {"name": "b_x", "file": "f", "killed": False, "killer": "timed out", "via": "timeout"}
+        self.assertEqual(mutate.check_records([row("a_x"), timed_out, row("c_x")], mutants),
+                         ["b_x timed out in f: no test run finished, not killed"])  # E738: named, never "survived"
         self.assertEqual(mutate.check_records([row("a_x"), row("b_x"), row("c_x"), row("d_x")], mutants),
                          ["d_x is no mutant"])
         self.assertEqual(mutate.check_records([row("a_x")], mutants + [mutants[0]]),
@@ -1980,6 +2067,94 @@ class MutationShardTest(unittest.TestCase):
                        ("twice", "a.py", "y = 2\n", "y = 0\n", ""), ("no_file", "b.py", "x", "y", "")]
             self.assertEqual(mutate.stale_anchors(Path(tmp), mutants),
                              ["gone (a.py: found 0x)", "twice (a.py: found 2x)", "no_file (b.py: found 0x)"])
+
+
+class MutantTimeoutTest(unittest.TestCase):
+    """E738: on 2026-11-23 main's no-hint daily run 45180563969 went red because one mutant's run passed its 900 s limit:
+    `subprocess.TimeoutExpired` was not caught, shard 7 crashed, wrote no records, and its log never named the mutant. A
+    run past the limit is now a recorded outcome: never a kill (`04:28` counts a kill only from a red the tests give,
+    and a run that never ends gives none), named with its file in the log and the record, and the shard runs the rest
+    and fails."""
+
+    @staticmethod
+    def mutate():
+        return MutationShardTest.mutate()
+
+    def test_a_run_past_the_limit_raises_and_is_never_a_kill(self):
+        # mutate_timeout_crashes_the_shard mutate_timeout_counted_killed mutate_hanging_test_verifies_a_kill
+        import subprocess
+        mutate = self.mutate()
+        seen = {}
+
+        def hang(argv, **kw):
+            seen["timeout"] = kw.get("timeout")
+            raise subprocess.TimeoutExpired(argv, kw.get("timeout"))
+        with mock.patch.object(mutate.shutil, "copytree"), mock.patch.object(mutate.shutil, "copy2"), \
+                mock.patch.object(mutate.subprocess, "run", hang):
+            with self.assertRaises(mutate.MutantTimeout) as caught:
+                mutate.run_mutant(3, None)
+        self.assertEqual(seen["timeout"], mutate.MUTANT_TIMEOUT_S)
+        self.assertIn(f"{mutate.MUTANT_TIMEOUT_S} s", str(caught.exception))
+        mutant = ("m_x", "f", "o", "n", "w")
+
+        def world(hint_hangs: bool, suite_hangs: bool, suite_kills: bool = True):
+            def run(index, m, tests=()):
+                if (tests and hint_hangs) or (not tests and suite_hangs):
+                    raise mutate.MutantTimeout("timed out: no test run finished in 900 s")
+                return (True, "test_m.T.test_t", 1.0) if tests else (suite_kills, "test_z.Z.test_z", 9.0)
+            return run
+        for hint, hint_hangs, suite_hangs, want in (
+                (None, False, True, (False, "timed out: no test run finished in 900 s", float(mutate.MUTANT_TIMEOUT_S),
+                                     "timeout")),
+                ("test_m.T.test_t", True, True, (False, "timed out: no test run finished in 900 s",
+                                                 2.0 * mutate.MUTANT_TIMEOUT_S, "timeout")),
+                ("test_m.T.test_t", True, False, (True, "test_z.Z.test_z", mutate.MUTANT_TIMEOUT_S + 9.0, "suite"))):
+            baseline = mutate.IsolatedBaseline()
+            baseline.known["test_m.T.test_t"] = True
+            with mock.patch.object(mutate, "run_mutant", world(hint_hangs, suite_hangs)):
+                self.assertEqual(mutate.judge(3, mutant, hint, baseline), want, (hint, hint_hangs, suite_hangs))
+
+        def alone(index, m, tests=()):
+            raise mutate.MutantTimeout("timed out")
+        with mock.patch.object(mutate, "run_mutant", alone):
+            self.assertFalse(mutate.IsolatedBaseline().passes("test_m.T.test_t"))  # a hanging test verifies no kill
+
+    def test_the_shard_runs_the_rest_names_the_mutant_and_fails(self):
+        # mutate_timeout_shard_green mutate_timeout_file_unnamed mutate_baseline_timeout_crashes
+        mutate = self.mutate()
+        mutants = [("a_x", "seed/a.py", "o", "n", "w"), ("b_x", "seed/b.py", "o", "n", "w"),
+                   ("c_x", "seed/c.py", "o", "n", "w")]
+
+        def judge(index, mutant, hint, baseline):
+            if mutant[0] == "b_x":
+                return False, "timed out: no test run finished in 900 s", 900.0, "timeout"
+            return True, "test_m.T.test_t", 1.0, "suite"
+        with tempfile.TemporaryDirectory() as tmp:
+            record = Path(tmp) / "shard.jsonl"
+            with mock.patch.object(mutate, "MUTANTS", mutants), mock.patch.object(mutate, "stale_anchors", lambda: []), \
+                    mock.patch.object(mutate, "run_mutant", lambda *a, **k: (False, "", 0.0)), \
+                    mock.patch.object(mutate, "judge", judge), \
+                    mock.patch("sys.argv", ["mutate.py", "--record", str(record)]), \
+                    mock.patch("sys.stdout", io.StringIO()) as out:
+                self.assertEqual(mutate.main(), 1)
+            rows = [json.loads(line) for line in record.read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([r["name"] for r in rows], ["a_x", "b_x", "c_x"])  # the rest of the shard is recorded
+        self.assertEqual({k: rows[1][k] for k in ("name", "file", "killed", "via")},
+                         {"name": "b_x", "file": "seed/b.py", "killed": False, "via": "timeout"})
+        log = out.getvalue()
+        self.assertRegex(log, r"(?m)^TIMEOUT  b_x .*seed/b\.py$")
+        self.assertIn("timed out after 900 s, not killed: b_x (seed/b.py)", log)
+        self.assertNotIn("SURVIVED", log)
+        self.assertEqual(mutate.check_records(rows, mutants), ["b_x timed out in seed/b.py: no test run finished, "
+                                                                "not killed"])
+
+        def hangs(*a, **k):
+            raise mutate.MutantTimeout("timed out: no test run finished in 900 s")
+        with mock.patch.object(mutate, "MUTANTS", mutants), mock.patch.object(mutate, "stale_anchors", lambda: []), \
+                mock.patch.object(mutate, "run_mutant", hangs), mock.patch("sys.argv", ["mutate.py"]), \
+                mock.patch("sys.stdout", io.StringIO()), mock.patch("sys.stderr", io.StringIO()) as err:
+            self.assertEqual(mutate.main(), 2)  # the unmutated tree itself hangs: said, not a crash
+        self.assertIn("the unmutated code's tests timed out", err.getvalue())
 
 
 class SystemMapTest(unittest.TestCase):

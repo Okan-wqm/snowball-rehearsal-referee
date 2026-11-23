@@ -8,6 +8,8 @@ anchor that no longer matches fails loudly, so the list cannot rot while the cod
     cd seed/bootstrap && python3 local/mutate.py [--only NAME[,NAME...]] [--list] [--shard K/N] [--jobs J]
                                                  [--hints FILE] [--record FILE]
     cd seed/bootstrap && python3 local/mutate.py --check-records DIR [--hints-out FILE]
+    cd seed/bootstrap && python3 local/mutate.py --shard-plan
+    cd seed/bootstrap && python3 local/mutate.py --check-plan FILE
 
 Run it on Linux (several tests need a POSIX shell). Exit 0 means every mutant was killed.
 
@@ -16,7 +18,10 @@ Run it on Linux (several tests need a POSIX shell). Exit 0 means every mutant wa
 alone against this tree with the mutant, and the mutant counts as killed only when it fails there and passes alone on
 the unmutated tree; otherwise the whole suite runs, as without a hint. A stale or forged hint can only cost time.
 `--record FILE` writes one line per mutant run; `--check-records` reads the shards' records and fails unless every
-mutant was run exactly once and killed (the CI job `mutation-complete`).
+mutant was run exactly once and killed (the CI job `mutation-complete`). A run past MUTANT_TIMEOUT_S is a recorded
+outcome, never a kill: the shard runs the rest, names the mutant and its file in its log and record, and fails. `--shard-plan` prints how many shards a full
+run needs (`shard_count`): the CI job `mutation-plan` sizes the matrix with it, so the shards follow the mutants;
+`--check-plan FILE` fails unless FILE is exactly that plan, so a failed or empty plan turns the plan job red.
 """
 
 from __future__ import annotations
@@ -37,15 +42,60 @@ BOOT = Path(__file__).resolve().parents[1]
 ROOT = BOOT.parents[1]
 
 
-def _ci_mutation_shards() -> int:
-    """N of the mutation job's `--shard "$SHARD/N"` in ci.yml, 0 when it is not there. The anchor of
-    `mutation_shards_back_to_eight` is the matrix of N shards: written as a number, it was left behind when a shard
-    was added (the verifier of 9600c4e: range(76) against 77 shards stopped every shard before its first mutant).
-    A matrix that disagrees with N is still a stale anchor."""
-    path = ROOT / ".github" / "workflows" / "ci.yml"
-    text = path.read_text(encoding="utf-8") if path.is_file() else ""
-    found = re.search(r'local/mutate\.py --shard "\$SHARD/([0-9]+)"', text)
-    return int(found.group(1)) if found else 0
+# CI's mutation job runs the mutants in shards, and the number of shards follows the number of mutants (E737). The
+# bound is per worker: with no hint at all each mutant runs the whole suite, and a worker's share at the worst mutant
+# seen ends within TIMEOUT_SHARE of the job's timeout (E410, E502; `test_wiring.MutationShardTest` holds ci.yml to it).
+SHARD_TIMEOUT_MINUTES = 180  # the mutation job's timeout-minutes in ci.yml
+SHARD_JOBS = 4  # mutants at a time in a shard (`--jobs`), the four cores of a standard Linux runner
+WORST_MUTANT_MINUTES = 6  # the worst mutant seen, the whole suite, four at a time (run 44763833954: 332 s)
+TIMEOUT_SHARE = 0.75  # of the job's timeout a shard may fill (E410: 15 mutants at 3 minutes in 60)
+# One mutant's run (the whole suite, or a hint's test) is stopped at MUTANT_TIMEOUT_S and recorded as timed out, never
+# as killed (E738). The limit is above the worst finished mutant (15 against 6 minutes), and a worker's full share at
+# the worst seen plus one mutant at the limit still ends inside the job's timeout (132 + 9 of 180 minutes).
+MUTANT_TIMEOUT_S = 900
+SHARDS_MIN = 24  # never fewer: the run's wall time stays what it was at 24 shards, 16 at a time (E525)
+MATRIX_MAX = 256  # GitHub runs at most 256 jobs of one matrix; a plan past it cannot run
+
+
+def shard_cap() -> int:
+    """The most mutants one shard may hold: each of its SHARD_JOBS workers runs at most the mutants that fit, at the
+    worst mutant seen, into TIMEOUT_SHARE of the timeout (today 22 a worker, 88 a shard)."""
+    return int(SHARD_TIMEOUT_MINUTES * TIMEOUT_SHARE // WORST_MUTANT_MINUTES) * SHARD_JOBS
+
+
+def shard_count(total: int) -> int:
+    """The shards a full run of TOTAL mutants needs: enough that none holds more than `shard_cap()`, never fewer than
+    SHARDS_MIN. A count past MATRIX_MAX is refused: `--shard-plan` exits 1 and the plan job turns red (its step writes
+    the plan to a file, no pipe, and `--check-plan` reads it back) instead of a shard timing out."""
+    count = max(SHARDS_MIN, -(-total // shard_cap()))
+    if count > MATRIX_MAX:
+        raise ValueError(f"{total} mutants need {count} shards of at most {shard_cap()}; a matrix holds {MATRIX_MAX}")
+    return count
+
+
+def shard_plan(total: int) -> str:
+    """The plan job's outputs (`$GITHUB_OUTPUT` lines): the shard count and the matrix of shard numbers."""
+    count = shard_count(total)
+    return f"count={count}\nshards={json.dumps(list(range(count)))}\n"
+
+
+def check_plan(text: str, total: int) -> list[str]:
+    """What is wrong with a plan the plan job is about to hand the matrix: it must be the two lines `count=N` and
+    `shards=[0, ..., N-1]`, N the shards TOTAL mutants need. Empty: it is. An empty or cut plan is named here, so the
+    plan job turns red instead of the matrix failing on `fromJSON('')` (E737)."""
+    lines = text.splitlines()
+    pairs = dict(line.split("=", 1) for line in lines if "=" in line)
+    if len(lines) != 2 or set(pairs) != {"count", "shards"}:
+        return [f"the plan is not the two lines count=N and shards=[...]: {text!r}"]
+    want = shard_count(total)
+    problems = [] if pairs["count"] == str(want) else [f"count={pairs['count']}, but {total} mutants need {want}"]
+    try:
+        shards = json.loads(pairs["shards"])
+    except ValueError:
+        return problems + [f"shards is no JSON: {pairs['shards']!r}"]
+    if shards != list(range(want)):
+        problems.append(f"shards is not [0..{want - 1}]: {pairs['shards']!r}")
+    return problems
 
 
 PKG = "seed/bootstrap/snowball_bootstrap"
@@ -2680,9 +2730,45 @@ MUTANTS = [
      "      max-parallel: 16" + chr(10), "",
      "E525: every shard starts at once and the referee's runs queue behind them"),
     ("mutation_shards_back_to_eight", ".github/workflows/ci.yml",
-     "        shard: [" + ", ".join(str(k) for k in range(_ci_mutation_shards())) + "]\n",
+     "        shard: ${{ fromJSON(needs.mutation-plan.outputs.shards) }}\n",
      "        shard: [0, 1, 2, 3, 4, 5, 6, 7]\n",
      "E410: fewer shards than the mutants need, and the mutation run hits its timeout and is cancelled"),
+    # E737: the shard count follows the mutant count (`shard_count`), so no epoch raises a fixed matrix by hand
+    ("mutation_shard_count_fixed", "seed/bootstrap/local/mutate.py",
+     "    count = max(SHARDS_MIN, -(-total // shard_cap()))\n", "    count = SHARDS_MIN\n",
+     "E737: a fixed shard count again; past its bound the shards grow and hit the job's timeout"),
+    ("mutation_shards_below_the_minimum", "seed/bootstrap/local/mutate.py",
+     "    count = max(SHARDS_MIN, -(-total // shard_cap()))\n", "    count = max(1, -(-total // shard_cap()))\n",
+     "E737: fewer than 24 shards while the mutants fit, and the run's wall time grows"),
+    ("mutation_matrix_limit_unchecked", "seed/bootstrap/local/mutate.py",
+     "    if count > MATRIX_MAX:\n", "    if False:\n",
+     "E737: a plan past GitHub's 256 jobs a matrix passes, and the run fails late instead of the plan"),
+    ("mutation_shard_cap_ignores_the_workers", "seed/bootstrap/local/mutate.py",
+     "TIMEOUT_SHARE // WORST_MUTANT_MINUTES) * SHARD_JOBS\n", "TIMEOUT_SHARE // WORST_MUTANT_MINUTES) * SHARD_JOBS * 2\n",
+     "E737: a shard holds twice what its workers finish in the timeout"),
+    ("mutation_worst_mutant_forgotten", "seed/bootstrap/local/mutate.py",
+     "\nWORST_MUTANT_MINUTES = 6  #", "\nWORST_MUTANT_MINUTES = 3  #",
+     "E502: the bound forgets the six-minute mutant seen, and the shards hold twice what fits"),
+    ("mutation_timeout_out_of_step", "seed/bootstrap/local/mutate.py",
+     "\nSHARD_TIMEOUT_MINUTES = 180  #", "\nSHARD_TIMEOUT_MINUTES = 240  #",
+     "E737: the plan assumes a longer timeout than ci.yml gives, and the shards it sizes hit the real one"),
+    ("mutation_plan_not_from_the_mutants", ".github/workflows/ci.yml",
+     '          python3 seed/bootstrap/local/mutate.py --shard-plan > "$RUNNER_TEMP/plan.txt"\n',
+     '          echo "count=24" > "$RUNNER_TEMP/plan.txt"\n',
+     "E737: the plan job writes a fixed count again, whatever the mutants"),
+    ("mutation_plan_piped_past_its_failure", ".github/workflows/ci.yml",
+     '          python3 seed/bootstrap/local/mutate.py --shard-plan > "$RUNNER_TEMP/plan.txt"\n',
+     '          python3 seed/bootstrap/local/mutate.py --shard-plan | tee "$RUNNER_TEMP/plan.txt"\n',
+     "E737 (review M1): the plan runs in a pipe under bash -e without pipefail, so a failed plan leaves the job green"),
+    ("mutation_plan_unchecked", ".github/workflows/ci.yml",
+     '          python3 seed/bootstrap/local/mutate.py --check-plan "$RUNNER_TEMP/plan.txt"\n', "",
+     "E737 (review M1): an empty or cut plan reaches the matrix, which fails on fromJSON('') in the wrong job"),
+    ("mutation_plan_check_passes_an_empty_plan", "seed/bootstrap/local/mutate.py",
+     '    if len(lines) != 2 or set(pairs) != {"count", "shards"}:\n', "    if False:\n",
+     "E737 (review M1): the plan check passes an empty plan"),
+    ("mutation_run_ignores_the_plan", ".github/workflows/ci.yml",
+     '--shard "$SHARD/$SHARDS"', '--shard "$SHARD/24"',
+     "E737: the shards split the mutants by a fixed count while the matrix follows the plan"),
     # CI speed (2026-11-20): main's runs are never cancelled, the shards are every mutant once, a hint is re-run and
     # verified, never replayed, and the daily run uses none
     ("ci_main_run_cancellable", ".github/workflows/ci.yml",
@@ -2703,8 +2789,42 @@ MUTANTS = [
      '    problems += [f"no shard ran {name}" for name in names if name not in seen]\n', "",
      "a mutant no shard ran passes the completeness check"),
     ("mutate_check_passes_a_survivor", "seed/bootstrap/local/mutate.py",
-     "    problems += [f\"{row.get('name')} survived\" for row in records if row.get(\"killed\") is not True]\n", "",
+     "    problems += [f\"{row.get('name')} survived\" for row in records\n"
+     "                 if row.get(\"killed\") is not True and row.get(\"via\") != \"timeout\"]\n", "",
      "a shard's survivor passes the completeness check"),
+    # E738: a mutant past its time limit is recorded and named, never killed, and never hides the shard's other results
+    ("mutate_timeout_crashes_the_shard", "seed/bootstrap/local/mutate.py",
+     "    try:\n        killed, killer, seconds = run_mutant(index, mutant)\n"
+     "    except MutantTimeout as timeout:  # recorded and named, never a kill (E738)\n"
+     "        return False, str(timeout), spent + MUTANT_TIMEOUT_S, \"timeout\"\n",
+     "    killed, killer, seconds = run_mutant(index, mutant)\n",
+     "E738: one mutant past its limit crashes the shard, and its records and the mutant's name are lost"),
+    ("mutate_timeout_counted_killed", "seed/bootstrap/local/mutate.py",
+     "        return False, str(timeout), spent + MUTANT_TIMEOUT_S, \"timeout\"\n",
+     "        return True, str(timeout), spent + MUTANT_TIMEOUT_S, \"timeout\"\n",
+     "E738: a run that never ends counts as a kill"),
+    ("mutate_check_passes_a_timeout", "seed/bootstrap/local/mutate.py",
+     "    problems += [f\"{row.get('name')} timed out in {row.get('file')}: no test run finished, not killed\"\n"
+     "                 for row in records if row.get(\"via\") == \"timeout\"]\n", "",
+     "E738: a timed-out mutant passes the completeness check unnamed"),
+    ("mutate_timeout_shard_green", "seed/bootstrap/local/mutate.py",
+     "    return 1 if survivors or timed_out else 0\n", "    return 1 if survivors else 0\n",
+     "E738: a shard whose mutant timed out ends green"),
+    ("mutate_timeout_file_unnamed", "seed/bootstrap/local/mutate.py",
+     "            rows[i] = {\"name\": m[0], \"file\": m[1], ", "            rows[i] = {\"name\": m[0], ",
+     "E738: a timed-out mutant's record does not name its file"),
+    ("mutate_hanging_test_verifies_a_kill", "seed/bootstrap/local/mutate.py",
+     "        except MutantTimeout:  # a test that hangs alone on the unmutated tree verifies no kill\n            failed = True\n",
+     "        except MutantTimeout:  # a test that hangs alone on the unmutated tree verifies no kill\n            failed = False\n",
+     "E738: a hinted test that hangs alone on the unmutated tree counts as passing there, so it verifies kills"),
+    ("mutate_baseline_timeout_crashes", "seed/bootstrap/local/mutate.py",
+     "    except MutantTimeout as timeout:\n        print(f\"the unmutated code's tests {timeout}; fix that first\", "
+     "file=sys.stderr)\n        return 2\n",
+     "    except MutantTimeout:\n        raise\n",
+     "E738: an unmutated run past its limit crashes the shard without saying the tree itself hangs"),
+    ("mutation_mutant_limit_past_the_job", "seed/bootstrap/local/mutate.py",
+     "\nMUTANT_TIMEOUT_S = 900\n", "\nMUTANT_TIMEOUT_S = 4000\n",
+     "E738: one mutant at its limit pushes a worker's full share past the job's timeout"),
     ("mutate_hint_replayed", "seed/bootstrap/local/mutate.py",
      "        if failed and baseline.passes(hint):\n", "        if failed:\n",
      "a hinted test that fails alone on the unmutated tree too counts as the mutant's killer"),
@@ -5567,6 +5687,87 @@ MUTANTS = [
      "M1 (review of PR #38): 29v's cited lines move"),
     ('ai_e734_risk_dropped', 'docs/eksik-kaydi.md', "; erken bir giriş güvenliğe değil MF5'in reddinin kanıtına mal olur: giren organ önyükleme hakeminin kabul ettiği bir organdır ve adayı yine diff-guard'dan, üç lint koşusundan, test koşusundan ve kırmızı kontrolden geçer (`26j:54-56`)", '',
      'S2 (review of PR #38): the register drops what L-P1E risks'),
+    # ---- seed epoch AJ (owner's hint E736, 2026-11-23): E697's class rule for all of the Founder's work, new 00f; each citation holds
+    ('classrule_successes_unsaid', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'hayatta kalan başarılar da satır doğurur (`22:62-63`).', 'yalnız başarısızlıklar satır doğurur (`22:62-63`).',
+     'E736: 00f says lessons are born only from failures'),
+    ('classrule_e697_miscited', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'kayıtlardır (`00e:58-60`).', 'kayıtlardır (`00e:45-46`).',
+     "E736: 00f cites E697's class rule at lines that do not hold it"),
+    ('classrule_mirror_miscited', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', '`26o:59-60`; tanımları', '`26o:23-24`; tanımları',
+     "E736: 00f cites the mirror's fields at lines that do not name them"),
+    ('classrule_02_miscited', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'değişiklik reddedilir (`02:79-80`).', 'değişiklik reddedilir (`02:22`).',
+     "E736: 00f cites 02's loosening rule at a line that does not hold it"),
+    ('classrule_cited_lesson_line_moved', 'spec/tohum/22-dersler.md', '## Doğuş\n', '## Doğuş\n\n',
+     "E736: 22's cited lesson lines move and 00f's citation lies"),
+    ('classrule_no_page_claim_dropped', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', '  - Sınıf kuralını ajanların ötesine, senin bütün işine taşıyan bir sayfa henüz yok.\n', '',
+     'E736: 00f no longer says what was missing'),
+    ('classrule_hint_unlabelled', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', '(bu kez kural esnetildi; 2026-11-23, E736; görev, reçete değil; korkuluklar bağlayıcıdır)', '(2026-11-23)',
+     "E736: the hint is not labelled an owner's hint, a duty and not a recipe"),
+    ('classrule_agents_only', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'yalnız ajanlarına değil, bütün işine uygulanır', 'yalnız ajanlarına uygulanır',
+     'E736: the class rule stays with the agents'),
+    ('classrule_successes_dropped', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', ' ve işe yarayan kabul edilmiş bir değişiklik,', ',',
+     'E736: an accepted change that worked is no source of a record'),
+    ('classrule_design_prescribed', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'Kaydın biçimi senindir.', 'Kaydın biçimini operatörün şablonu verir.',
+     "E736: the record's design is handed over"),
+    ('classrule_second_patch', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'ikinci bir\n     vaka başına düzeltmeyle değil', 'gerekirse\n     vaka başına bir düzeltmeyle',
+     'E736: a cause that comes back gets a second per-case fix'),
+    ('classrule_no_return_check', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', ', dönerse kırmızı olan bir denetimle kapanır;', ' kapanır;',
+     'E736: a closed class has no check that fails if it returns'),
+    ('classrule_layer_dropped', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'iki kez) doğduğu katmanda, dönerse', 'iki kez) görüldüğü yerde, dönerse',
+     'E736: a class is closed where it shows, not at the layer where it arises'),
+    ('classrule_genesis_rule_changed', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', "`22:64-65`'in genesis kuralı olduğu gibi kalır.", "`22:64-65`'in genesis kuralı ikinci tekrarda işler.",
+     "E736: the hint rewrites 22's genesis rule"),
+    ('classrule_tests_weakened', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'zayıflatılmış, atlanmış ya da silinmiş test ya da denetim yok', 'gerekirse bir test atlanır',
+     'E736: a skipped test closes a problem'),
+    ('classrule_threshold_lowered', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'düşürülmüş eşik\n     yok;', 'eşik\n     düşürülebilir;',
+     'E736: a lowered threshold closes a problem'),
+    ('classrule_silent_deferral', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'adlandıran bir neden satırı olmadan erteleme', 'adlandıran bir neden satırıyla ya da onsuz erteleme',
+     'E736: a deferral without a reason row closes a problem'),
+    ('classrule_02_loosened', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', "`02:79-80`'in kuralı olduğu gibi kalır;", "`02:79-80`'in kuralı bu görevle gevşer;",
+     "E736: the hint loosens 02's rule"),
+    ('classrule_not_falsifiable', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', '4. Yanlışlanabilir: bu görevle geçen 5 oturumdan sonra', '4. Kalıcı: bu görevle geçen oturumlarda',
+     'E736: the duty has no falsifiable check'),
+    ('classrule_growth_ignored', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'Artarlarsa yaklaşımını (kendi kuralını) yeniden yazarsın', 'Artarlarsa da yaklaşımın (kendi kuralın) kalır',
+     'E736: growing repeats change nothing'),
+    ('classrule_decision_unnamed', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', ', kanıtı\n     adlandıran bir `decision` satırıyla.', '.',
+     'E736: the rewrite leaves no decision row naming the evidence'),
+    ('classrule_check_unrequired', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', ' ve kapanan\n     her sınıfın dönüşünü yakalayacak denetimi vardır.', '.',
+     'E736: a closed class needs no check of its return'),
+    ('classrule_referee_loosened', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'hiçbir hakemi ya da denetimi gevşetmez', 'bir hakemin denetimini gevşetir',
+     'E736: the hint loosens a referee check'),
+    ('classrule_new_referee_rule', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 've yeni bir hakem kuralı getirmez:', 've hakeme yeni bir kural ekler:',
+     'E736: the hint brings a new referee rule'),
+    ('classrule_rework_demanded', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', 'Teslimde hiçbir yeniden yapım istenmez: görev bundan sonraki işine uygulanır;', 'Teslimde yapılmış iş bu göreve göre yeniden yapılır;',
+     'E736: the delivery asks the Founder to redo its work'),
+    ('classrule_00e_pointer_dropped', 'spec/tohum/00e-gorev-haritasi-sahibin-ipuclari-3.md', "\nSahibin 2026-11-23'ten sonraki ipuçları (E736'dan başlayarak) `00f`'dedir.\n", '\n',
+     'E736: 00e does not point to 00f'),
+    ('classrule_00e_line_moved', 'spec/tohum/00e-gorev-haritasi-sahibin-ipuclari-3.md', '**Sahibin ipucu (bu kez kural esnetildi; 2026-11-22, E697', '\n**Sahibin ipucu (bu kez kural esnetildi; 2026-11-22, E697',
+     "E736: 00e's cited lines move"),
+    ('e736_unlabelled', 'docs/eksik-kaydi.md', '(bu kez kural esnetildi; 2026-11-23, Suderra sahip tarafı; panelsiz; E697 gibi işaretli)', '(2026-11-23)',
+     "E736: the register does not label the owner's hint"),
+    ('e736_open', 'docs/eksik-kaydi.md', "| sahip (2026-11-23); E697; E692; E647 | kapandı (tohum dönemi AJ; ölçüm Kurucu'nun) |", '| sahip (2026-11-23); E697; E692; E647 | açık |',
+     'E736: the register row stays open'),
+    ('e736_recipe', 'docs/eksik-kaydi.md', 'Görev, reçete değil: hiçbir tasarım verilmez. Yeni `00f`', 'Reçete: kayıt operatörün şablonuyla yazılır. Yeni `00f`',
+     'E736: the register hands over a design'),
+    ('classrule_00f_lines_shifted', 'spec/tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md', "(`22`'nin ders satırları).\n     Kaydın biçimi senindir.\n", "(`22`'nin ders satırları). Kaydın biçimi senindir.\n",
+     "D1 (review of PR #39): the shortened sentence pulls 00f's later lines up"),
+    ('e738_open', 'docs/eksik-kaydi.md', '| E410; E502; E737; CI koşusu 45180563969 | kapandı (tohum dönemi AJ) |', '| E410; E502; E737; CI koşusu 45180563969 | açık |',
+     'E738: the register row stays open'),
+    ('e738_kill_claimed', 'docs/eksik-kaydi.md', 'sınırı geçen koşu kayıtlı bir sonuçtur, hiçbir zaman öldürme değildir.', 'sınırı geçen koşu öldürülmüş sayılır.',
+     'E738: the register counts a timed-out mutant as killed'),
+    ('e737_open', 'docs/eksik-kaydi.md', '| E410; E502; E525; E697 | kapandı (tohum dönemi AJ) |', '| E410; E502; E525; E697 | açık |',
+     'E737: the register row stays open'),
+    ('e737_bound_kept', 'docs/eksik-kaydi.md', "`mutate.shard_count` commit'in kendi mutantlarından hesaplar", 'matris 24 parçada kalır, sınırı `test_wiring` tutar',
+     'E737: the register keeps the fixed matrix'),
+    ('aj_first_task_not_first', 'spec/tohum/CHANGELOG-19.md', '  **İlk iş** (`25` 10b). Teslimden', '  Teslimden',
+     'E736: CHANGELOG-19 does not open with its first task'),
+    ('aj_order_changed', 'spec/tohum/CHANGELOG-19.md', "sırası `CHANGELOG-14`'ünkidir; E736", "sırası E736'yla başlar; E736",
+     "E736: the hint changes the order of the Founder's work"),
+    ('aj_rework_demanded', 'spec/tohum/CHANGELOG-19.md', 've hiçbir yeniden yapım istemez.', 've teslimde yapılmış işin yeniden yapımını ister.',
+     'E736: the changelog asks the Founder to redo its work'),
+    ('aj_changelog_unindexed', 'spec/tohum/CHANGELOG.md', '`00f`): `CHANGELOG-19.md`; başında **İlk iş**.\n', '`00f`): `CHANGELOG-19.md`.\n',
+     'E736: the changelog index does not say the entry opens with its first task'),
+    ('aj_index_missing', 'spec/INDEX.md', "| `tohum/CHANGELOG-19.md` | Değişiklik Günlüğü — Tohum, 2.2'nin On Sekizinci Kayıtları | bir sayfanın geçmişi aranırken |\n", '',
+     'E736: INDEX does not list CHANGELOG-19'),
 ]
 
 
@@ -5621,8 +5822,11 @@ def run_mutant(index: int, mutant: tuple[str, str, str, str, str] | None,
                "HOME": str(work)}
         argv = ([sys.executable, "-m", "unittest", "-f", *tests] if tests
                 else [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-f"])
-        proc = subprocess.run(argv, cwd=boot, env=env,
-                              capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=900)
+        try:
+            proc = subprocess.run(argv, cwd=boot, env=env, capture_output=True, text=True, encoding="utf-8",
+                                  errors="replace", timeout=MUTANT_TIMEOUT_S)
+        except subprocess.TimeoutExpired:
+            raise MutantTimeout(f"timed out: no test run finished in {MUTANT_TIMEOUT_S} s") from None
     output = proc.stdout + proc.stderr
     killers = [failed_test(line) for line in output.splitlines() if line.startswith(("FAIL: ", "ERROR: "))]
     return proc.returncode != 0, (killers[0] if killers else "(no test named)"), time.monotonic() - started
@@ -5639,6 +5843,11 @@ def failed_test(line: str) -> str:
 HINT = re.compile(r"test_\w+(\.\w+){0,2}")  # a module, class or test of tests/: nothing else is run as a hint
 
 
+class MutantTimeout(Exception):
+    """A run of the tests that did not finish in MUTANT_TIMEOUT_S (E738). It is no kill: `04` counts a mutant killed
+    only by a red the tests give, and a run that never ends gives none."""
+
+
 class IsolatedBaseline:
     """Whether a test passes when it runs alone on the unmutated tree; each test is run once, whichever worker asks."""
 
@@ -5650,7 +5859,10 @@ class IsolatedBaseline:
         with self.lock:
             if test in self.known:
                 return self.known[test]
-        failed, _detail, _seconds = run_mutant(-1, None, (test,))
+        try:
+            failed, _detail, _seconds = run_mutant(-1, None, (test,))
+        except MutantTimeout:  # a test that hangs alone on the unmutated tree verifies no kill
+            failed = True
         with self.lock:
             self.known[test] = not failed
         return not failed
@@ -5662,10 +5874,16 @@ def judge(index: int, mutant, hint: str | None, baseline: IsolatedBaseline) -> t
     it, not the test's isolation). Anything else runs the whole suite, exactly as a run without hints."""
     spent = 0.0
     if hint and HINT.fullmatch(hint):
-        failed, killer, spent = run_mutant(index, mutant, (hint,))
+        try:
+            failed, killer, spent = run_mutant(index, mutant, (hint,))
+        except MutantTimeout:  # the hinted test hangs with the mutant: unverified, the whole suite judges
+            failed, spent = False, float(MUTANT_TIMEOUT_S)
         if failed and baseline.passes(hint):
             return True, killer, spent, "hint"
-    killed, killer, seconds = run_mutant(index, mutant)
+    try:
+        killed, killer, seconds = run_mutant(index, mutant)
+    except MutantTimeout as timeout:  # recorded and named, never a kill (E738)
+        return False, str(timeout), spent + MUTANT_TIMEOUT_S, "timeout"
     return killed, killer, spent + seconds, "suite"
 
 
@@ -5705,7 +5923,10 @@ def check_records(records: list[dict], mutants=MUTANTS) -> list[str]:
     problems += [f"no shard ran {name}" for name in names if name not in seen]
     problems += [f"{name} ran {count} times" for name, count in sorted(seen.items()) if count > 1]
     problems += [f"{name} is no mutant" for name in sorted(set(seen) - set(names))]
-    problems += [f"{row.get('name')} survived" for row in records if row.get("killed") is not True]
+    problems += [f"{row.get('name')} timed out in {row.get('file')}: no test run finished, not killed"
+                 for row in records if row.get("via") == "timeout"]
+    problems += [f"{row.get('name')} survived" for row in records
+                 if row.get("killed") is not True and row.get("via") != "timeout"]
     return problems
 
 
@@ -5748,7 +5969,19 @@ def main() -> int:
     parser.add_argument("--check-records", help="a folder of the shards' records: fail unless they are every mutant "
                                                 "once, each killed")
     parser.add_argument("--hints-out", help="with --check-records: write the killers as the next run's hints")
+    parser.add_argument("--shard-plan", action="store_true",
+                        help="print CI's plan for every mutant: count=N and shards=[0..N-1] (`shard_count`)")
+    parser.add_argument("--check-plan", help="a file --shard-plan wrote: fail unless it is exactly the plan")
     args = parser.parse_args()
+    if args.shard_plan:
+        print(shard_plan(len(MUTANTS)), end="")
+        return 0
+    if args.check_plan:
+        problems = check_plan(Path(args.check_plan).read_text(encoding="utf-8"), len(MUTANTS))
+        for problem in problems:
+            print(problem, file=sys.stderr)
+        print(f"plan for {len(MUTANTS)} mutants: {'INVALID' if problems else 'valid'}")
+        return 1 if problems else 0
     if args.check_records:
         return check_main(args.check_records, args.hints_out)
     if args.jobs < 1:
@@ -5780,7 +6013,11 @@ def main() -> int:
     if stale:
         print(f"stale mutant anchors, update them first: {'; '.join(stale)}", file=sys.stderr)
         return 2
-    killed, detail, _ = run_mutant(-1, None)  # without this a failing environment makes every mutant "killed"
+    try:
+        killed, detail, _ = run_mutant(-1, None)  # without this a failing environment makes every mutant "killed"
+    except MutantTimeout as timeout:
+        print(f"the unmutated code's tests {timeout}; fix that first", file=sys.stderr)
+        return 2
     if killed:
         print(f"the unmutated code already fails its tests ({detail}); fix that first", file=sys.stderr)
         return 2
@@ -5791,9 +6028,12 @@ def main() -> int:
         for done in as_completed(running):
             i, m = running[done]
             killed, detail, seconds, via = done.result()
-            print(f"{'killed  ' if killed else 'SURVIVED'} {m[0]:34} {seconds:5.1f}s  {detail}  [{via}]", flush=True)
-            rows[i] = {"name": m[0], "killed": killed, "killer": detail, "via": via, "seconds": round(seconds, 1)}
-    survivors = [rows[i]["name"] for i, _m in chosen if not rows[i]["killed"]]
+            mark = "TIMEOUT " if via == "timeout" else "killed  " if killed else "SURVIVED"
+            print(f"{mark} {m[0]:34} {seconds:5.1f}s  {detail}  [{via}]  {m[1]}", flush=True)
+            rows[i] = {"name": m[0], "file": m[1], "killed": killed, "killer": detail, "via": via,
+                       "seconds": round(seconds, 1)}
+    survivors = [rows[i]["name"] for i, _m in chosen if not rows[i]["killed"] and rows[i]["via"] != "timeout"]
+    timed_out = [f"{rows[i]['name']} ({rows[i]['file']})" for i, _m in chosen if rows[i]["via"] == "timeout"]
     if args.record:
         Path(args.record).parent.mkdir(parents=True, exist_ok=True)
         Path(args.record).write_text("".join(json.dumps(rows[i], sort_keys=True) + "\n" for i, _m in chosen),
@@ -5803,7 +6043,9 @@ def main() -> int:
           f"{len(chosen) - by_hint} by the whole suite; {args.jobs} at a time)")
     if survivors:
         print("not measured by any test:", ", ".join(survivors))
-    return 1 if survivors else 0
+    if timed_out:
+        print(f"timed out after {MUTANT_TIMEOUT_S} s, not killed:", ", ".join(timed_out))
+    return 1 if survivors or timed_out else 0
 
 if __name__ == "__main__":
     sys.exit(main())
