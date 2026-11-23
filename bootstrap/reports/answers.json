@@ -135,6 +135,21 @@
       "id": "seed-095-asama-1-per-finding-brakes-have-no-policy-key",
       "changelog": "CHANGELOG-15",
       "kind": "answered"
+    },
+    {
+      "id": "seed-097-an-agent-runs-cost-is-shown-to-no-session",
+      "changelog": "CHANGELOG-16",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-098-the-form-of-an-organs-output-is-on-no-page",
+      "changelog": "CHANGELOG-16",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-099-the-rerun-of-a-run-time-candidate-leaves-its-form-and-bounds-unstated",
+      "changelog": "CHANGELOG-16",
+      "kind": "answered"
     }
   ],
   "carried": {

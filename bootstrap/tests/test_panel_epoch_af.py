@@ -382,7 +382,8 @@ class RecordsTest(unittest.TestCase):
                     "| `tohum/26m-semalar-p1-kalanlar.md` |", "| `tohum/26n-semalar-p1-kalanlar-devam.md` |"):
             self.assertIn(row, index)
         log = (TOHUM / "CHANGELOG.md").read_text(encoding="utf-8")
-        self.assertIn("`CHANGELOG-15.md`; başında **İlk iş**.", log.splitlines()[6])
+        af = next(line for line in log.splitlines() if "E698–E703" in line)  # a later epoch's line comes above it (AG)
+        self.assertIn("`CHANGELOG-15.md`; başında **İlk iş**.", af)
         self.assertIn("`CHANGELOG-arsiv.md`", log.splitlines()[-1])
         archive = (TOHUM / "CHANGELOG-arsiv.md").read_text(encoding="utf-8")
         for moved in ("- 2.2 (2026-11-14 – 2026-11-15, E585–E599)", "- 2.1 ve öncesi (2026-10-28): `CHANGELOG-1.md`."):

@@ -708,6 +708,205 @@ class PageTest(unittest.TestCase):
         row = next(line for line in register if line.startswith("| E647 |"))
         self.assertIn("sahip kararı 2026-11-19, ölçüm aynası", row)
 
+# ---- seed epoch AG (report desk, 2026-11-22): an agent run's cost (seed-097, E720) and the rival's outage (E721)
+PRICES = {"source": "the operator", "as_of": "2026-11-22",
+          "models": {"claude-opus-5-5": {"in": 4_000_000, "out": 20_000_000, "cache_read": 200_000,
+                                         "cache_write_5m": 5_000_000, "cache_write_1h": 8_000_000}}}
+
+
+def agent_call(use_id, parent=None, **given):
+    return {"type": "assistant", "parent_tool_use_id": parent,
+            "message": {"id": f"msg-call-{use_id}", "model": "claude-opus-5-5" if parent else "claude-fable-5-2",
+                        "usage": {"input_tokens": 1, "output_tokens": 1, "cache_read_input_tokens": 500,
+                                  "cache_creation_input_tokens": 0},
+                        "content": [{"type": "tool_use", "id": use_id, "name": "Agent", "input": given}]}}
+
+
+def agent_message(parent, mid, model="claude-opus-5-5", **usage):
+    full = {"input_tokens": 2, "output_tokens": 8, "cache_read_input_tokens": 1000,
+            "cache_creation": {"ephemeral_5m_input_tokens": 100, "ephemeral_1h_input_tokens": 10}}
+    full.update(usage)
+    return {"type": "assistant", "parent_tool_use_id": parent, "message": {"id": mid, "model": model, "usage": full,
+                                                                           "content": [{"type": "text", "text": "x"}]}}
+
+
+def closing(**models):
+    return {"type": "result", "modelUsage": {m: dict({"inputTokens": 4, "outputTokens": 5000, "cacheReadInputTokens": 2000,
+                                                       "cacheCreationInputTokens": 220, "costUSD": 0.5}, **u)
+                                             for m, u in models.items()}}
+
+
+def ended(use_id, ms, status="completed"):
+    return {"type": "system", "subtype": "task_notification", "tool_use_id": use_id, "status": status,
+            "usage": {"total_tokens": 1, "tool_uses": 1, "duration_ms": ms}}
+
+
+class RunCostTest(unittest.TestCase):
+    """seed-097 (E720): each agent run keyed by its call's tool_use_id, with its tokens by kind, wall time and a cost
+    derived from the operator's price table; what cannot be measured is null with its reason."""
+
+    def session(self, events, prices=PRICES):
+        w = Work()
+        stamp = "20261118T010000Z"
+        w.folder(stamp, **{f"session-{stamp}.jsonl": [{"type": "system", "subtype": "init", "model": "claude-fable-5-2"},
+                                                     *events]})
+        return M.mirror(STAMP, w.metrics, w.logs, None, w.root / "no-spec", None, None, prices)["delegation"]
+
+    def test_a_runs_tokens_wall_time_and_derived_cost(self):
+        # run_tokens_counted_per_event run_cost_not_derived run_out_from_another_line run_wall_dropped run_effort_dropped
+        out = self.session([agent_call("toolu_a", subagent_type="brain:push-reviewer", effort="high"),
+                            agent_message("toolu_a", "m1"), agent_message("toolu_a", "m1"),  # one message, two events
+                            agent_message("toolu_a", "m2", cache_read_input_tokens=3000),
+                            ended("toolu_a", 514818), closing(**{"claude-opus-5-5": {"costBasis": "list"},
+                                                                 "claude-fable-5-2": {"costBasis": "unknown"}})])
+        session = out["sessions"][0]
+        self.assertEqual(session["session_model"], "claude-fable-5-2")
+        run, = session["runs"]
+        self.assertEqual({k: run[k] for k in ("tool_use_id", "subagent_type", "model", "effort", "parent", "status",
+                                              "wall_ms", "out_from", "cost_basis", "not_measured")},
+                         {"tool_use_id": "toolu_a", "subagent_type": "brain:push-reviewer", "model": "claude-opus-5-5",
+                          "effort": "high", "parent": None, "status": "completed", "wall_ms": 514818,
+                          "out_from": "cli_model_line", "cost_basis": "derived:price_table", "not_measured": None})
+        self.assertEqual(run["tokens"], {"in": 4, "cache_read": 4000, "cache_write_5m": 200, "cache_write_1h": 20,
+                                         "out": 5000})  # out: the model's line, the only run on it
+        floor = (4 * 4_000_000 + 4000 * 200_000 + 200 * 5_000_000 + 20 * 8_000_000 + 500_000) // 1_000_000
+        self.assertEqual(run["cost_floor_usd_micros"], floor)
+        self.assertEqual(run["cost_usd_micros"], (4 * 4_000_000 + 4000 * 200_000 + 200 * 5_000_000 + 20 * 8_000_000
+                                                  + 5000 * 20_000_000 + 500_000) // 1_000_000)
+        self.assertEqual(session["models_cli"]["claude-opus-5-5"], {"in": 4, "out": 5000, "cache_read": 2000,
+                                                                    "cache_write": 220, "cost_usd_micros": 500000,
+                                                                    "cost_basis": "list"})
+        self.assertEqual(out["prices"]["models"], PRICES["models"])
+        self.assertIn("never the CLI's figure", out["cost_is"])
+        self.assertIn("only when the session ran that agent once on that model", out["exactness"])
+
+    def test_a_foreground_runs_last_message_is_its_calls_result(self):  # run_last_message_dropped
+        """The transcript holds a foreground run's messages but its last; the Agent call's tool_use_result carries that
+        message's usage (session 20261122T130912Z: with it the run's input, cache read and cache write tokens are the
+        CLI's opus line exactly, and the derived cost is the CLI's 2071132 micros)."""
+        last = {"type": "user", "tool_use_result": {"status": "completed", "resolvedModel": "claude-opus-5-5",
+                                                     "usage": {"input_tokens": 2, "output_tokens": 3504,
+                                                               "cache_read_input_tokens": 201930,
+                                                               "cache_creation": {"ephemeral_5m_input_tokens": 1163,
+                                                                                  "ephemeral_1h_input_tokens": 0}}},
+                "message": {"content": [{"type": "tool_result", "tool_use_id": "toolu_a", "content": "{}"}]}}
+        out = self.session([agent_call("toolu_a"), agent_message("toolu_a", "m1"), last,
+                            closing(**{"claude-opus-5-5": {"costBasis": "list"}})])
+        run = out["sessions"][0]["runs"][0]
+        self.assertEqual(run["tokens"], {"in": 4, "cache_read": 202930, "cache_write_5m": 1263, "cache_write_1h": 10,
+                                         "out": 5000})
+
+    def test_two_runs_on_one_model_and_a_nested_run_leave_output_unmeasured(self):
+        # run_nested_merged run_out_shared run_floor_dropped
+        out = self.session([agent_call("toolu_a", subagent_type="x"), agent_message("toolu_a", "m1"),
+                            agent_call("toolu_b", parent="toolu_a", subagent_type="y"), agent_message("toolu_b", "m2"),
+                            closing(**{"claude-opus-5-5": {"costBasis": "list"}})])
+        one, two = out["sessions"][0]["runs"]
+        self.assertEqual((one["parent"], two["parent"]), (None, "toolu_a"))
+        # each its own messages: the call's message is the calling run's, the nested run's message its own
+        self.assertEqual((one["tokens"]["cache_read"], two["tokens"]["cache_read"]), (1500, 1000))
+        for run in (one, two):
+            self.assertEqual((run["tokens"]["out"], run["out_from"], run["cost_usd_micros"], run["not_measured"]),
+                             (None, None, None, "output_tokens_unlogged"))
+        self.assertEqual(two["cost_floor_usd_micros"], (2 * 4_000_000 + 1000 * 200_000 + 100 * 5_000_000
+                                                        + 10 * 8_000_000 + 500_000) // 1_000_000)
+        self.assertEqual(one["cost_floor_usd_micros"], (3 * 4_000_000 + 1500 * 200_000 + 100 * 5_000_000
+                                                        + 10 * 8_000_000 + 500_000) // 1_000_000)
+        self.assertEqual(out["sessions"][0]["agent_calls"], 2)
+
+    def test_a_run_on_the_sessions_own_model_has_no_output_of_its_own(self):  # run_out_from_the_sessions_model
+        out = self.session([agent_call("toolu_a"), agent_message("toolu_a", "m1", model="claude-fable-5-2"),
+                            closing(**{"claude-fable-5-2": {"costBasis": "list"}})],
+                           prices=dict(PRICES, models=dict(PRICES["models"], **{"claude-fable-5-2": PRICES["models"]["claude-opus-5-5"]})))
+        run = out["sessions"][0]["runs"][0]
+        self.assertEqual((run["tokens"]["out"], run["not_measured"]), (None, "output_tokens_unlogged"))
+
+    def test_what_cannot_be_priced_or_read_is_null_with_its_reason(self):
+        # run_unknown_basis_priced run_unpriced_model_priced run_no_usage_priced run_unsplit_writes_priced
+        cases = [([agent_message("toolu_a", "m1")], {"claude-opus-5-5": {"costBasis": "unknown"}},
+                  "price_unknown:claude-opus-5-5"),
+                 ([agent_message("toolu_a", "m1", model="claude-sonnet-x")], {"claude-sonnet-x": {"costBasis": "list"}},
+                  "price_unknown:claude-sonnet-x"),
+                 ([agent_message("toolu_a", "m1")], {}, "price_unknown:claude-opus-5-5"),  # no closing line: no basis
+                 ([], {"claude-opus-5-5": {"costBasis": "list"}}, "no_usage"),
+                 ([agent_message("toolu_a", "m1", cache_creation=None, cache_creation_input_tokens=5)],
+                  {"claude-opus-5-5": {"costBasis": "list"}}, "usage_unreadable")]
+        for messages, models, why in cases:
+            with self.subTest(why=why):
+                events = [agent_call("toolu_a"), *messages] + ([closing(**models)] if models else [])
+                run = self.session(events)["sessions"][0]["runs"][0]
+                self.assertEqual((run["cost_usd_micros"], run["not_measured"]), (None, why))
+        run = self.session([agent_call("toolu_a"), agent_message("toolu_a", "m1"),
+                            closing(**{"claude-opus-5-5": {"costBasis": "list"}})], prices=None)["sessions"][0]["runs"][0]
+        self.assertEqual(run["not_measured"], "price_unknown:claude-opus-5-5")  # no table at all
+        unsplit = self.session([agent_call("toolu_a"), agent_message("toolu_a", "m1", cache_creation=None,
+                                                                     cache_creation_input_tokens=0),
+                                closing(**{"claude-opus-5-5": {"costBasis": "list"}})])["sessions"][0]["runs"][0]
+        self.assertEqual(unsplit["tokens"]["cache_write_5m"], 0)  # nothing written needs no split
+        unfinished = self.session([agent_call("toolu_a"), closing()])["sessions"][0]["runs"][0]
+        self.assertEqual((unfinished["status"], unfinished["wall_ms"], unfinished["tokens"]), ("unfinished", None, None))
+
+    def test_the_price_table_is_read_in_its_form_or_said_unread(self):  # prices_form_unchecked
+        good = M.price_table(PRICES)
+        self.assertEqual((good["source"], good["as_of"], good["unit"]),
+                         ("the operator", "2026-11-22", "usd_micros_per_million_tokens"))
+        row = PRICES["models"]["claude-opus-5-5"]
+        for bad in ({"error": "FileNotFoundError"}, None, dict(PRICES, models=[]), dict(PRICES, as_of="today"),
+                    dict(PRICES, models={"claude-opus-5-5": dict(row, out=1.5)}),
+                    dict(PRICES, models={"claude-opus-5-5": dict(row, out=-1)}),
+                    dict(PRICES, models={"claude-opus-5-5": {"in": 1}}),
+                    dict(PRICES, models={"bad model!": row})):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                M.price_table(bad)
+        out = self.session([], prices={"error": "ValueError"})
+        self.assertIsNone(out["prices"])
+        self.assertEqual(out["null_reasons"]["prices"], "seed/founder/prices.json: not read: ValueError")
+        shipped = json.loads((ROOT / "seed" / "founder" / "prices.json").read_text(encoding="utf-8"))
+        self.assertEqual(sorted(M.price_table(shipped)["models"]), ["claude-fable-5-2", "claude-opus-5-5"])
+
+    def test_the_runs_of_a_session_are_capped(self):  # runs_uncapped
+        events = [agent_call(f"toolu_{i}") for i in range(M.RUNS_MAX + 3)]
+        session = self.session(events)["sessions"][0]
+        self.assertEqual((len(session["runs"]), session["runs_left_out"], session["agent_calls"]),
+                         (M.RUNS_MAX, 3, M.RUNS_MAX + 3))
+        self.assertEqual(session["runs"][0]["tool_use_id"], "toolu_0")  # in the order the calls were made
+
+
+class OutageCountTest(unittest.TestCase):
+    """E721: a push the rival's outage left unjudged is counted under outages, never as a verdict or a rejection."""
+
+    def test_an_outage_is_no_rejection_in_any_form(self):
+        # mirror_outage_counted_rejected mirror_old_outage_row_rejected mirror_outage_takes_an_unevaluated_late_verdict
+        w = Work()
+        outage = [{"kind": "rival_unresolved", "ref": "api_error:http_429", "owner": "rival"}]
+        w.rows(cycle("20261118T010000Z", verdict=None, unjudged={"cause": "outage", "owner": "rival"}, reasons=outage),
+               cycle("20261118T020000Z", verdict="rejected", reasons=outage),  # written before E721
+               cycle("20261118T030000Z", verdict="rejected", reasons=outage),
+               cycle("20261118T040000Z", verdict=None, unjudged={"cause": "outage", "owner": "rival"}, reasons=outage),
+               cycle("20261118T050000Z", verdict="rejected", reasons=[{"kind": "refutation_reproduced"}]))
+        w.folder("20261118T030000Z", previous_session_json={"stamp": "20261118T020000Z", "verdict": "rejected"})
+        w.folder("20261118T050000Z", previous_session_json={"stamp": "20261118T040000Z", "verdict": "accepted",
+                                                            "evaluated": True})
+        m = w.mirror()["per_model"]["models"][0]
+        self.assertEqual((m["outages"], m["verdicts"], m["verdicts_from_next_session"], m["rejected_rows_by_reason"],
+                          m["pushes_without_verdict"], m["accepted"]),
+                         (3, {"code:rejected": 1}, {"accepted": 1}, {"refutation_reproduced": 1}, 0, 1))
+        self.assertIn("outages", M.SOURCES["per_model"])
+        repeats = w.mirror()["repeats"]["repeats"]
+        self.assertEqual([r["class"] for r in repeats], [])  # the outage is no repeated rejection class
+
+    def test_only_the_rivals_own_api_errors_are_an_outage(self):
+        self.assertTrue(M.rival_outage([{"kind": "rival_unresolved", "ref": "api_error:http_429"}]))
+        for reasons in ([], None, [{"kind": "rival_unresolved", "ref": "api_error:isolation_network"}],
+                        [{"kind": "rival_unresolved", "ref": "max_turns"}],
+                        [{"kind": "rival_unresolved", "ref": "api_error:http_429"}, {"kind": "infra", "ref": "kos"}]):
+            with self.subTest(reasons=reasons):
+                self.assertFalse(M.rival_outage(reasons))
+        self.assertFalse(M.outage({"verdict": "accepted", "reasons": [{"kind": "rival_unresolved",
+                                                                       "ref": "api_error:http_429"}]}))
+        self.assertTrue(M.outage({"verdict": None, "unjudged": {"cause": "outage"}}))
+
+
 
 if __name__ == "__main__":
     unittest.main()
