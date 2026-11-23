@@ -124,7 +124,9 @@
    "rival_min_attempts": 6,
    "repeat_reject_limit": 4,
    "fix_acceptance_min": "0.810000",
-   "live_merge_min": 11
+   "live_merge_min": 11,
+   "fix_call_max_usd": "0.510000",
+   "fix_call_max_s": 301
   },
   "stage_budgets": {
    "asama_0": {

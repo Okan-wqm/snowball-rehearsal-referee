@@ -98,14 +98,22 @@ class FixtureTest(unittest.TestCase):
     def test_the_required_paths_are_18as_rows_a_stage_0_loop_tool_reads(self):  # required_json_drifts_from_18a
         """Every constitutional row whose readers name a Stage 0 loop tool, and every `operating` row (`18a` names
         `run.contained`, `unit.verify` and `deps.fetch` as their readers): a new such row without its path here is red
-        in the seed, the class seed-053 named."""
+        in the seed, the class seed-053 named. A row whose reader is a P3 row (epoch AI: the fixer.llm brakes, read by
+        `llm.call` on `fixer.llm`'s behalf only from P3 MF2) is required when P3's table opens (`29v`), not in Stage 0:
+        exactly the two brake keys are such rows."""
         text = page("18a")
         self.assertIn("`run.contained`, `unit.verify` ve `deps.fetch`'tir", " ".join(text.split()))
-        derived = set()
+        derived, later = set(), set()
         for paths, row in key_rows("18a"):
             readers = row.rsplit(" | ", 1)[-1]
-            if paths[0].startswith("operating.") or any(f"`{tool}`" in readers for tool in LOOP_TOOLS):
+            if readers.startswith("P3 MF"):
+                later.update(paths)
+            elif paths[0].startswith("operating.") or any(f"`{tool}`" in readers for tool in LOOP_TOOLS):
                 derived.update(paths)
+        self.assertEqual(later, {"constitutional.stage_params.fix_call_max_usd",
+                                 "constitutional.stage_params.fix_call_max_s"})
+        self.assertFalse(later & {path for rows_ in json.loads((FIXTURES / policyreads.REQUIRED).read_text(
+            encoding="utf-8")).values() for path in rows_})
         rows = json.loads((FIXTURES / policyreads.REQUIRED).read_text(encoding="utf-8"))
         self.assertEqual(sorted(rows), ["0", "1"])
         self.assertEqual(sorted(rows["0"]), sorted(derived))

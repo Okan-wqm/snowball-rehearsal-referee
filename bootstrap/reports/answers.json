@@ -160,6 +160,16 @@
       "id": "seed-101-the-run-in-the-writer-s-findings-file-and-the-findings-form-of-the-two-file-command-are-unstated",
       "changelog": "CHANGELOG-17",
       "kind": "answered"
+    },
+    {
+      "id": "seed-073-organ-definition-layout-and-carriage-unstated",
+      "changelog": "CHANGELOG-18",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-087-allowlist-package-layout-accept-trigger-and-run-ids-unstated",
+      "changelog": "CHANGELOG-18",
+      "kind": "answered"
     }
   ],
   "carried": {

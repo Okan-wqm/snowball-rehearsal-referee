@@ -282,30 +282,32 @@ class OfflineDriftBrakesPageTest(unittest.TestCase):
 
     def test_the_brakes_are_deferred_to_the_owner_at_fixer_llm(self):
         # brakes_keys_required_now brakes_owner_unnamed
+        """AF deferred the keys to the owner; the P1 exit epoch (AI, E735) carries the owner's decision of 2026-11-23:
+        the keys are named, and required only when P3's table opens."""
         text = section("26n", "**Aşama 1'in bulgu başı frenleri**", "**Açıkça ertelenenler**")
-        for words in ("Ertelendi: `fixer.llm`'i (Aşama 1 MF4, ilk organ merge'ünden sonra, `26h:12-15`) getiren döneme.",
-                      "zorunlu bir politika okuması yoktur, hiçbir `policy_reads_required_absent` kırmızı olmaz.",
-                      "Anahtarlar anayasal bütçe anahtarlarıdır: o dönemde sahip karar verir.",
-                      "`constitutional.stage_params.fix_call_max_usd` ve `constitutional.stage_params.fix_call_max_s`. "
-                      "`stage_budgets` değil:"):
+        for words in ("(`asama-1/10:16`; seed-095; sahip kararı (2026-11-23), P1 çıkış dönemi). Karar verildi",
+                      "P3'ün tablosu açılınca okunması zorunlu yollardır (`29v`), bu dönemin tesliminde değil.",
+                      "`constitutional.stage_params.fix_call_max_usd` `\"0.500000\"`",
+                      "`constitutional.stage_params.fix_call_max_s` `300`", "`stage_budgets` değil:"):
             self.assertIn(words, text, words)
-        self.assertIn("anahtarları `fixer.llm`'in dönemine ertelendi (`26n`, seed-095)", page("18a"))
+        self.assertIn("anahtarları aşağıdaki satırdadır (karar verildi, `26n`, seed-095)", page("18a"))
 
     def test_the_suspended_threshold_item_is_labelled_l_af1(self):  # l_af1_unlabelled
+        """L-AF1 was AF's loosening until the owner decided the keys; it ends with the P1 exit epoch (AI)."""
         text = section("26n", "**Aşama 1'in bulgu başı frenleri**", "**Açıkça ertelenenler**")
-        self.assertIn("(`asama-1/10:16`; seed-095; gevşetme L-AF1, geçici)", text)
-        self.assertIn("**Gevşetme L-AF1** (geçici): `02:22`'nin eşik maddesi (\"her eşik ya `policy.json`'a ya da anayasal "
-                      "tabana atıf\") bu hücreye o döneme kadar uygulanmaz; L-AF1 `fixer.llm`'in (MF4) döneminde, sahip "
-                      "anahtarlara karar verince biter ve o dönemden sonra hiçbir `spec.lint` bu hücreyi muaf tutmaz.", text)
-        self.assertNotIn("o dönemde uygulanır", text)
+        self.assertIn("**L-AF1 bitti** (bu dönemle): `02:22`'nin eşik maddesi (\"her eşik ya `policy.json`'a ya da anayasal "
+                      "tabana atıf\") bu hücreye de uygulanır ve hiçbir `spec.lint` bu hücreyi muaf tutmaz.", text)
+        self.assertNotIn("o döneme kadar uygulanmaz", text)
         self.assertIn("Gevşetme L-AF1 (geçici; `26n:51-53`; sahibe bildirilir)", register_row("E702"))
-        self.assertIn("**Gevşetme L-AF1**", page("26n").splitlines()[50])
+        self.assertIn("**L-AF1 bitti**", page("26n").splitlines()[50])
 
     def test_each_deferral_names_its_epoch_and_reason(self):  # deferral_unnamed_epoch
         text = flat(page("26n").split("**Açıkça ertelenenler**", 1)[1])
         for words in ("K4'ün sayımı (seed-091 (4)) → Aşama 3: K4 orada gelir",
-                      "`cases/dev.jsonl`'un hash zinciri (seed-090 (1)) → P1 çıkış dönemi:",
-                      "(seed-091 (1)) → P1 çıkış dönemi:", "Test 11'in tam yol listesi (seed-092 (4)) → P1 çıkış dönemi:",
+                      # the three "P1 exit epoch" deferrals, decided by that epoch (AI, E735)
+                      "`cases/dev.jsonl`'un hash zinciri (seed-090 (1)) → Aşama 1 çıkış partisi",
+                      "(seed-091 (1)) → ilk LLM avcısını getiren dönem",
+                      "Test 11'in tam yol listesi (seed-092 (4)) → reddedildi",
                       "(seed-094 (3)) → ilk özel hedefin dönemi:",
                       "aşama sınırının yerine kapı: bu okumanın kimliği bir sayfada adlandırılmadan hiçbir özel hedef "
                       "bağlanmaz.", "Sayfalar özel hedefe bir aşama vermez (`01a:23-25`",
@@ -313,7 +315,7 @@ class OfflineDriftBrakesPageTest(unittest.TestCase):
                       "`system_tp` vaka adayıdır; bunu o sayfa belirler)", "(seed-090 (3)) → Aşama 2: Aşama 1'de yazıcısı yoktur",
                       "(seed-089 (4)) → \"yorum satırı\"nın tanımıyla aynı dönem",
                       "(seed-089) → `system_tp` vakası üreten ilk partinin dönemi, en geç",
-                      "(seed-095) → `fixer.llm`'in dönemi"):
+                      "(seed-095) → P1 çıkış döneminde karar verildi"):
             self.assertIn(words, text, words)
         self.assertIn("Kalanları (seed-089–092, seed-094; rapor masası uzlaşısı, 2026-11-22) `26m` ve `26n`'dedir.",
                       flat(page("26e")))
@@ -398,7 +400,8 @@ class RecordsTest(unittest.TestCase):
         self.assertIn("`null` `base_sha`'lı kesim satırı (etkinleştirmede boş `main`) dal yok demektir", register_row("E699"))
         for eid in ("E700", "E701"):
             self.assertIn("kapandı (tohum dönemi AF", register_row(eid))
-        self.assertTrue(register_row("E702").endswith("| açık (sahibin kararı, `fixer.llm`'in dönemi) |"))
+        self.assertIn("ertelendi, `fixer.llm`'i (Aşama 1 MF4) getiren döneme", register_row("E702"))
+        self.assertTrue(register_row("E702").endswith("| kapandı (tohum dönemi AI) |"))  # the owner decided (AI)
         self.assertIn("Aşama 3 (K4 orada gelir); P1 çıkış dönemi", register_row("E703"))
         self.assertTrue(register_row("E703").endswith("| açık (operatörün işi, adlı dönemlerde) |"))
         for eid in ("E698", "E699", "E700", "E701", "E702", "E703"):

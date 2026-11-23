@@ -363,8 +363,9 @@ class Seed087ResidualsPageTest(unittest.TestCase):
                       "yalnız genesis merge'ünden koşar", "bu yer tutucu yalnız testlerdedir, canlı yoldan ulaşılamaz.",
                       "**(g)** Listelenmiş çift sonraki SHA'larda listede kalır (L1).",
                       "**(h)** Kapının tanımları kabul edilmiş SHA'daki organlardır (`26a`).",
-                      "`accept.json` için aşama koruması yoktur: P1 çıkış dönemine ertelendi, seed-073'ün (a), (c), "
-                      "(d)'siyle", "o zamana kadar Kurucu'nun okuması geçerlidir."):
+                      # AD deferred (iv) to the P1 exit epoch; AI (E733, E734) answered it: no guard, loosening L-P1E
+                      "`accept.json`'un aşama koruması yoktur, P1'de de sonra da: hiçbir hakem kodu bir giriş isteğini "
+                      "okunduğu aşama için reddetmez"):
             self.assertIn(words, text, words)
         self.assertIn("Aşama 1 MF5/MF6'dadır. seed-087'nin kalanları sayfanın sonundadır.", text)
         self.assertIn("Giriş isteği `accept.json` ve imzalı sonucun koşu kimliği `26j`'dedir (seed-087).", flat(page("26h")))
@@ -386,7 +387,8 @@ class RecordsTest(unittest.TestCase):
                       "`intervention` satırı)", row)
         self.assertIn("başlatıcı (`seed/founder/launch.py`) aynı okuyucuyu ve aynı `split`'i kullanır", row)
         self.assertIn("kapandı (tohum dönemi AD; teyitler Kurucu'nun", row)
-        self.assertTrue(register_row("E696").endswith("| açık (operatörün işi, P1 çıkış dönemi) |"))
+        self.assertIn("rapor masası uzlaşısı (2026-11-22): açıkça P1 çıkış dönemine ertelendi", register_row("E696"))
+        self.assertTrue(register_row("E696").endswith("| kapandı (tohum dönemi AI) |"))  # the P1 exit epoch answered it
         log = flat(changelog())
         for name in ("L-AD1", "L-AD2", "L-AD3"):
             self.assertIn(name, log)
