@@ -114,7 +114,7 @@ class ClassRuleHintTest(unittest.TestCase):
         """The review of PR #39 (D1) shortened duty 1's last sentence in place: 00f keeps 38 lines and its duty items
         their lines, so nothing that cites 00f moves."""
         lines = page("00f").splitlines()
-        self.assertEqual(len(lines), 38)
+        self.assertEqual(len(lines), 40)  # epoch AK appended a pointer to 00g after line 38 (test_panel_epoch_ak)
         self.assertEqual(lines[25], "     Kaydın biçimi senindir.")  # 00f:26
         self.assertTrue(lines[26].startswith("  2. Geri gelen bir neden"))  # 00f:27
 
@@ -184,9 +184,9 @@ class RecordsTest(unittest.TestCase):
         self.assertIn("| `tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md` | Görev Haritası, Devam: Sahibin İpuçları IV |",
                       index)
         log = (TOHUM / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
-        self.assertEqual(log[6], "- 2.2 (2026-11-23, E736; tohum dönemi AJ, sahibin ipucu: doğrudan da yanlıştan da "
+        self.assertEqual(log[7], "- 2.2 (2026-11-23, E736; tohum dönemi AJ, sahibin ipucu: doğrudan da yanlıştan da "
                                  "öğrenmek, her sorunu sınıf olarak kapatmak, üstünü örtmemek; yeni `00f`): "
-                                 "`CHANGELOG-19.md`; başında **İlk iş**.")  # the newest entry first
+                                 "`CHANGELOG-19.md`; başında **İlk iş**.")  # under epoch AK's entry (log[6])
         for p in TOHUM.glob("*.md"):
             self.assertLessEqual(len(p.read_text(encoding="utf-8").splitlines()), 80, p.name)
 

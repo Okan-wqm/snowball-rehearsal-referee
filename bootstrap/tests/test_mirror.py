@@ -13,6 +13,7 @@ import json
 import re
 import subprocess
 import tempfile
+from datetime import datetime, timezone
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -905,6 +906,144 @@ class OutageCountTest(unittest.TestCase):
         self.assertFalse(M.outage({"verdict": "accepted", "reasons": [{"kind": "rival_unresolved",
                                                                        "ref": "api_error:http_429"}]}))
         self.assertTrue(M.outage({"verdict": None, "unjudged": {"cause": "outage"}}))
+
+
+# ---- seed epoch AK (owner's hint E742, 2026-11-23): context is a measured resource; per session, the compactions
+def own(at, usage=None, parent=None):
+    return {"type": "assistant", "timestamp": at, "parent_tool_use_id": parent,
+            "message": {"id": f"msg-{at}", "model": "claude-x", "content": [], "usage": usage or {}}}
+
+
+def compacted(pre=None, parent=None):
+    event = {"type": "system", "subtype": "compact_boundary", "uuid": "u", "session_id": "s"}
+    if pre is not None:
+        event["compact_metadata"] = {"trigger": "auto", "pre_tokens": pre, "post_tokens": 6000}
+    if parent is not None:
+        event["parent_tool_use_id"] = parent
+    return event
+
+
+class ContextTest(unittest.TestCase):
+    """E742: per session, how often its context was compacted, the minute of the first compaction and the input tokens
+    before each, from the transcript's own compact_boundary events; not_measured says why a value is not there."""
+
+    def test_two_compactions_of_the_session_and_none_of_a_subagent(self):
+        # context_subagent_counted context_pre_tokens_ignored context_usage_fallback_dropped context_subagent_usage_read
+        # context_minute_from_the_first_event context_first_is_last context_cache_uncounted context_section_unwired
+        w = Work()
+        one = "20261118T010000Z"
+        w.rows(cycle(one))
+        w.folder(one, **{f"session-{one}.jsonl": [
+            {"type": "system", "subtype": "init"},
+            own("2026-11-18T01:00:30.000Z", {"input_tokens": 10, "cache_read_input_tokens": 1000,
+                                             "cache_creation_input_tokens": 200}),
+            own("2026-11-18T01:01:00Z", {"input_tokens": 5, "cache_read_input_tokens": 90000}, parent="toolu_a"),
+            {"type": "user", "timestamp": "2026-11-18T01:03:30.250Z", "message": {"content": []}},
+            compacted(171318),
+            compacted(50000, parent="toolu_a"),  # a subagent's compaction is not the session's
+            own("2026-11-18T01:10:00Z", {"input_tokens": 7, "cache_read_input_tokens": 3000,
+                                         "cache_creation_input_tokens": 40}),
+            own("2026-11-18T01:11:00Z", {"input_tokens": 9, "cache_read_input_tokens": 80000}, parent="toolu_a"),
+            own("2026-11-18T01:12:00Z", {"input_tokens": "x", "cache_read_input_tokens": 99}),
+            compacted()]})
+        note = w.mirror()
+        out = note["context"]
+        self.assertEqual(out["source"], M.SOURCES["context"])
+        self.assertEqual((out["sessions_read"], out["sessions_compacted"]), (1, 1))
+        fact = out["sessions"][0]
+        self.assertEqual(fact, {"stamp": one, "compactions": 2, "first_compaction_min": 3.5, "each": [
+            {"minute": 3.5, "input_tokens_before": 171318, "tokens_from": "pre_tokens", "not_measured": {}},
+            {"minute": 12.0, "input_tokens_before": 3047, "tokens_from": "last_usage", "not_measured": {}}],
+            "each_left_out": 0, "not_measured": {}})
+        self.assertEqual(json.dumps(note, sort_keys=True), json.dumps(w.mirror(), sort_keys=True))
+
+    def test_no_compaction_and_no_transcript_are_said(self):  # context_zero_unsaid context_no_transcript_zero
+        w = Work()
+        one, two = "20261118T010000Z", "20261118T020000Z"
+        w.rows(cycle(one), cycle(two))
+        w.folder(one, **{f"session-{one}.jsonl": [{"type": "system", "subtype": "init"},
+                                                    own("2026-11-18T01:00:30Z", {"input_tokens": 3})]})
+        w.folder(two)
+        out = w.mirror()["context"]
+        first, second = out["sessions"]
+        self.assertEqual(first, {"stamp": one, "compactions": 0, "first_compaction_min": None, "each": [],
+                                 "each_left_out": 0,
+                                 "not_measured": {"first_compaction_min": "no compaction in the transcript"}})
+        self.assertEqual(second, {"stamp": two, "compactions": None, "first_compaction_min": None, "each": None,
+                                  "each_left_out": None, "not_measured": {
+                                      "compactions": "no transcript", "first_compaction_min": "no transcript",
+                                      "each": "no transcript"}})
+        self.assertEqual((out["sessions_read"], out["sessions_compacted"]), (1, 0))
+
+    def test_a_compaction_without_its_time_or_tokens_says_so(self):  # context_minute_unsaid context_tokens_unsaid
+        w = Work()
+        one = "20261118T010000Z"
+        w.rows(cycle(one))
+        w.folder(one, **{f"session-{one}.jsonl": [{"type": "system", "subtype": "init"}, compacted()]})
+        fact = w.mirror()["context"]["sessions"][0]
+        self.assertEqual(fact["compactions"], 1)
+        self.assertEqual(fact["each"], [{"minute": None, "input_tokens_before": None, "tokens_from": None,
+                                         "not_measured": {
+                                             "minute": "no event before it carries a timestamp",
+                                             "input_tokens_before": "no pre_tokens and no usage of an own message "
+                                                                    "before it"}}])
+        self.assertEqual(fact["not_measured"], {"first_compaction_min": "no event before it carries a timestamp"})
+
+    def test_many_compactions_are_capped_and_counted(self):
+        # context_uncapped context_left_out_uncounted context_count_capped
+        w = Work()
+        one = "20261118T010000Z"
+        w.rows(cycle(one))
+        events = []
+        for k in range(M.COMPACTIONS_MAX + 3):
+            events += [own(f"2026-11-18T02:{k:02d}:00Z", {"input_tokens": k}), compacted(160000 + k)]
+        w.folder(one, **{f"session-{one}.jsonl": events})
+        fact = w.mirror()["context"]["sessions"][0]
+        self.assertEqual((fact["compactions"], fact["each_left_out"], len(fact["each"])), (23, 3, 20))
+        self.assertEqual(fact["first_compaction_min"], 60.0)
+        self.assertEqual([e["input_tokens_before"] for e in fact["each"]], [160000 + k for k in range(20)])
+
+    def test_the_newest_sessions_are_read(self):  # context_keeps_the_oldest
+        w = Work()
+        stamps = [f"20261117T{h:02d}0000Z" for h in range(M.SESSIONS_MAX + 2)]
+        for stamp in stamps:
+            w.folder(stamp)
+        out = w.mirror()["context"]
+        self.assertEqual([s["stamp"] for s in out["sessions"]], stamps[2:])
+
+    def test_a_too_large_transcript_is_said_in_each_section_that_reads_it(self):
+        # context_too_large_unread session_time_too_large_unread delegation_too_large_unread
+        w = Work()
+        one = "20261118T010000Z"
+        w.rows(cycle(one))
+        w.folder(one, **{f"session-{one}.jsonl": [{"type": "system", "subtype": "init"}, compacted(5)]})
+        with mock.patch.object(M, "TRANSCRIPT_MAX", 10):
+            note = w.mirror()
+        self.assertEqual(note["context"]["sessions"][0]["not_measured"],
+                         {k: "transcript too large" for k in ("compactions", "first_compaction_min", "each")})
+        self.assertEqual(note["session_time"]["sessions"][0]["null_reasons"]["api_s"], "transcript too large")
+        self.assertEqual(note["delegation"]["sessions"][0]["reason"], "transcript too large")
+
+    def test_the_minute_reads_any_events_timestamp_and_the_tokens_their_keys(self):
+        # context_minute_own_only context_cache_key_required context_input_unrequired
+        w = Work()
+        one = "20261118T010000Z"
+        w.rows(cycle(one))
+        w.folder(one, **{f"session-{one}.jsonl": [own("2026-11-18T01:01:00Z", {"input_tokens": 4}),
+                                                    own("2026-11-18T01:05:00Z", {"input_tokens": 9}, parent="toolu_a"),
+                                                    compacted()]})
+        each = w.mirror()["context"]["sessions"][0]["each"]
+        self.assertEqual([(e["minute"], e["input_tokens_before"]) for e in each], [(5.0, 4)])  # SOURCES: any event
+        self.assertEqual(M.context_tokens({"input_tokens": 5, "cache_read_input_tokens": 7}), 12)
+        for usage in ({"cache_read_input_tokens": 7}, {"input_tokens": True}, None):
+            self.assertIsNone(M.context_tokens(usage), usage)
+
+    def test_an_event_time_keeps_its_fraction(self):  # context_fraction_dropped
+        self.assertEqual(M.event_time("2026-11-18T01:03:30.25Z"),
+                         datetime(2026, 11, 18, 1, 3, 30, 250000, tzinfo=timezone.utc))
+        self.assertEqual(M.event_time("2026-11-18T01:03:30Z"), datetime(2026, 11, 18, 1, 3, 30, tzinfo=timezone.utc))
+        for text in ("2026-13-18T01:03:30Z", "2026-11-18 01:03:30Z", 5, None, "2026-11-18T01:03:30.1234567Z"):
+            self.assertIsNone(M.event_time(text), text)
 
 
 
