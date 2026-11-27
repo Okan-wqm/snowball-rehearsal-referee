@@ -200,7 +200,7 @@ class GuardsTest(unittest.TestCase):
         raw = page("00g")
         self.assertEqual(len(re.findall(r"(?m)^  [1-9]\. ", raw[raw.index("- Korkuluklar"):])), 3)
         self.assertEqual(re.findall(r"E7[0-9]{2}; görev, reçete değil\)", raw),
-                         [f"E{n}; görev, reçete değil)" for n in (739, 740, 741, 742)])  # four hints, in order
+                         [f"E{n}; görev, reçete değil)" for n in (739, 740, 741, 742, 750)])  # AK's four hints, then AM's E750
         for recipe in ("şablon", "şu adımlarla", "operatör yazar"):
             self.assertNotIn(recipe, raw, recipe)
 
@@ -309,8 +309,8 @@ class RecordsTest(unittest.TestCase):
         self.assertIn("| `tohum/00g-gorev-haritasi-sahibin-ipuclari-5.md` | Görev Haritası, Devam: Sahibin İpuçları V | "
                       "her oturumda, görev seçilirken (`00f`'nin devamı) |", index)
         log = (TOHUM / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
-        self.assertTrue(log[6].startswith("- 2.2 (2026-11-23, E739–E743; tohum dönemi AK,"))  # the newest entry first
-        self.assertTrue(log[6].endswith("`CHANGELOG-20.md`; başında **İlk iş**."))
+        self.assertTrue(log[7].startswith("- 2.2 (2026-11-23, E739–E743; tohum dönemi AK,"))  # under epoch AM's entry
+        self.assertTrue(log[7].endswith("`CHANGELOG-20.md`; başında **İlk iş**."))
         answers = json.loads((BOOT / "reports" / "answers.json").read_text(encoding="utf-8"))["answers"]
         self.assertEqual([(a["id"], a["kind"]) for a in answers if a["changelog"] == "CHANGELOG-20"],
                          [(REPORT, "answered")])

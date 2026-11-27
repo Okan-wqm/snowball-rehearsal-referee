@@ -175,6 +175,16 @@
       "id": "seed-102-where-a-running-referee-finds-a-target-s-census-rule-set-is-unstated",
       "changelog": "CHANGELOG-20",
       "kind": "answered"
+    },
+    {
+      "id": "seed-103-a-revert-that-ended-before-its-merge-has-no-rule-for-the-next-cycle-and-no-field-that-shows-it",
+      "changelog": "CHANGELOG-22",
+      "kind": "answered"
+    },
+    {
+      "id": "seed-104-a-candidate-id-whose-branch-stands-from-an-earlier-merge-has-no-rule",
+      "changelog": "CHANGELOG-22",
+      "kind": "answered"
     }
   ],
   "carried": {
