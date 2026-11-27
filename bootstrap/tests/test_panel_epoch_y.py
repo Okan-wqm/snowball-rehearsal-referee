@@ -361,7 +361,7 @@ class ReviewFixesTest(unittest.TestCase):
                       "O vektör var olana kadar kopyanın sayımı Aşama 1 çıkışını geçemez",
                       "asla Kurucu'nun kataloğu değildir, asla oyuncağın yedi kuralı da değildir"):
             self.assertIn(words, text, words)
-        self.assertTrue(register_row("E671").endswith("| açık (operatörün işi) |"))
+        self.assertTrue(register_row("E671").endswith("| kapandı (tohum dönemi AL; E744) |"))  # the vector: E744
 
     def test_a_summary_without_drift_has_one_reading(self):  # drift_missing_falls_back
         text = flat(page("01c"))

@@ -6169,5 +6169,3175 @@
         }
       }
     ]
+  },
+  "census_copy": {
+    "owner": "asama-1-cikis",
+    "runner": "data",
+    "interface": "spec/tohum/29zc-vektor-arayuzleri-kopyanin-census-vektoru.md",
+    "source": "the union of the rules the copy target's own ESLint (9.39.4, Node 20.11.0, npm 10.2.4, installed from its lockfile) enables, by `eslint --print-config`, on every tracked file of its four units that ESLint lints (ESLint decides: not ignored and a config applies; 258 of 262 tracked files) (the referee's setup/summary.json targets[kind=copy].unit_candidates) at 4f479013a42f4b750e0784cc2500bd17d932af1a; each case names the units it is enabled in; per-unit sets, versions, every file's verdict and hashes and each distinct canonical rules object: seed/bootstrap/local/census_copy.json (operator decision, 2026-11-20, 29za; the union: operator decision, 2026-11-24, E744)",
+    "cases": [
+      {
+        "id": "census_copy.nx_enforce_module_boundaries",
+        "purpose": "The copy's census denominator is the seed's rule set: `@nx/enforce-module-boundaries` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @nx/enforce-module-boundaries",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_adjacent_overload_signatures",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/adjacent-overload-signatures` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/adjacent-overload-signatures",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_await_thenable",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/await-thenable` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/await-thenable",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_ban_ts_comment",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/ban-ts-comment` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/ban-ts-comment",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_explicit_function_return_type",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/explicit-function-return-type` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/explicit-function-return-type",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_array_constructor",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-array-constructor` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-array-constructor",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_array_delete",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-array-delete` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-array-delete",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_base_to_string",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-base-to-string` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-base-to-string",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_duplicate_enum_values",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-duplicate-enum-values` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-duplicate-enum-values",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_duplicate_type_constituents",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-duplicate-type-constituents` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-duplicate-type-constituents",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_dynamic_delete",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-dynamic-delete` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-dynamic-delete",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_empty_function",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-empty-function` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-empty-function",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_empty_interface",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-empty-interface` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-empty-interface",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_empty_object_type",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-empty-object-type` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-empty-object-type",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_explicit_any",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-explicit-any` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-explicit-any",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_extra_non_null_assertion",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-extra-non-null-assertion` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-extra-non-null-assertion",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_extraneous_class",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-extraneous-class` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-extraneous-class",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_floating_promises",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-floating-promises` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-floating-promises",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_for_in_array",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-for-in-array` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-for-in-array",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_implied_eval",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-implied-eval` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-implied-eval",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_inferrable_types",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-inferrable-types` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-inferrable-types",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_invalid_void_type",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-invalid-void-type` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-invalid-void-type",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_misused_new",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-misused-new` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-misused-new",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_misused_promises",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-misused-promises` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-misused-promises",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_namespace",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-namespace` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-namespace",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_non_null_asserted_nullish_coalescing",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-non-null-asserted-nullish-coalescing` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-non-null-asserted-nullish-coalescing",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_non_null_asserted_optional_chain",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-non-null-asserted-optional-chain` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-non-null-asserted-optional-chain",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_non_null_assertion",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-non-null-assertion` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-non-null-assertion",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_redundant_type_constituents",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-redundant-type-constituents` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-redundant-type-constituents",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_require_imports",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-require-imports` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-require-imports",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_this_alias",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-this-alias` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-this-alias",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unnecessary_type_assertion",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unnecessary-type-assertion` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unnecessary-type-assertion",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unnecessary_type_constraint",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unnecessary-type-constraint` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unnecessary-type-constraint",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unsafe_argument",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unsafe-argument` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unsafe-argument",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unsafe_assignment",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unsafe-assignment` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unsafe-assignment",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unsafe_call",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unsafe-call` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unsafe-call",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unsafe_declaration_merging",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unsafe-declaration-merging` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unsafe-declaration-merging",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unsafe_enum_comparison",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unsafe-enum-comparison` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unsafe-enum-comparison",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unsafe_function_type",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unsafe-function-type` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unsafe-function-type",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unsafe_member_access",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unsafe-member-access` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unsafe-member-access",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unsafe_return",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unsafe-return` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unsafe-return",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unsafe_unary_minus",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unsafe-unary-minus` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unsafe-unary-minus",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unused_expressions",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unused-expressions` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unused-expressions",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_unused_vars",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-unused-vars` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-unused-vars",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_useless_constructor",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-useless-constructor` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-useless-constructor",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_no_wrapper_object_types",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/no-wrapper-object-types` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/no-wrapper-object-types",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_only_throw_error",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/only-throw-error` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/only-throw-error",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_prefer_as_const",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/prefer-as-const` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/prefer-as-const",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_prefer_literal_enum_member",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/prefer-literal-enum-member` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/prefer-literal-enum-member",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_prefer_namespace_keyword",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/prefer-namespace-keyword` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/prefer-namespace-keyword",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_prefer_promise_reject_errors",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/prefer-promise-reject-errors` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/prefer-promise-reject-errors",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_require_await",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/require-await` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/require-await",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_restrict_plus_operands",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/restrict-plus-operands` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/restrict-plus-operands",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_restrict_template_expressions",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/restrict-template-expressions` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/restrict-template-expressions",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_triple_slash_reference",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/triple-slash-reference` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/triple-slash-reference",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_unbound_method",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/unbound-method` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/unbound-method",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.typescript_eslint_unified_signatures",
+        "purpose": "The copy's census denominator is the seed's rule set: `@typescript-eslint/unified-signatures` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint @typescript-eslint/unified-signatures",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.aquaculture_no_bare_graphql_query_string",
+        "purpose": "The copy's census denominator is the seed's rule set: `aquaculture/no-bare-graphql-query-string` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint aquaculture/no-bare-graphql-query-string",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.aquaculture_no_bare_tenant_query_key",
+        "purpose": "The copy's census denominator is the seed's rule set: `aquaculture/no-bare-tenant-query-key` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint aquaculture/no-bare-tenant-query-key",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.aquaculture_no_claude_sdk_raw_call",
+        "purpose": "The copy's census denominator is the seed's rule set: `aquaculture/no-claude-sdk-raw-call` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage.",
+        "cmd": "python -m cases.build produce eslint aquaculture/no-claude-sdk-raw-call",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.aquaculture_no_direct_event_publish",
+        "purpose": "The copy's census denominator is the seed's rule set: `aquaculture/no-direct-event-publish` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage.",
+        "cmd": "python -m cases.build produce eslint aquaculture/no-direct-event-publish",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.aquaculture_no_high_cardinality_metric_label",
+        "purpose": "The copy's census denominator is the seed's rule set: `aquaculture/no-high-cardinality-metric-label` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox.",
+        "cmd": "python -m cases.build produce eslint aquaculture/no-high-cardinality-metric-label",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.aquaculture_no_unpinned_ssrf_fetch",
+        "purpose": "The copy's census denominator is the seed's rule set: `aquaculture/no-unpinned-ssrf-fetch` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage.",
+        "cmd": "python -m cases.build produce eslint aquaculture/no-unpinned-ssrf-fetch",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.aquaculture_no_unsandboxed_html_frame",
+        "purpose": "The copy's census denominator is the seed's rule set: `aquaculture/no-unsandboxed-html-frame` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint aquaculture/no-unsandboxed-html-frame",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.constructor_super",
+        "purpose": "The copy's census denominator is the seed's rule set: `constructor-super` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint constructor-super",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.for_direction",
+        "purpose": "The copy's census denominator is the seed's rule set: `for-direction` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint for-direction",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.getter_return",
+        "purpose": "The copy's census denominator is the seed's rule set: `getter-return` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint getter-return",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.import_order",
+        "purpose": "The copy's census denominator is the seed's rule set: `import/order` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint import/order",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_alt_text",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/alt-text` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/alt-text",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_anchor_has_content",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/anchor-has-content` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/anchor-has-content",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_anchor_is_valid",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/anchor-is-valid` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/anchor-is-valid",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_aria_activedescendant_has_tabindex",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/aria-activedescendant-has-tabindex` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/aria-activedescendant-has-tabindex",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_aria_props",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/aria-props` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/aria-props",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_aria_proptypes",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/aria-proptypes` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/aria-proptypes",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_aria_role",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/aria-role` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/aria-role",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_aria_unsupported_elements",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/aria-unsupported-elements` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/aria-unsupported-elements",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_autocomplete_valid",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/autocomplete-valid` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/autocomplete-valid",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_click_events_have_key_events",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/click-events-have-key-events` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/click-events-have-key-events",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_heading_has_content",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/heading-has-content` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/heading-has-content",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_html_has_lang",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/html-has-lang` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/html-has-lang",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_iframe_has_title",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/iframe-has-title` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/iframe-has-title",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_img_redundant_alt",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/img-redundant-alt` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/img-redundant-alt",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_interactive_supports_focus",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/interactive-supports-focus` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/interactive-supports-focus",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_label_has_associated_control",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/label-has-associated-control` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/label-has-associated-control",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_media_has_caption",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/media-has-caption` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/media-has-caption",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_mouse_events_have_key_events",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/mouse-events-have-key-events` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/mouse-events-have-key-events",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_no_access_key",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/no-access-key` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/no-access-key",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_no_autofocus",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/no-autofocus` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/no-autofocus",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_no_distracting_elements",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/no-distracting-elements` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/no-distracting-elements",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_no_interactive_element_to_noninteractive_role",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/no-interactive-element-to-noninteractive-role` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/no-interactive-element-to-noninteractive-role",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_no_noninteractive_element_interactions",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/no-noninteractive-element-interactions` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/no-noninteractive-element-interactions",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_no_noninteractive_element_to_interactive_role",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/no-noninteractive-element-to-interactive-role` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/no-noninteractive-element-to-interactive-role",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_no_noninteractive_tabindex",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/no-noninteractive-tabindex` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/no-noninteractive-tabindex",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_no_redundant_roles",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/no-redundant-roles` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/no-redundant-roles",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_no_static_element_interactions",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/no-static-element-interactions` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/no-static-element-interactions",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_role_has_required_aria_props",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/role-has-required-aria-props` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/role-has-required-aria-props",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_role_supports_aria_props",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/role-supports-aria-props` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/role-supports-aria-props",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_scope",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/scope` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/scope",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.jsx_a11y_tabindex_no_positive",
+        "purpose": "The copy's census denominator is the seed's rule set: `jsx-a11y/tabindex-no-positive` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint jsx-a11y/tabindex-no-positive",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_alert",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-alert` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-alert",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_async_promise_executor",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-async-promise-executor` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-async-promise-executor",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_case_declarations",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-case-declarations` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-case-declarations",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_class_assign",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-class-assign` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-class-assign",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_compare_neg_zero",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-compare-neg-zero` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-compare-neg-zero",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_cond_assign",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-cond-assign` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-cond-assign",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_console",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-console` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-console",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_const_assign",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-const-assign` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-const-assign",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_constant_binary_expression",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-constant-binary-expression` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-constant-binary-expression",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_constant_condition",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-constant-condition` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-constant-condition",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_control_regex",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-control-regex` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-control-regex",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_debugger",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-debugger` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-debugger",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_delete_var",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-delete-var` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-delete-var",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_dupe_args",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-dupe-args` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-dupe-args",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_dupe_class_members",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-dupe-class-members` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-dupe-class-members",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_dupe_else_if",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-dupe-else-if` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-dupe-else-if",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_dupe_keys",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-dupe-keys` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-dupe-keys",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_duplicate_case",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-duplicate-case` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-duplicate-case",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_empty",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-empty` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-empty",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_empty_character_class",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-empty-character-class` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-empty-character-class",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_empty_pattern",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-empty-pattern` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-empty-pattern",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_empty_static_block",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-empty-static-block` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-empty-static-block",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_ex_assign",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-ex-assign` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-ex-assign",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_extra_boolean_cast",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-extra-boolean-cast` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-extra-boolean-cast",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_fallthrough",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-fallthrough` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-fallthrough",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_func_assign",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-func-assign` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-func-assign",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_global_assign",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-global-assign` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-global-assign",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_import_assign",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-import-assign` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-import-assign",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_invalid_regexp",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-invalid-regexp` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-invalid-regexp",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_irregular_whitespace",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-irregular-whitespace` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-irregular-whitespace",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_loss_of_precision",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-loss-of-precision` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-loss-of-precision",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_misleading_character_class",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-misleading-character-class` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-misleading-character-class",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_new_native_nonconstructor",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-new-native-nonconstructor` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-new-native-nonconstructor",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_nonoctal_decimal_escape",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-nonoctal-decimal-escape` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-nonoctal-decimal-escape",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_obj_calls",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-obj-calls` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-obj-calls",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_octal",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-octal` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-octal",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_prototype_builtins",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-prototype-builtins` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-prototype-builtins",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_redeclare",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-redeclare` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-redeclare",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_regex_spaces",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-regex-spaces` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-regex-spaces",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_restricted_imports",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-restricted-imports` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-restricted-imports",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_restricted_syntax",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-restricted-syntax` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-restricted-syntax",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_self_assign",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-self-assign` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-self-assign",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_setter_return",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-setter-return` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-setter-return",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_shadow_restricted_names",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-shadow-restricted-names` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-shadow-restricted-names",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_sparse_arrays",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-sparse-arrays` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-sparse-arrays",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_this_before_super",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-this-before-super` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-this-before-super",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_undef",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-undef` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-undef",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_unexpected_multiline",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-unexpected-multiline` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-unexpected-multiline",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_unreachable",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-unreachable` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-unreachable",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_unsafe_finally",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-unsafe-finally` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-unsafe-finally",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_unsafe_negation",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-unsafe-negation` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-unsafe-negation",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_unsafe_optional_chaining",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-unsafe-optional-chaining` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-unsafe-optional-chaining",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_unused_labels",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-unused-labels` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-unused-labels",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_unused_private_class_members",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-unused-private-class-members` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-unused-private-class-members",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_unused_vars",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-unused-vars` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-unused-vars",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_useless_backreference",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-useless-backreference` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-useless-backreference",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_useless_catch",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-useless-catch` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-useless-catch",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_useless_escape",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-useless-escape` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-useless-escape",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_var",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-var` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-var",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.no_with",
+        "purpose": "The copy's census denominator is the seed's rule set: `no-with` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint no-with",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.prefer_const",
+        "purpose": "The copy's census denominator is the seed's rule set: `prefer-const` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint prefer-const",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.prefer_rest_params",
+        "purpose": "The copy's census denominator is the seed's rule set: `prefer-rest-params` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint prefer-rest-params",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.prefer_spread",
+        "purpose": "The copy's census denominator is the seed's rule set: `prefer-spread` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint prefer-spread",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_hooks_exhaustive_deps",
+        "purpose": "The copy's census denominator is the seed's rule set: `react-hooks/exhaustive-deps` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react-hooks/exhaustive-deps",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_hooks_rules_of_hooks",
+        "purpose": "The copy's census denominator is the seed's rule set: `react-hooks/rules-of-hooks` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react-hooks/rules-of-hooks",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_display_name",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/display-name` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/display-name",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_jsx_key",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/jsx-key` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/jsx-key",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_jsx_no_comment_textnodes",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/jsx-no-comment-textnodes` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/jsx-no-comment-textnodes",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_jsx_no_duplicate_props",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/jsx-no-duplicate-props` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/jsx-no-duplicate-props",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_jsx_no_target_blank",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/jsx-no-target-blank` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/jsx-no-target-blank",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_jsx_no_undef",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/jsx-no-undef` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/jsx-no-undef",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_jsx_uses_react",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/jsx-uses-react` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/jsx-uses-react",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_jsx_uses_vars",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/jsx-uses-vars` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/jsx-uses-vars",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_no_children_prop",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/no-children-prop` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/no-children-prop",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_no_danger_with_children",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/no-danger-with-children` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/no-danger-with-children",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_no_deprecated",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/no-deprecated` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/no-deprecated",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_no_direct_mutation_state",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/no-direct-mutation-state` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/no-direct-mutation-state",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_no_find_dom_node",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/no-find-dom-node` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/no-find-dom-node",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_no_is_mounted",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/no-is-mounted` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/no-is-mounted",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_no_render_return_value",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/no-render-return-value` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/no-render-return-value",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_no_string_refs",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/no-string-refs` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/no-string-refs",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_no_unescaped_entities",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/no-unescaped-entities` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/no-unescaped-entities",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_no_unknown_property",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/no-unknown-property` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/no-unknown-property",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.react_require_render_return",
+        "purpose": "The copy's census denominator is the seed's rule set: `react/require-render-return` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint react/require-render-return",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.require_yield",
+        "purpose": "The copy's census denominator is the seed's rule set: `require-yield` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint require-yield",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.use_isnan",
+        "purpose": "The copy's census denominator is the seed's rule set: `use-isnan` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint use-isnan",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      },
+      {
+        "id": "census_copy.valid_typeof",
+        "purpose": "The copy's census denominator is the seed's rule set: `valid-typeof` is enabled in the copy's ESLint config at 4f47901 (`eslint --print-config`, seed/bootstrap/local/census_copy.json) and the shared mutation library must produce it; enabled in: libs/storage, platform/libs/outbox, web/modules/hr-module, web/modules/messaging-module.",
+        "cmd": "python -m cases.build produce eslint valid-typeof",
+        "fixture": [],
+        "expect": {
+          "producible": true
+        },
+        "changed": {
+          "description": "A rule ESLint does not have: no operator can produce it.",
+          "cmd": "python -m cases.build produce eslint no-such-rule",
+          "fixture": [],
+          "expect_not": {
+            "producible": true
+          }
+        }
+      }
+    ]
   }
 }

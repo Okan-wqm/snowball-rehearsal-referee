@@ -428,7 +428,7 @@ class SeedDataVectorsTest(unittest.TestCase):
         self.assertEqual([n for n, g in self.SEED.items() if isinstance(g, dict) and g.get("runner") == "data"
                           and g.get("owner") == "asama-0"], list(DATA_GROUPS))
         ids = []
-        for name in DATA_GROUPS + ("census",):  # census: the Stage 1 exit batch's group (29za), same format
+        for name in DATA_GROUPS + ("census", "census_copy"):  # the Stage 1 exit batch's groups (29za), same format
             group = self.SEED[name]
             self.assertEqual(set(group), {"owner", "runner", "interface", "source", "cases"})
             for case in group["cases"]:
@@ -449,7 +449,7 @@ class SeedDataVectorsTest(unittest.TestCase):
                                                               if p.startswith("/vec/")])
                     ids.append(case["id"])
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertEqual(len(ids), 157 + 7)  # MF2-MF7 63, MF8-MF13 63, MF14-MF18 31; census 7 (29za)
+        self.assertEqual(len(ids), 157 + 7 + 186)  # MF2-MF7 63, MF8-MF13 63, MF14-MF18 31; census 7, census_copy 186 (29za)
 
     def test_expected_values_carry_no_floats(self):
         """`tohum/26`: hashed artefacts carry no floats; nor do the vectors' answers (the runner tells 1 from 1.0)."""

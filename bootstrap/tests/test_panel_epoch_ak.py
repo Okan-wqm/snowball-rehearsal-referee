@@ -265,7 +265,7 @@ class CensusAnswerTest(unittest.TestCase):
     def test_no_cited_line_moves(self):  # ak_102_29za_line_moved ak_102_26q_grown
         lines = page("29za").splitlines()
         self.assertTrue(lines[35].startswith("snapshot kanaryası (test 16) Aşama 4'e taşınır"))  # 29za:36, as it was
-        self.assertEqual((lines[36], len(lines)), ("", 57))
+        self.assertEqual((lines[36], lines[56], lines[57]), ("", "  taşır.", ""))  # epoch AL appends after 29za:57
         self.assertEqual(len(page("26q").splitlines()), 80)
 
 
@@ -309,8 +309,8 @@ class RecordsTest(unittest.TestCase):
         self.assertIn("| `tohum/00g-gorev-haritasi-sahibin-ipuclari-5.md` | Görev Haritası, Devam: Sahibin İpuçları V | "
                       "her oturumda, görev seçilirken (`00f`'nin devamı) |", index)
         log = (TOHUM / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
-        self.assertTrue(log[7].startswith("- 2.2 (2026-11-23, E739–E743; tohum dönemi AK,"))  # under epoch AM's entry
-        self.assertTrue(log[7].endswith("`CHANGELOG-20.md`; başında **İlk iş**."))
+        self.assertTrue(log[8].startswith("- 2.2 (2026-11-23, E739–E743; tohum dönemi AK,"))  # under epochs AL's and AM's entries
+        self.assertTrue(log[8].endswith("`CHANGELOG-20.md`; başında **İlk iş**."))
         answers = json.loads((BOOT / "reports" / "answers.json").read_text(encoding="utf-8"))["answers"]
         self.assertEqual([(a["id"], a["kind"]) for a in answers if a["changelog"] == "CHANGELOG-20"],
                          [(REPORT, "answered")])
