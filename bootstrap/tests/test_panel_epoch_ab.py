@@ -4,6 +4,7 @@ seed-085's open items, the operator's table correction that gives P1 the referee
 reaches the brain, so each binding sentence is on a `tohum` page; the seed's copies of `asama-1/13` and `06` are
 aligned. The trailing comment on a test names the mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import hashlib
 import json
 import re

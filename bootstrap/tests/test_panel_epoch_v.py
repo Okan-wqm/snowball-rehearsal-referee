@@ -6,6 +6,7 @@ model-choice principle (E644, `00b`), and the reference MF5's reading of a bundl
 themselves run in `test_reference_brain`. The trailing comment on a test names the mutants it kills
 (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import base64
 import hashlib
 import importlib.util

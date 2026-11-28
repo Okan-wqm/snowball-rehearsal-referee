@@ -2,6 +2,7 @@
 `seats/` and `policy.json` into every signed result, and stops when the vectors' or the seats' hash differs from the
 summary's `drift.hashes` (`01c`). The trailing comment on a test names the mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import hashlib
 import json
 import tempfile

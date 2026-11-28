@@ -7,6 +7,7 @@ E100, E281-E283; its control sub-rule since E282, `test_exit_decisions`), #agac 
 counted against the Founder. The trailing comment on a test names the mutants it kills (`local/mutate.py`).
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import hashlib
 import io
 import json

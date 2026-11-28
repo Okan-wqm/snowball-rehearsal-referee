@@ -10,6 +10,7 @@ runs left out on a green push. Each one stops the join (an outage), or, for a fa
 run on that sandbox.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import copy
 import hashlib
 import json

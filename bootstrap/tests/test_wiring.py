@@ -5,6 +5,7 @@ every claim in it against the code and the spec, so that a renamed flag, a delet
 nobody documented or a stale instruction fails a test instead of the first real run.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import inspect
 import io
 import json

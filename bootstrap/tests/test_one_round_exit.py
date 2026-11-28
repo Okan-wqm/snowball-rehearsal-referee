@@ -2,6 +2,7 @@
 reports seed-064 (E632, `24a`) and seed-065 (E631, `07`) were answered with, each named by the changelog, and the owner's outage re-trigger (E633, `25a`). The
 behaviour itself is `test_flow`'s (`Flow.test_an_own_head_request_*`, `test_only_a_request_on_top_of_its_own_code_*`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import re
 import unittest
 from pathlib import Path

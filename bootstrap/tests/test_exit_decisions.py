@@ -15,6 +15,7 @@
 The trailing comment on a test names the mutants it kills (`local/mutate.py`).
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import contextlib
 import io
 import json

@@ -1,3 +1,4 @@
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import io
 import json
 import re

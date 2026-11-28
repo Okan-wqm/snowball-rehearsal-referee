@@ -2,6 +2,7 @@
 çağrısı") and carried by every signed result's `rival` record, measured before the limit's check, so a session reads its
 distance from the limit before a push instead of after a rejection."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import re
 import unittest

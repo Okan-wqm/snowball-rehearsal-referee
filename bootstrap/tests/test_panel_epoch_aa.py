@@ -5,6 +5,7 @@ already gives, the "first task" convention (the Founder's lesson f1741) and the 
 sentence is on a `tohum` page; the seed's copy of `asama-1/13d` is aligned. The policy fixtures' number form is in
 `test_policyreads`. The trailing comment on a test names the mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import re
 import unittest

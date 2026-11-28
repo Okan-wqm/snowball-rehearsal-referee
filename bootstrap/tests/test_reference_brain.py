@@ -15,6 +15,7 @@ do not replace. For MF2-MF7 the other, B, is `local/blind_b/referee/` as it was 
 expected values): the second computation `29a` and `29d` ask for, run here again on every change of the seed.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import shlex
 import shutil

@@ -8,6 +8,7 @@ metric that cannot be computed is null with its reason; a section that fails is 
 is capped; the same files give the same bytes. Nothing reaches GitHub here.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import importlib.util
 import json
 import re

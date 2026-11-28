@@ -3,6 +3,7 @@ defect it is not told about. The pipeline runs here over local git repositories 
 `run-tests`, `fetch-deps`, `reproduce` and `decide`; the container and the rival are fakes. The trailing comment on a
 test names the mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import hashlib
 import importlib.util
 import json

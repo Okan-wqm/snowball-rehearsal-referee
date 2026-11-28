@@ -4,6 +4,7 @@
 the loader enforces is broken once on a copy of it, and module-less red's tree is built from it.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import copy
 import hashlib
 import io

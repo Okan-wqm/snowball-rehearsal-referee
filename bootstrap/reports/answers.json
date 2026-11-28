@@ -185,6 +185,11 @@
       "id": "seed-104-a-candidate-id-whose-branch-stands-from-an-earlier-merge-has-no-rule",
       "changelog": "CHANGELOG-22",
       "kind": "answered"
+    },
+    {
+      "id": "seed-105-which-names-are-a-paket-manifesti-for-a-case-s-group",
+      "changelog": "CHANGELOG-23",
+      "kind": "answered"
     }
   ],
   "carried": {

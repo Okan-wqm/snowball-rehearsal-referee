@@ -4,6 +4,7 @@ outside its folder. The world here is synthetic: no target, no live repository."
 
 from __future__ import annotations
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import copy
 import hashlib
 import importlib.util

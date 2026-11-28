@@ -8,6 +8,7 @@ ranked, the ledger is never written. A lesson is retired by a later row's `close
 `tohum/01`, and the core points to it. Nothing reaches GitHub here.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import gzip
 import json
 import re

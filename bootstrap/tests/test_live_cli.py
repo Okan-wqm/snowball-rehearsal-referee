@@ -5,6 +5,7 @@ That is enough to tell a drifted contract from a healthy one, because the CLI on
 this module parses when it accepted every flag in `_cli_argv`.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import os
 import re

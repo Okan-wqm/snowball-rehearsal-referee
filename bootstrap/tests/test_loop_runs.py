@@ -6,6 +6,7 @@ summary line, or the class that kept it out. Nothing reaches GitHub here: `launc
 the API path. The summary lines are shaped like the referee's real ones (runs 43534260172, 43685908138, 43686181570).
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import subprocess
 import tempfile

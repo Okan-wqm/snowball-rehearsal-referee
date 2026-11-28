@@ -8,6 +8,7 @@ recorder, as `test_flow` and `test_exit_checks` do. Every git repository is a lo
 names the mutants it kills (`local/mutate.py`).
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import base64
 import copy
 import hashlib

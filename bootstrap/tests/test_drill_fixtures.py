@@ -8,6 +8,7 @@ asks for it (the suite runs under every mutant, and the seed's fetch of the lock
 The trailing comment on a test names the mutants it kills (`local/mutate.py`).
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import base64
 import hashlib
 import http.server

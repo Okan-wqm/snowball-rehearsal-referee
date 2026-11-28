@@ -4,6 +4,7 @@ The vector is `vectors.json`'s `census_copy` group: the enabled ESLint rules at 
 the copy's set is the units' union, each rule carrying the units it is enabled in. `29za:1-57` do not move; the facts
 are appended. The trailing comment on a test names the mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import hashlib
 import importlib.util
 import json
@@ -214,7 +215,7 @@ class RecordsTest(unittest.TestCase):
                       "Gevşetme yok."):
             self.assertIn(words, entry, words)
         log = (TOHUM / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
-        self.assertTrue(log[6].startswith("- 2.2 (2026-11-24, E744; tohum dönemi AL,"))  # the newest entry first
-        self.assertTrue(log[6].endswith("`CHANGELOG-21.md`; başında **İlk iş**."))
+        self.assertTrue(log[7].startswith("- 2.2 (2026-11-24, E744; tohum dönemi AL,"))  # under epoch AN's entry
+        self.assertTrue(log[7].endswith("`CHANGELOG-21.md`; başında **İlk iş**."))
         self.assertIn("| `tohum/CHANGELOG-21.md` | Değişiklik Günlüğü — Tohum, 2.2'nin Yirminci Kayıtları |",
                       (ROOT / "spec" / "INDEX.md").read_text(encoding="utf-8"))

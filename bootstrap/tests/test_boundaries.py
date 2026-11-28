@@ -1,6 +1,7 @@
 """Boundaries of the rival code, from a mutation run (142 mutants of rival, rival_mcp, cmd_rival, config and
 treehash; 82 survived the earlier tests). Each test names the mutants it kills in its docstring."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import io
 import json
 import re

@@ -3,6 +3,7 @@ L-AD2, L-AD3) and seed-087's residuals (`26j`, E695; the deferral E696). Only `s
 binding sentence is on a `tohum` page; the counting is `reportlife`'s, one rule for the referee (`decide`) and the
 operator's launcher. The trailing comment on a test names the mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import hashlib
 import io
 import json

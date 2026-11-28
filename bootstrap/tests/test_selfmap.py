@@ -6,6 +6,7 @@ part; `decide` warns in Stage 0 and rejects from Stage 1, and a run that is miss
 never the Founder's. The header's text never reaches a shell.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import hashlib
 import io
 import json

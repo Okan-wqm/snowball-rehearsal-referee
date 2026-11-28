@@ -5,6 +5,7 @@ instead of the registry and points `rules_total` to `29za:9-22`; `26j` and `26k`
 reports has a line in `CHANGELOG-17`. The one loosening, L-AH1, is named on the page, in `26m`, in the register and in
 `CHANGELOG-17`. The trailing comment on a test names the mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import unittest
 from pathlib import Path

@@ -2,6 +2,7 @@
 controls and vectors; 69 survived the earlier tests). The trailing comment on each test names the mutants it kills.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import hashlib
 import io
 import json

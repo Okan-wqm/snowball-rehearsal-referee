@@ -7,6 +7,7 @@ repositories); GitHub (CI, the referee's results, its runs and the dispatch) is 
 
 from __future__ import annotations
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import builtins
 import contextlib
 import hashlib

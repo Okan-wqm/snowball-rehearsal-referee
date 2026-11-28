@@ -4,6 +4,7 @@ on a seed page, decided by the independent review panel, the operator on the own
 seed's copy of `asama-1` is aligned and the Founder reconciles its own (E180). The trailing comment on a test names the
 mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import re
 import unittest

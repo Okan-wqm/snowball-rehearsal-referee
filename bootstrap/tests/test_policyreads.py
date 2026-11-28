@@ -7,6 +7,7 @@ owner's part; `decide` warns in Stage 0 and rejects from Stage 1. The Founder's 
 top level, its tests agreeing with its code) is red here, and the seed's reference answer is clean.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import re
 import unittest

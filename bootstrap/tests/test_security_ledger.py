@@ -5,6 +5,7 @@ define, and points to regression tests, CI jobs and mutants that still exist: re
 mutant fails here, so a closed security gap cannot quietly lose the guard that keeps it closed.
 """
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import re
 import sys

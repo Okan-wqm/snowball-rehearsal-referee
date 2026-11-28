@@ -6,6 +6,7 @@ item of each report as written has a line in `CHANGELOG-15` (the desk's rule of 
 reaches the brain, so each binding sentence is on a `tohum` page. The trailing comment on a test names the mutants it
 kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import re
 import subprocess

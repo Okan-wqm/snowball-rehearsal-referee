@@ -5,6 +5,7 @@ The facts it states are cited `page:line`, and each citation is read here, so a 
 Only `spec/tohum` reaches the brain, so each binding sentence is on a `tohum` page. The trailing comment on a test
 names the mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import re
 import unittest
 from pathlib import Path
@@ -184,9 +185,9 @@ class RecordsTest(unittest.TestCase):
         self.assertIn("| `tohum/00f-gorev-haritasi-sahibin-ipuclari-4.md` | Görev Haritası, Devam: Sahibin İpuçları IV |",
                       index)
         log = (TOHUM / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
-        self.assertEqual(log[9], "- 2.2 (2026-11-23, E736; tohum dönemi AJ, sahibin ipucu: doğrudan da yanlıştan da "
+        self.assertEqual(log[10], "- 2.2 (2026-11-23, E736; tohum dönemi AJ, sahibin ipucu: doğrudan da yanlıştan da "
                                  "öğrenmek, her sorunu sınıf olarak kapatmak, üstünü örtmemek; yeni `00f`): "
-                                 "`CHANGELOG-19.md`; başında **İlk iş**.")  # under epochs AL's, AM's and AK's entries (log[6]-log[8])
+                                 "`CHANGELOG-19.md`; başında **İlk iş**.")  # under epochs AN's, AL's, AM's and AK's entries (log[6]-log[9])
         for p in TOHUM.glob("*.md"):
             self.assertLessEqual(len(p.read_text(encoding="utf-8").splitlines()), 80, p.name)
 

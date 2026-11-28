@@ -6,6 +6,7 @@ the brain, so each binding sentence is on a `tohum` page: new `26r` (the organ's
 `29v` and `26e` point there. P3's machine copy is not part of this epoch. Every item of the two reports has a line in
 `CHANGELOG-18`. The trailing comment on a test names the mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import re
 import unittest
@@ -249,7 +250,9 @@ class BrakesTest(unittest.TestCase):
             self.assertIn(words, text, words)
         for words in ("Gevşetme L-AF1** (geçici)", "o döneme kadar uygulanmaz", "Ertelendi:"):
             self.assertNotIn(words, text, words)
-        self.assertEqual(len(page("26n").splitlines()), 71)
+        lines = page("26n").splitlines()
+        self.assertTrue(lines[70].startswith("- Bulgu başı frenlerin anahtarları (seed-095)"))  # 26n:71, as it was
+        self.assertEqual(lines[71], "")  # epoch AN appends after 26n:71
         self.assertTrue(page("26n").splitlines()[54].startswith("**Açıkça ertelenenler**"))  # 26n:55 did not move
         self.assertIn("- Bulgu başı frenlerin anahtarları (seed-095) → P1 çıkış döneminde karar verildi (yukarıda, `26s`).",
                       page("26n"))

@@ -3,6 +3,7 @@ is pinned here, so a later edit that loosens it fails a test instead of passing 
 
 from __future__ import annotations
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import argparse
 import contextlib
 import dataclasses

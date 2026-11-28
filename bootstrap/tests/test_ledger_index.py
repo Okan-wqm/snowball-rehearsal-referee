@@ -9,6 +9,7 @@ the mutants it kills (`local/mutate.py`)."""
 
 from __future__ import annotations
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import gzip
 import hashlib
 import json

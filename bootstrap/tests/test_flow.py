@@ -1,5 +1,6 @@
 """End to end over local git repositories: pull -> decide, across spec, code and exit requests."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import contextlib
 import datetime
 import hashlib

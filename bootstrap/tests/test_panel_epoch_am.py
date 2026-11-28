@@ -5,6 +5,7 @@ fact is cited `page:line` and each citation is read here, so a cited line that m
 are cited at the brain commit the page names (the brain is not read here). Only `spec/tohum` reaches the brain, so each
 binding sentence is on a `tohum` page. The trailing comment on a test names the mutants it kills (`local/mutate.py`)."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import json
 import unittest
 from pathlib import Path

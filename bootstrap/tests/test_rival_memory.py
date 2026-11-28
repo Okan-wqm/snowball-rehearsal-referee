@@ -1,6 +1,7 @@
 """Batch 2 of the gap register (`docs/eksik-kaydi.md`, E06-E13, E20, E27, E33): the rival, its reproducers and
 what the referee remembers of them. Each class names the register item it closes."""
 
+import no_real_delays  # noqa: F401  (first: no test waits on a real delay, E751)
 import contextlib
 import datetime
 import hashlib
